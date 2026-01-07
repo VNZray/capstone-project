@@ -1,5 +1,9 @@
-import { ShopColors } from '@/constants/ShopColors';
-import type { BusinessProfileMenuItem, BusinessProfileView } from '@/components/shops/details/types';
+import { ShopColors } from '@/constants/color';
+import type {
+  BusinessProfileMenuItem,
+  BusinessProfileService,
+  BusinessProfileView,
+} from '@/components/shops/details/types';
 import {
   ShopDetailInfoSection,
   ShopDetailMenuSection,
@@ -8,13 +12,13 @@ import {
   ShopDetailReviewsSection,
 } from '@/components/shops/details/sections';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
   FlatList,
   Image,
+  Linking,
   Modal,
   StyleSheet,
   Text,
@@ -24,8 +28,14 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { useCart } from '@/context/CartContext';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { Routes } from '@/routes/mainRoutes';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const HERO_HEIGHT = 280;
@@ -54,10 +64,11 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
   onWebsite,
 }) => {
   const { addToCart, getTotalItems } = useCart();
+  const { push, back, isNavigating } = usePreventDoubleNavigation();
+  const requireAuth = useRequireAuth();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [selectedMenuItem, setSelectedMenuItem] = useState<BusinessProfileMenuItem | null>(
-    null
-  );
+  const [selectedMenuItem, setSelectedMenuItem] =
+    useState<BusinessProfileMenuItem | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [specialRequests, setSpecialRequests] = useState('');
   const [index, setIndex] = useState(0);
@@ -71,7 +82,8 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
 
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [isCollapsedHeaderVisible, setIsCollapsedHeaderVisible] = useState(false);
+  const [isCollapsedHeaderVisible, setIsCollapsedHeaderVisible] =
+    useState(false);
   const [isFavorited, setIsFavorited] = useState(shop.isFavorited ?? false);
 
   const handleFavoriteToggle = useCallback(() => {
@@ -90,13 +102,85 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
     setSpecialRequests('');
   }, []);
 
-  const handleQuantityChange = useCallback((delta: number) => {
-    if (!selectedMenuItem?.productData) return;
-    const newQuantity = quantity + delta;
-    if (newQuantity >= 1 && newQuantity <= selectedMenuItem.productData.current_stock) {
-      setQuantity(newQuantity);
+  const handleServicePress = useCallback((service: BusinessProfileService) => {
+    // Format price for display
+    const priceTypeLabels: Record<string, string> = {
+      fixed: '',
+      per_hour: '/hr',
+      per_day: '/day',
+      per_week: '/week',
+      per_month: '/mo',
+      per_session: '/session',
+      per_person: '/person',
+      custom: '',
+    };
+    const formattedPrice = `₱${service.basePrice.toLocaleString()}${priceTypeLabels[service.priceType] || ''}`;
+    
+    // Build contact options
+    const contactOptions: { text: string; onPress: () => void }[] = [];
+    
+    if (service.contactMethods && service.contactMethods.length > 0) {
+      service.contactMethods.forEach((method) => {
+        const label = method.type.charAt(0).toUpperCase() + method.type.slice(1);
+        contactOptions.push({
+          text: `${label}: ${method.value}`,
+          onPress: () => {
+            if (method.type === 'phone') {
+              Linking.openURL(`tel:${method.value}`);
+            } else if (method.type === 'email') {
+              Linking.openURL(`mailto:${method.value}?subject=Inquiry about ${service.name}`);
+            } else if (method.type === 'facebook') {
+              Linking.openURL(method.value.startsWith('http') ? method.value : `https://facebook.com/${method.value}`);
+            } else if (method.type === 'viber') {
+              Linking.openURL(`viber://chat?number=${method.value.replace(/\D/g, '')}`);
+            } else if (method.type === 'whatsapp') {
+              Linking.openURL(`whatsapp://send?phone=${method.value.replace(/\D/g, '')}`);
+            }
+          },
+        });
+      });
     }
-  }, [quantity, selectedMenuItem]);
+    
+    // If no contact methods, use business phone if available
+    if (contactOptions.length === 0 && shop.contact) {
+      contactOptions.push({
+        text: `Call: ${shop.contact}`,
+        onPress: () => Linking.openURL(`tel:${shop.contact}`),
+      });
+    }
+    
+    // Build the message
+    let message = `${service.description || 'No description available'}\n\nPrice: ${formattedPrice}`;
+    if (service.requirements) {
+      message += `\n\nRequirements: ${service.requirements}`;
+    }
+    if (service.contactNotes) {
+      message += `\n\n${service.contactNotes}`;
+    }
+    
+    Alert.alert(
+      service.name,
+      message,
+      [
+        ...contactOptions.slice(0, 3), // Limit to 3 contact options
+        { text: 'Close', style: 'cancel' },
+      ]
+    );
+  }, [shop.contact]);
+
+  const handleQuantityChange = useCallback(
+    (delta: number) => {
+      if (!selectedMenuItem?.productData) return;
+      const newQuantity = quantity + delta;
+      if (
+        newQuantity >= 1 &&
+        newQuantity <= selectedMenuItem.productData.current_stock
+      ) {
+        setQuantity(newQuantity);
+      }
+    },
+    [quantity, selectedMenuItem]
+  );
 
   const handleAddToCart = useCallback(() => {
     if (!selectedMenuItem?.productData) return;
@@ -104,50 +188,70 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
     const productData = selectedMenuItem.productData;
 
     if (!selectedMenuItem.isAvailable || productData.is_unavailable) {
-      Alert.alert('Unavailable', 'This product is currently not available for ordering.');
+      Alert.alert(
+        'Unavailable',
+        'This product is currently not available for ordering.'
+      );
       return;
     }
 
-    try {
-      // Create a Product object compatible with CartContext
-      const product = {
-        id: selectedMenuItem.id,
-        business_id: productData.business_id,
-        name: productData.name,
-        price: productData.price,
-        status: productData.status as 'active' | 'inactive' | 'out_of_stock',
-        current_stock: productData.current_stock,
-        image_url: productData.image_url || null,
-        is_unavailable: productData.is_unavailable,
-        description: selectedMenuItem.description || null,
-        product_category_id: undefined,
-        created_at: '',
-        updated_at: '',
-      };
+    // Require authentication before adding to cart
+    requireAuth(() => {
+      try {
+        // Create a Product object compatible with CartContext
+        const product = {
+          id: selectedMenuItem.id,
+          business_id: productData.business_id,
+          name: productData.name,
+          price: productData.price,
+          status: productData.status as 'active' | 'inactive' | 'out_of_stock',
+          current_stock: productData.current_stock,
+          image_url: productData.image_url || null,
+          is_unavailable: productData.is_unavailable,
+          description: selectedMenuItem.description || null,
+          product_category_id: undefined,
+          created_at: '',
+          updated_at: '',
+        };
 
-      addToCart(product, quantity, specialRequests || undefined);
+        addToCart(product, quantity, specialRequests || undefined);
 
-      Alert.alert(
-        'Added to Cart',
-        `${quantity}x ${selectedMenuItem.item} added to your cart`,
-        [
-          { text: 'Continue Shopping', style: 'cancel', onPress: () => setSelectedMenuItem(null) },
-          {
-            text: 'View Cart',
-            onPress: () => {
-              setSelectedMenuItem(null);
-              router.push('/(tabs)/(home)/(shop)/cart' as never);
+        Alert.alert(
+          'Added to Cart',
+          `${quantity}x ${selectedMenuItem.item} added to your cart`,
+          [
+            {
+              text: 'Continue Shopping',
+              style: 'cancel',
+              onPress: () => setSelectedMenuItem(null),
             },
-          },
-        ]
-      );
+            {
+              text: 'View Cart',
+              onPress: () => {
+                setSelectedMenuItem(null);
+                push(Routes.shop.cart());
+              },
+            },
+          ]
+        );
 
-      setQuantity(1);
-      setSpecialRequests('');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to add to cart');
-    }
-  }, [selectedMenuItem, quantity, specialRequests, addToCart]);
+        setQuantity(1);
+        setSpecialRequests('');
+      } catch (error: any) {
+        Alert.alert('Error', error.message || 'Failed to add to cart');
+      }
+    }, 'add items to cart');
+  }, [
+    selectedMenuItem,
+    quantity,
+    specialRequests,
+    addToCart,
+    requireAuth,
+    push,
+    setSelectedMenuItem,
+    setQuantity,
+    setSpecialRequests,
+  ]);
 
   const handleImagePress = useCallback((imageUrl: string) => {
     setSelectedImage(imageUrl);
@@ -193,6 +297,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           <ShopDetailMenuSection
             shop={shop}
             onMenuItemPress={handleMenuItemPress}
+            onServicePress={handleServicePress}
           />
         );
       case 1:
@@ -214,19 +319,34 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
         );
       case 4:
         return (
-          <ShopDetailPhotosSection shop={shop} onImagePress={handleImagePress} />
+          <ShopDetailPhotosSection
+            shop={shop}
+            onImagePress={handleImagePress}
+          />
         );
       default:
         return <View />;
     }
-  }, [handleDirections, handleImagePress, handleMenuItemPress, handleReviewHelpful, index, shop]);
+  }, [
+    handleDirections,
+    handleImagePress,
+    handleMenuItemPress,
+    handleReviewHelpful,
+    index,
+    shop,
+  ]);
 
   const renderListHeader = useMemo(
     () => (
       <>
         <View style={styles.heroContainer}>
           <Image
-            source={{ uri: shop.coverImage || shop.image || 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200' }}
+            source={{
+              uri:
+                shop.coverImage ||
+                shop.image ||
+                'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=1200',
+            }}
             style={styles.heroImage}
             resizeMode="cover"
           />
@@ -238,7 +358,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
             <View style={styles.shopMainInfo}>
               <View style={styles.shopTitleContainer}>
                 <Text style={styles.shopName}>{shop.name}</Text>
-                {shop.tagline && <Text style={styles.shopTagline}>{shop.tagline}</Text>}
+                {shop.tagline && (
+                  <Text style={styles.shopTagline}>{shop.tagline}</Text>
+                )}
               </View>
             </View>
 
@@ -253,7 +375,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               {typeof shop.distance === 'number' && shop.distance > 0 && (
                 <View style={styles.metric}>
                   <Ionicons name="location" size={16} color="#FFFFFF" />
-                  <Text style={styles.metricText}>{shop.distance.toFixed(1)} km</Text>
+                  <Text style={styles.metricText}>
+                    {shop.distance.toFixed(1)} km
+                  </Text>
                 </View>
               )}
             </View>
@@ -262,7 +386,10 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
 
         <View style={styles.quickActionsBar}>
           {shop.contact && (
-            <TouchableOpacity style={styles.quickActionButton} onPress={handleCall}>
+            <TouchableOpacity
+              style={styles.quickActionButton}
+              onPress={handleCall}
+            >
               <Ionicons name="call" size={20} color={ShopColors.accent} />
               <Text style={styles.quickActionText}>Call</Text>
             </TouchableOpacity>
@@ -288,7 +415,10 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.quickActionButton} onPress={handleShare}>
+          <TouchableOpacity
+            style={styles.quickActionButton}
+            onPress={handleShare}
+          >
             <Ionicons name="share-social" size={20} color={ShopColors.accent} />
             <Text style={styles.quickActionText}>Share</Text>
           </TouchableOpacity>
@@ -314,7 +444,15 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
         </View>
       </>
     ),
-    [handleCall, handleDirections, handleShare, handleWebsite, index, routes, shop]
+    [
+      handleCall,
+      handleDirections,
+      handleShare,
+      handleWebsite,
+      index,
+      routes,
+      shop,
+    ]
   );
 
   const flatListData: TabContentItem[] = useMemo(
@@ -349,7 +487,7 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           },
         ]}
       >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.headerButton} onPress={() => back()}>
           <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
 
@@ -357,9 +495,10 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           <TouchableOpacity style={styles.headerButton} onPress={handleShare}>
             <Ionicons name="share-outline" size={24} color="#FFFFFF" />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.headerButton} 
-            onPress={() => router.push('/(tabs)/(home)/(shop)/cart' as never)}
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => push(Routes.shop.cart())}
+            disabled={isNavigating}
           >
             <Ionicons name="cart-outline" size={24} color="#FFFFFF" />
             {getTotalItems() > 0 && (
@@ -368,7 +507,10 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               </View>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerButton} onPress={handleFavoriteToggle}>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={handleFavoriteToggle}
+          >
             <Ionicons
               name={isFavorited ? 'heart' : 'heart-outline'}
               size={24}
@@ -392,9 +534,13 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
           <View style={styles.collapsedHeaderContent}>
             <TouchableOpacity
               style={styles.collapsedBackButton}
-              onPress={() => router.back()}
+              onPress={() => back()}
             >
-              <Ionicons name="arrow-back" size={24} color={ShopColors.textPrimary} />
+              <Ionicons
+                name="arrow-back"
+                size={24}
+                color={ShopColors.textPrimary}
+              />
             </TouchableOpacity>
 
             <View style={styles.collapsedShopInfo}>
@@ -416,7 +562,8 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.collapsedActionButton}
-                onPress={() => router.push('/(tabs)/(home)/(shop)/cart' as never)}
+                onPress={() => push(Routes.shop.cart())}
+                disabled={isNavigating}
               >
                 <Ionicons
                   name="cart-outline"
@@ -425,7 +572,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                 />
                 {getTotalItems() > 0 && (
                   <View style={styles.cartBadgeSmall}>
-                    <Text style={styles.cartBadgeTextSmall}>{getTotalItems()}</Text>
+                    <Text style={styles.cartBadgeTextSmall}>
+                      {getTotalItems()}
+                    </Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -436,7 +585,9 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                 <Ionicons
                   name={isFavorited ? 'heart' : 'heart-outline'}
                   size={20}
-                  color={isFavorited ? ShopColors.error : ShopColors.textSecondary}
+                  color={
+                    isFavorited ? ShopColors.error : ShopColors.textSecondary
+                  }
                 />
               </TouchableOpacity>
             </View>
@@ -479,7 +630,11 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
               style={styles.menuModalClose}
               onPress={() => setSelectedMenuItem(null)}
             >
-              <Ionicons name="close-circle" size={32} color={ShopColors.textSecondary} />
+              <Ionicons
+                name="close-circle"
+                size={32}
+                color={ShopColors.textSecondary}
+              />
             </TouchableOpacity>
 
             {selectedMenuItem && (
@@ -493,27 +648,36 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                     />
                     {!selectedMenuItem.isAvailable && (
                       <View style={styles.unavailableBadge}>
-                        <Text style={styles.unavailableBadgeText}>Out of Stock</Text>
+                        <Text style={styles.unavailableBadgeText}>
+                          Out of Stock
+                        </Text>
                       </View>
                     )}
                   </View>
                 )}
-                
+
                 <View style={styles.menuModalInfo}>
                   <View style={styles.menuModalHeader}>
                     <View style={styles.menuModalTitleContainer}>
-                      <Text style={styles.menuModalName}>{selectedMenuItem.item}</Text>
-                      {selectedMenuItem.tags && selectedMenuItem.tags.length > 0 && (
-                        <View style={styles.menuModalTags}>
-                          {selectedMenuItem.tags.slice(0, 2).map((tag) => (
-                            <View key={tag} style={styles.menuModalTag}>
-                              <Text style={styles.menuModalTagText}>{tag}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      )}
+                      <Text style={styles.menuModalName}>
+                        {selectedMenuItem.item}
+                      </Text>
+                      {selectedMenuItem.tags &&
+                        selectedMenuItem.tags.length > 0 && (
+                          <View style={styles.menuModalTags}>
+                            {selectedMenuItem.tags.slice(0, 2).map((tag) => (
+                              <View key={tag} style={styles.menuModalTag}>
+                                <Text style={styles.menuModalTagText}>
+                                  {tag}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
                     </View>
-                    <Text style={styles.menuModalPrice}>{selectedMenuItem.price}</Text>
+                    <Text style={styles.menuModalPrice}>
+                      {selectedMenuItem.price}
+                    </Text>
                   </View>
 
                   {selectedMenuItem.description && (
@@ -524,9 +688,14 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
 
                   {selectedMenuItem.productData && (
                     <View style={styles.stockInfo}>
-                      <Ionicons name="cube-outline" size={16} color={ShopColors.textSecondary} />
+                      <Ionicons
+                        name="cube-outline"
+                        size={16}
+                        color={ShopColors.textSecondary}
+                      />
                       <Text style={styles.stockInfoText}>
-                        {selectedMenuItem.productData.current_stock} units available
+                        {selectedMenuItem.productData.current_stock} units
+                        available
                       </Text>
                     </View>
                   )}
@@ -535,34 +704,57 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                     <Text style={styles.quantitySectionLabel}>Quantity</Text>
                     <View style={styles.quantityControls}>
                       <TouchableOpacity
-                        style={[styles.quantityButton, quantity <= 1 && styles.quantityButtonDisabled]}
+                        style={[
+                          styles.quantityButton,
+                          quantity <= 1 && styles.quantityButtonDisabled,
+                        ]}
                         onPress={() => handleQuantityChange(-1)}
                         disabled={quantity <= 1}
                       >
-                        <Ionicons name="remove" size={20} color={quantity <= 1 ? ShopColors.textSecondary : ShopColors.accent} />
+                        <Ionicons
+                          name="remove"
+                          size={20}
+                          color={
+                            quantity <= 1
+                              ? ShopColors.textSecondary
+                              : ShopColors.accent
+                          }
+                        />
                       </TouchableOpacity>
                       <Text style={styles.quantityValue}>{quantity}</Text>
                       <TouchableOpacity
                         style={[
                           styles.quantityButton,
-                          (!selectedMenuItem.productData || quantity >= selectedMenuItem.productData.current_stock) && styles.quantityButtonDisabled
+                          (!selectedMenuItem.productData ||
+                            quantity >=
+                              selectedMenuItem.productData.current_stock) &&
+                            styles.quantityButtonDisabled,
                         ]}
                         onPress={() => handleQuantityChange(1)}
-                        disabled={!selectedMenuItem.productData || quantity >= selectedMenuItem.productData.current_stock}
+                        disabled={
+                          !selectedMenuItem.productData ||
+                          quantity >= selectedMenuItem.productData.current_stock
+                        }
                       >
-                        <Ionicons 
-                          name="add" 
-                          size={20} 
-                          color={(!selectedMenuItem.productData || quantity >= selectedMenuItem.productData.current_stock) 
-                            ? ShopColors.textSecondary 
-                            : ShopColors.accent} 
+                        <Ionicons
+                          name="add"
+                          size={20}
+                          color={
+                            !selectedMenuItem.productData ||
+                            quantity >=
+                              selectedMenuItem.productData.current_stock
+                              ? ShopColors.textSecondary
+                              : ShopColors.accent
+                          }
                         />
                       </TouchableOpacity>
                     </View>
                   </View>
 
                   <View style={styles.notesSection}>
-                    <Text style={styles.notesSectionLabel}>Special Requests (Optional)</Text>
+                    <Text style={styles.notesSectionLabel}>
+                      Special Requests (Optional)
+                    </Text>
                     <View style={styles.notesInputContainer}>
                       <TextInput
                         style={styles.notesInput}
@@ -580,14 +772,17 @@ const ShopDetail: React.FC<ShopDetailProps> = ({
                   <TouchableOpacity
                     style={[
                       styles.addToCartButton,
-                      !selectedMenuItem.isAvailable && styles.addToCartButtonDisabled
+                      !selectedMenuItem.isAvailable &&
+                        styles.addToCartButtonDisabled,
                     ]}
                     onPress={handleAddToCart}
                     disabled={!selectedMenuItem.isAvailable}
                   >
                     <Ionicons name="cart" size={20} color="#FFFFFF" />
                     <Text style={styles.addToCartButtonText}>
-                      {selectedMenuItem.isAvailable ? 'Add to Cart' : 'Out of Stock'}
+                      {selectedMenuItem.isAvailable
+                        ? 'Add to Cart'
+                        : 'Out of Stock'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -626,7 +821,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingTop: 20,
+    paddingBottom: 44,
   },
   shopMainInfo: {
     marginBottom: 12,
@@ -701,6 +897,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: ShopColors.border,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
   },
   quickActionButton: {
     flex: 1,

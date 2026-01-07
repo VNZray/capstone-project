@@ -1,7 +1,5 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
-  Stack,
-  Typography,
   FormControl,
   FormLabel,
   Input,
@@ -12,6 +10,7 @@ import {
   Box,
 } from "@mui/joy";
 import type { FormOption, TouristSpotFormData } from "@/src/types/TouristSpot";
+import type { Category } from "@/src/types/Category";
 
 interface BasicInfoStepProps {
   formData: TouristSpotFormData;
@@ -19,20 +18,108 @@ interface BasicInfoStepProps {
   selectedCategories: FormOption[];
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onFormDataChange: (updater: (prev: TouristSpotFormData) => TouristSpotFormData) => void;
+  allCategories: Category[];
 }
 
 const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   formData,
-  categoryOptions,
-  selectedCategories,
   onInputChange,
   onFormDataChange,
+  allCategories,
 }) => {
-  return (
-    <Stack spacing={1}>
-      <Typography level="h4">Basic Information</Typography>
+  const mainCategories = useMemo(() => 
+    allCategories.filter(c => !c.parent_category), 
+    [allCategories]
+  );
 
-      <Grid container spacing={1}>
+  const subCategories = useMemo(() => 
+    allCategories.filter(c => c.parent_category), 
+    [allCategories]
+  );
+
+  const selectedMainIds = useMemo(() => 
+    formData.category_ids.filter(id => mainCategories.some(mc => mc.id === id)),
+    [formData.category_ids, mainCategories]
+  );
+
+  const selectedSubIds = useMemo(() => 
+    formData.category_ids.filter(id => subCategories.some(sc => sc.id === id)),
+    [formData.category_ids, subCategories]
+  );
+
+  const mainCategoryOptions = useMemo<FormOption[]>(() => 
+    mainCategories.map(c => ({ id: c.id, label: c.title })),
+    [mainCategories]
+  );
+
+  const subCategoryOptions = useMemo<FormOption[]>(() => {
+    const relevantSubCategories = selectedMainIds.length === 0 
+      ? subCategories 
+      : subCategories.filter(c => c.parent_category && selectedMainIds.includes(c.parent_category));
+      
+    const options = relevantSubCategories.map(c => ({ 
+      id: c.id, 
+      label: c.title, 
+      group: mainCategories.find(m => m.id === c.parent_category)?.title 
+    }));
+
+    // Sort options by group to prevent duplicate headers in Autocomplete
+    return options.sort((a, b) => {
+      const groupA = a.group || "";
+      const groupB = b.group || "";
+      return groupA.localeCompare(groupB);
+    });
+  }, [subCategories, selectedMainIds, mainCategories]);
+
+  const selectedMainOptions = useMemo(() => 
+    mainCategoryOptions.filter(o => selectedMainIds.includes(o.id)),
+    [mainCategoryOptions, selectedMainIds]
+  );
+
+  const allSubCategoryOptions = useMemo(() => 
+    subCategories.map(c => ({ id: c.id, label: c.title })),
+    [subCategories]
+  );
+  
+  const selectedSubOptions = useMemo(() => 
+    allSubCategoryOptions.filter(o => selectedSubIds.includes(o.id)),
+    [allSubCategoryOptions, selectedSubIds]
+  );
+
+  const handleMainCategoryChange = (_e: any, values: FormOption[]) => {
+    const newMainIds = values.map(v => v.id);
+    const validSubIds = selectedSubIds.filter(subId => {
+      const subCat = subCategories.find(sc => sc.id === subId);
+      return subCat && subCat.parent_category && newMainIds.includes(subCat.parent_category);
+    });
+
+    onFormDataChange(prev => ({
+      ...prev,
+      category_ids: [...newMainIds, ...validSubIds]
+    }));
+  };
+
+  const handleSubCategoryChange = (_e: any, values: FormOption[]) => {
+    const newSubIds = values.map(v => v.id);
+    
+    // Find parents of new subcategories
+    const requiredMainIds = new Set(selectedMainIds);
+    newSubIds.forEach(subId => {
+      const subCat = subCategories.find(sc => sc.id === subId);
+      if (subCat && subCat.parent_category) {
+        requiredMainIds.add(subCat.parent_category);
+      }
+    });
+
+    onFormDataChange(prev => ({
+      ...prev,
+      category_ids: [...Array.from(requiredMainIds), ...newSubIds]
+    }));
+  };
+
+  return (
+    <Box>
+      <Grid container spacing={2}>
         <Grid xs={12}>
           <FormControl required>
             <FormLabel>Name</FormLabel>
@@ -44,7 +131,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
             />
           </FormControl>
         </Grid>
-        
+
         <Grid xs={12}>
           <FormControl required>
             <FormLabel>Description</FormLabel>
@@ -59,22 +146,16 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
 
         <Grid xs={12}>
           <FormControl required>
-            <FormLabel>Categories</FormLabel>
+            <FormLabel>Main Category</FormLabel>
             <Autocomplete<FormOption, true>
               multiple
-              options={categoryOptions}
-              value={selectedCategories}
+              options={mainCategoryOptions}
+              value={selectedMainOptions}
               isOptionEqualToValue={(a, b) => a?.id === b?.id}
               getOptionLabel={(opt) => opt?.label ?? ""}
-              onChange={(_e, values) =>
-                onFormDataChange((prev) => ({
-                  ...prev,
-                  category_ids: values ? values.map((v: FormOption) => v.id) : [],
-                  type_id: "4", // Always set to Tourist Spot type
-                }))
-              }
+              onChange={handleMainCategoryChange}
               renderTags={(tags, getTagProps) => (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                   {tags.map((option, index) => (
                     <Chip
                       variant="soft"
@@ -87,8 +168,39 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
                   ))}
                 </Box>
               )}
+              placeholder="Select Main Categories"
               slotProps={{ listbox: { sx: { zIndex: 2200 } } }}
-              placeholder="Select Categories"
+            />
+          </FormControl>
+        </Grid>
+
+        <Grid xs={12}>
+          <FormControl>
+            <FormLabel>Subcategory</FormLabel>
+            <Autocomplete<FormOption, true>
+              multiple
+              options={subCategoryOptions}
+              groupBy={(option) => option.group || "Other"}
+              value={selectedSubOptions}
+              isOptionEqualToValue={(a, b) => a?.id === b?.id}
+              getOptionLabel={(opt) => opt?.label ?? ""}
+              onChange={handleSubCategoryChange}
+              renderTags={(tags, getTagProps) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {tags.map((option, index) => (
+                    <Chip
+                      variant="soft"
+                      color="neutral"
+                      size="sm"
+                      {...getTagProps({ index })}
+                    >
+                      {option.label}
+                    </Chip>
+                  ))}
+                </Box>
+              )}
+              placeholder={selectedMainIds.length === 0 ? "Select Subcategories (All)" : "Select Subcategories"}
+              slotProps={{ listbox: { sx: { zIndex: 2200 } } }}
             />
           </FormControl>
         </Grid>
@@ -107,7 +219,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
           </FormControl>
         </Grid>
       </Grid>
-    </Stack>
+    </Box>
   );
 };
 

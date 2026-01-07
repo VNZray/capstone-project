@@ -39,7 +39,7 @@ function randomPhone() {
   // Hash passwords before insertion to satisfy bcrypt.compare during login
   const plainUsers = [
     { id: uuidv4(), email: 'admin@gmail.com',   phone_number: randomPhone(), password: 'admin123',   user_role_id: 1, barangay_id: 1 }, // Admin/Tourism Officer
-    { id: uuidv4(), email: 'tourist@gmail.com', phone_number: randomPhone(), password: 'tourist123', user_role_id: 9, barangay_id: 2 }, // Tourist
+    { id: uuidv4(), email: 'tourist@gmail.com', phone_number: randomPhone(), password: 'tourist123', user_role_id: 5, barangay_id: 2 }, // Tourist
     { id: uuidv4(), email: 'owner@gmail.com',   phone_number: randomPhone(), password: 'owner123',   user_role_id: 4, barangay_id: 3 }  // Business Owner
   ];
 
@@ -108,8 +108,6 @@ function randomPhone() {
       max_price: 550,
       email: 'restaurant@example.com',
       phone_number: randomPhone(),
-      business_type_id: 2, // Shop type id
-      business_category_id: 3, // Restaurant category
       barangay_id: barangayId,
       address: 'Abella, Naga City, Camarines Sur',
       owner_id: owner.id,
@@ -123,4 +121,7 @@ function randomPhone() {
 
   await knex('business').insert(businessRecords);
 
+  // Add entity categories for the business (Shop type category)
+  // Note: Category IDs will be assigned by the hierarchical_categories migration
+  // For now, we'll add them via a separate query after the categories migration runs
 }

@@ -1,33 +1,3 @@
-import Header, { HEADER_BASE_HEIGHT } from '@/components/home/Header';
-import HeroSection from '@/components/home/HeroSection';
-import MainContentCard from '@/components/home/MainContentCard';
-import WelcomeSection from '@/components/home/WelcomeSection';
-import SectionContainer from '@/components/home/SectionContainer';
-import TouristSpotCard from '@/components/home/TouristSpotCard';
-import BusinessCard from '@/components/home/BusinessCard';
-import EventListCard from '@/components/home/EventListCard';
-import NewsCard from '@/components/home/NewsCard';
-import { ThemedText } from '@/components/themed-text';
-import { useAuth } from '@/context/AuthContext';
-import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
-import { navigateToEventHome } from '@/routes/eventRoutes';
-import { navigateToShopHome, navigateToCart } from '@/routes/shopRoutes';
-import {
-  navigateToTouristSpotHome,
-} from '@/routes/touristSpotRoutes';
-import {
-  fetchHighlightedSpots,
-  fetchPartnerBusinesses,
-  fetchUpcomingEvents,
-  fetchNewsArticles,
-  type HighlightedTouristSpot,
-  type PartnerBusiness,
-  type HomeEvent,
-  type NewsArticle,
-} from '@/services/HomeContentService';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
@@ -35,179 +5,232 @@ import {
   StatusBar,
   StyleSheet,
   View,
-  ViewStyle,
-  StyleProp,
-  FlatList,
   RefreshControl,
+  useColorScheme,
+  Platform,
+  UIManager,
 } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { Routes } from '@/routes/mainRoutes';
 
-const HERO_HEIGHT = 260;
+// --- YOUR IMPORTS ---
+import HeroSection from '@/components/home/HeroSection';
+import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
+import { ThemedText } from '@/components/themed-text';
+import HomepageSkeleton from '@/components/skeleton/HomepageSkeleton';
+import CityListSection from '@/components/home/CityListSection';
+import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
+import VisitorsHandbookSection from '@/components/home/VisitorsHandbookSection';
+import SpecialOffersSection from '@/components/home/SpecialOffersSection';
+import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
+import FeaturedTouristSpotsSection from '@/components/home/FeaturedTouristSpotsSection';
+import ReportIssueSection from '@/components/home/ReportIssueSection';
+import SearchBar from '@/components/SearchBar';
+
+import { useAuth } from '@/context/AuthContext';
+import { Colors } from '@/constants/color';
+import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
+import { navigateToEventHome } from '@/routes/eventRoutes';
+import { navigateToShopHome, navigateToCart } from '@/routes/shopRoutes';
+import { navigateToTouristSpotHome } from '@/routes/touristSpotRoutes';
+import {
+  type HomeEvent,
+  type NewsArticle,
+} from '@/services/HomeContentService';
+import {
+  ACTIONS,
+  PLACEHOLDER_EVENTS,
+  PLACEHOLDER_NEWS,
+  type ActionItem,
+} from '@/components/home/data';
+import { Image } from 'expo-image';
+import { getUnreadNotificationCount } from '@/services/NotificationService';
+
+// Enable LayoutAnimation for Android
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const HERO_HEIGHT = 280;
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const GRID_ITEM_WIDTH = (SCREEN_WIDTH - 64) / 4;
-
-type ActionItem = {
-  id: 'accommodation' | 'shops' | 'spots' | 'events';
-  label: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-  colors: [string, string];
-};
-
-type PromoCardContent = {
-  id: string;
-  title: string;
-  description: string;
-  primaryCta: string;
-  secondaryCta: string;
-};
-
-type QuickLink = {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-};
-
-const ACTIONS: ActionItem[] = [
-  {
-    id: 'accommodation',
-    label: 'Accommodation',
-    icon: 'bed-queen-outline',
-    colors: ['#FF9D6C', '#FF6B4F'],
-  },
-  {
-    id: 'shops',
-    label: 'Shops',
-    icon: 'storefront-outline',
-    colors: ['#FDBA74', '#FF8F5E'],
-  },
-  {
-    id: 'spots',
-    label: 'Tourist Spots',
-    icon: 'map-marker-radius-outline',
-    colors: ['#FFB5C3', '#F16CA4'],
-  },
-  {
-    id: 'events',
-    label: 'Events',
-    icon: 'calendar-star',
-    colors: ['#B7A2FF', '#8B6CFF'],
-  },
-];
-
-const PROMO_CARD: PromoCardContent = {
-  id: 'report',
-  title: 'Help us improve our city',
-  description:
-    'Create an account to report local issues and keep Naga thriving.',
-  primaryCta: 'View Reports',
-  secondaryCta: 'Report an issue',
-};
-
-const QUICK_LINKS: QuickLink[] = [
-  {
-    id: 'updates',
-    title: 'City Updates',
-    description: 'Latest advisories, announcements, and emergency bulletins.',
-    icon: 'newspaper-variant-outline',
-  },
-  {
-    id: 'explore',
-    title: 'Explore Naga',
-    description: 'Curated guides, upcoming events, and nearby gems.',
-    icon: 'map-marker-radius',
-  },
-];
+const HEADER_SCROLL_THRESHOLD = 80;
 
 const AnimatedScrollView = Animated.ScrollView;
 
 const HomeScreen = () => {
   const { user } = useAuth();
+  const { top: insetsTop, bottom } = useSafeAreaInsets();
+  const colorScheme = useColorScheme() ?? 'light';
+  const palette = Colors[colorScheme];
+
+  // Extract user_id to a stable reference to prevent unnecessary re-renders
+  const userId = user?.user_id;
+
+  // --- Animation Values ---
   const scrollY = useSharedValue(0);
-  const { bottom } = useSafeAreaInsets();
-  const didRedirect = useRef(false);
+  const prevScrollY = useSharedValue(0);
+  const headerVisible = useSharedValue(1); // 1 = Visible, 0 = Hidden
+
+  // --- State ---
   const [searchValue, setSearchValue] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [greeting, setGreeting] = useState('Hello');
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  type SectionState<T> = {
-    data: T[];
+  const [eventState, setEventState] = useState<{
+    data: HomeEvent[];
     loading: boolean;
     error?: string;
-  };
+  }>({
+    data: [],
+    loading: true,
+  });
+  const [newsState, setNewsState] = useState<{
+    data: NewsArticle[];
+    loading: boolean;
+    error?: string;
+  }>({
+    data: [],
+    loading: true,
+  });
 
-  const [spotState, setSpotState] = useState<SectionState<HighlightedTouristSpot>>({
-    data: [],
-    loading: true,
-  });
-  const [businessState, setBusinessState] = useState<SectionState<PartnerBusiness>>({
-    data: [],
-    loading: true,
-  });
-  const [eventState, setEventState] = useState<SectionState<HomeEvent>>({
-    data: [],
-    loading: true,
-  });
-  const [newsState, setNewsState] = useState<SectionState<NewsArticle>>({
-    data: [],
-    loading: true,
-  });
+  // --- Effects ---
+  useEffect(() => {
+    const greetings = [
+      'Hello',
+      'Bonjour',
+      'Hola',
+      'Ciao',
+      'Konnichiwa',
+      'Guten Tag',
+      'Namaste',
+    ];
+    let index = 0;
+    const interval = setInterval(() => {
+      index = (index + 1) % greetings.length;
+      setGreeting(greetings[index]);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Guest mode enabled - no auto-redirect to login
+  // Users can browse as guests and will be prompted to login when accessing protected features
+
+  // Fetch unread notification count
+  const fetchUnreadCount = useCallback(async () => {
+    if (!userId) return;
+    try {
+      const count = await getUnreadNotificationCount(userId);
+      setUnreadCount(count);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  }, [userId]);
 
   useEffect(() => {
-    if (!user && !didRedirect.current) {
-      didRedirect.current = true;
-      router.replace('/(screens)/Login');
-    }
-  }, [user]);
-
-  const displayName = user?.first_name ?? user?.last_name ?? 'Friend';
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   const loadHomeContent = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true);
-    } else {
-      setSpotState((prev) => ({ ...prev, loading: true }));
-      setBusinessState((prev) => ({ ...prev, loading: true }));
+    if (isRefresh) setRefreshing(true);
+    else {
       setEventState((prev) => ({ ...prev, loading: true }));
       setNewsState((prev) => ({ ...prev, loading: true }));
     }
-
-    try {
-      const [spots, businesses, events, news] = await Promise.all([
-        fetchHighlightedSpots(),
-        fetchPartnerBusinesses(),
-        fetchUpcomingEvents(),
-        fetchNewsArticles(),
-      ]);
-      setSpotState({ data: spots ?? [], loading: false });
-      setBusinessState({ data: businesses ?? [], loading: false });
-      setEventState({ data: events ?? [], loading: false });
-      setNewsState({ data: news ?? [], loading: false });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unable to load content';
-      setSpotState((prev) => ({ ...prev, loading: false, error: message }));
-      setBusinessState((prev) => ({ ...prev, loading: false, error: message }));
-      setEventState((prev) => ({ ...prev, loading: false, error: message }));
-      setNewsState((prev) => ({ ...prev, loading: false, error: message }));
-    } finally {
-      setRefreshing(false);
-    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setEventState({ data: PLACEHOLDER_EVENTS, loading: false });
+    setNewsState({ data: PLACEHOLDER_NEWS, loading: false });
+    setRefreshing(false);
   }, []);
+
+  const handleRefresh = useCallback(() => {
+    loadHomeContent(true);
+    fetchUnreadCount();
+  }, [loadHomeContent, fetchUnreadCount]);
 
   useEffect(() => {
     loadHomeContent();
   }, [loadHomeContent]);
 
-  const handleRefresh = useCallback(() => {
-    loadHomeContent(true);
-  }, [loadHomeContent]);
-
+  // --- UPDATED SCROLL HANDLER (Fixes Slow Scroll Issue) ---
   const handleScroll = useAnimatedScrollHandler((event) => {
-    scrollY.value = event.contentOffset.y;
+    const currentY = event.contentOffset.y;
+    const diff = currentY - prevScrollY.value;
+
+    // 1. Top of screen logic (always show fully)
+    if (currentY < HEADER_SCROLL_THRESHOLD) {
+      if (headerVisible.value !== 1) {
+        headerVisible.value = withTiming(1, { duration: 200 });
+      }
+    } else {
+      // 2. Scrolled down logic
+      // We use '0' instead of '5' to catch even the slowest downward scroll
+      if (diff > 0 && headerVisible.value !== 0) {
+        // Scrolling Down -> Hide Row 1
+        headerVisible.value = withTiming(0, {
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+        });
+      }
+      // We keep a small buffer (-3) for scrolling up to prevent flickering
+      else if (diff < -3 && headerVisible.value !== 1) {
+        // Scrolling Up -> Show Row 1
+        headerVisible.value = withTiming(1, {
+          duration: 250,
+          easing: Easing.out(Easing.ease),
+        });
+      }
+    }
+
+    prevScrollY.value = currentY;
+    scrollY.value = currentY;
+  });
+
+  // --- Animated Styles ---
+  const headerBackgroundStyle = useAnimatedStyle(() => {
+    const opacity = interpolate(
+      scrollY.value,
+      [0, HEADER_SCROLL_THRESHOLD],
+      [0, 1],
+      Extrapolation.CLAMP
+    );
+    return {
+      opacity,
+      backgroundColor: palette.primary,
+    };
+  });
+
+  const topRowAnimatedStyle = useAnimatedStyle(() => {
+    const translateY = interpolate(headerVisible.value, [0, 1], [-60, 0]);
+    const opacity = interpolate(headerVisible.value, [0, 1], [0, 1]);
+    const height = interpolate(
+      headerVisible.value,
+      [0, 1],
+      [0, 60],
+      Extrapolation.CLAMP
+    );
+
+    return {
+      transform: [{ translateY }],
+      opacity,
+      height,
+      marginBottom: interpolate(headerVisible.value, [0, 1], [0, 12]),
+      overflow: 'hidden',
+    };
   });
 
   const handleActionPress = (id: ActionItem['id']) => {
@@ -215,10 +238,10 @@ const HomeScreen = () => {
       case 'accommodation':
         navigateToAccommodationHome();
         break;
-      case 'shops':
+      case 'food':
         navigateToShopHome();
         break;
-      case 'spots':
+      case 'tours':
         navigateToTouristSpotHome();
         break;
       case 'events':
@@ -229,148 +252,110 @@ const HomeScreen = () => {
     }
   };
 
-  const handleSpotPress = useCallback((spot: HighlightedTouristSpot) => {
-    router.push({
-      pathname: '/(tabs)/(home)/(spot)/profile/profile',
-      params: { spotId: spot.id },
-    });
-  }, []);
-
-  const handleBusinessPress = useCallback((business: PartnerBusiness) => {
-    router.push({
-      pathname: '/(tabs)/(home)/(shop)/business-profile',
-      params: { businessId: business.id },
-    });
-  }, []);
-
   const handleEventPress = useCallback((event: HomeEvent) => {
-    router.push({
-      pathname: '/(tabs)/(home)/(event)',
-      params: { eventId: event.id },
-    });
+    router.push(Routes.event.detail(event.id) as any);
   }, []);
 
-  const handleNewsPress = useCallback((article: NewsArticle) => {
-    router.push({
-      pathname: '/(tabs)/(home)',
-      params: { newsId: article.id },
-    });
+  const handleNewsPress = useCallback((_article: NewsArticle) => {
+    // TODO: News detail not yet implemented
+    router.push(Routes.tabs.home);
   }, []);
 
-  const renderSpotSection = () => {
-    if (spotState.loading && spotState.data.length === 0) {
-      return <SpotsSkeleton />;
-    }
-    if (!spotState.loading && spotState.data.length === 0) {
-      return <EmptyState icon="map-marker-off" message="No highlighted spots yet." />;
-    }
-
-    return (
-      <>
-        {spotState.error ? <SectionError message={spotState.error} /> : null}
-        <FlatList
-          horizontal
-          data={spotState.data}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TouristSpotCard spot={item} onPress={handleSpotPress} />
-          )}
-          contentContainerStyle={styles.horizontalList}
-          showsHorizontalScrollIndicator={false}
-          getItemLayout={(_, index) => ({
-            length: 316,
-            offset: 316 * index,
-            index,
-          })}
-        />
-      </>
-    );
-  };
-
-  const renderBusinessSection = () => {
-    if (businessState.loading && businessState.data.length === 0) {
-      return <BusinessSkeleton />;
-    }
-    if (!businessState.loading && businessState.data.length === 0) {
-      return <EmptyState icon="store-off" message="No partnered businesses yet." />;
-    }
-
-    return (
-      <>
-        {businessState.error ? <SectionError message={businessState.error} /> : null}
-        <FlatList
-          horizontal
-          data={businessState.data}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <BusinessCard business={item} onPress={handleBusinessPress} />
-          )}
-          contentContainerStyle={styles.horizontalList}
-          showsHorizontalScrollIndicator={false}
-          getItemLayout={(_, index) => ({
-            length: 216,
-            offset: 216 * index,
-            index,
-          })}
-        />
-      </>
-    );
-  };
-
-  const renderEventSection = () => {
-    if (eventState.loading && eventState.data.length === 0) {
-      return <EventSkeleton />;
-    }
-    if (!eventState.loading && eventState.data.length === 0) {
-      return <EmptyState icon="calendar-blank" message="No upcoming events available." />;
-    }
-
-    return (
-      <>
-        {eventState.error ? <SectionError message={eventState.error} /> : null}
-        {eventState.data.map((event) => (
-          <EventListCard
-            key={event.id}
-            event={event}
-            onPress={handleEventPress}
-          />
-        ))}
-      </>
-    );
-  };
-
-  const renderNewsSection = () => {
-    if (newsState.loading && newsState.data.length === 0) {
-      return <NewsSkeleton />;
-    }
-    if (!newsState.loading && newsState.data.length === 0) {
-      return <EmptyState icon="newspaper-remove" message="No news articles yet." />;
-    }
-
-    return (
-      <>
-        {newsState.error ? <SectionError message={newsState.error} /> : null}
-        {newsState.data.map((article) => (
-          <NewsCard
-            key={article.id}
-            article={article}
-            onPress={handleNewsPress}
-          />
-        ))}
-      </>
-    );
-  };
-
-  if (!user) return null;
+  // Show skeleton during initial load
+  if (eventState.loading && newsState.loading && eventState.data.length === 0) {
+    return <HomepageSkeleton />;
+  }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: palette.background }]}>
       <StatusBar
         translucent
         backgroundColor="transparent"
         barStyle="light-content"
       />
 
+      {/* --- Sticky Header --- */}
+      <View style={[styles.stickyHeader, { paddingTop: insetsTop + 10 }]}>
+        {/* Animated Background Layer */}
+        <Animated.View
+          style={[StyleSheet.absoluteFill, headerBackgroundStyle]}
+        />
+
+        {/* Row 1: Profile + Icons */}
+        <Animated.View style={[styles.topRow, topRowAnimatedStyle]}>
+          <View style={styles.profileSection}>
+            <View style={styles.profileIcon}>
+              {user?.user_profile ? (
+                <Image
+                  source={{ uri: user.user_profile }}
+                  style={{ width: 40, height: 40, borderRadius: 20 }}
+                />
+              ) : (
+                <Ionicons name="person" size={20} color="#FFF" />
+              )}
+            </View>
+            <View>
+              <ThemedText
+                type="label-medium"
+                style={{ color: 'rgba(255,255,255,0.8)' }}
+              >
+                {greeting}
+              </ThemedText>
+              <ThemedText
+                type="body-large"
+                weight="bold"
+                style={{ color: '#FFF' }}
+              >
+                {user?.first_name || 'Guest'}!
+              </ThemedText>
+            </View>
+          </View>
+
+          <View style={styles.iconRow}>
+            <Pressable
+              onPress={() => {
+                router.push(Routes.tabs.notification);
+              }}
+              style={styles.iconButton}
+            >
+              <Ionicons name="notifications-outline" size={24} color="#FFF" />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  {unreadCount <= 9 ? (
+                    <ThemedText style={styles.notificationBadgeText}>
+                      {unreadCount}
+                    </ThemedText>
+                  ) : (
+                    <ThemedText style={styles.notificationBadgeText}>
+                      9+
+                    </ThemedText>
+                  )}
+                </View>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={() => navigateToCart()}
+              style={styles.iconButton}
+            >
+              <Ionicons name="cart-outline" size={24} color="#FFF" />
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        {/* Row 2: Search Bar */}
+        <View style={styles.searchBarWrapper}>
+          <SearchBar
+            value={searchValue}
+            onChangeText={setSearchValue}
+            onSearch={() => {}}
+            placeholder="Where do you want to go?"
+            variant="plain"
+            containerStyle={styles.searchBarContainer}
+          />
+        </View>
+      </View>
+
+      {/* --- Main Content --- */}
       <HeroSection scrollY={scrollY} heroHeight={HERO_HEIGHT} />
 
       <AnimatedScrollView
@@ -382,391 +367,302 @@ const HomeScreen = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#fff"
+            tintColor={palette.primary}
           />
         }
         onScroll={handleScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroSpacer}>
-          <WelcomeSection
-            scrollY={scrollY}
-            name={displayName}
-            subtitle="Stay connected with city life, follow events, and access the services you need every day."
-          />
-        </View>
+        <View style={{ height: HERO_HEIGHT - 30 }} />
 
-        <MainContentCard style={styles.mainCard}>
+        <View
+          style={[styles.contentSheet, { backgroundColor: palette.background }]}
+        >
           <ActionGrid items={ACTIONS} onPressItem={handleActionPress} />
 
-          <SectionContainer
-            title="Highlighted Tourist Spots"
-            onPressViewAll={navigateToTouristSpotHome}
-          >
-            {renderSpotSection()}
-          </SectionContainer>
-
-          <SectionContainer
-            title="Partnered Businesses"
-            onPressViewAll={navigateToShopHome}
-          >
-            {renderBusinessSection()}
-          </SectionContainer>
-
-          <SectionContainer
-            title="Upcoming Events"
-            onPressViewAll={navigateToEventHome}
-          >
-            {renderEventSection()}
-          </SectionContainer>
-
-          <SectionContainer title="News & Updates">
-            {renderNewsSection()}
-          </SectionContainer>
-
-          <PromoCard content={PROMO_CARD} style={styles.promoCard} />
-
-          <View style={styles.quickLinksCard}>
-            <ThemedText
-              type="sub-title-small"
-              weight="bold"
-              lightColor="#F8F8FF"
-            >
-              Explore Naga
-            </ThemedText>
-            <View style={styles.quickLinkDivider} />
-            {QUICK_LINKS.map((link) => (
-              <QuickLinkRow key={link.id} link={link} />
-            ))}
+          <View style={styles.sectionContainer}>
+            <CityListSection
+              onPressCity={(city) => console.log(city.name)}
+              onPressViewMore={() => console.log('View more cities')}
+            />
+            <PersonalRecommendationSection
+              onPressItem={(item) => console.log(item.title)}
+            />
+            <VisitorsHandbookSection />
+            <SpecialOffersSection
+              onPressOffer={(offer) => console.log(offer.title)}
+            />
+            <FeaturedPartnersSection
+              onPressPartner={(partner) => console.log(partner.name)}
+            />
+            <FeaturedTouristSpotsSection />
+            <ReportIssueSection
+              onViewReports={() => console.log('View Reports')}
+              onReportIssue={() => console.log('Report Issue')}
+            />
+            <NewsAndEventsSection
+              newsData={newsState.data}
+              eventsData={eventState.data}
+              loading={newsState.loading || eventState.loading}
+              error={newsState.error || eventState.error}
+              onPressArticle={(article) => router.push(Routes.tabs.home)}
+              onPressEvent={() => router.push(Routes.event.index as any)}
+              onPressViewAllEvents={navigateToEventHome}
+            />
           </View>
-        </MainContentCard>
+        </View>
       </AnimatedScrollView>
-
-      <Header
-        scrollY={scrollY}
-        heroHeight={HERO_HEIGHT}
-        searchValue={searchValue}
-        onChangeSearch={setSearchValue}
-        style={styles.header}
-        onPressBell={() => {}}
-        onPressCart={() => navigateToCart()}
-      />
     </View>
   );
 };
 
+// --- Sub-Components ---
+
 type ActionGridProps = {
   items: ActionItem[];
-  onPressItem: (id: ActionItem['id']) => void;
+  onPressItem: (id: string) => void;
 };
 
-const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => (
-  <View style={styles.actionGrid}>
-    {items.map((item) => (
-      <Pressable
-        key={item.id}
-        style={styles.actionItem}
-        onPress={() => onPressItem(item.id)}
-      >
-        <LinearGradient
-          colors={item.colors}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.actionIcon}
-        >
-          <MaterialCommunityIcons name={item.icon} size={22} color="#fff" />
-        </LinearGradient>
-        <ThemedText
-          type="label-small"
-          align="center"
-          lightColor="#E8E9F4"
-          style={styles.actionLabel}
-        >
-          {item.label}
-        </ThemedText>
-      </Pressable>
-    ))}
-  </View>
-);
+const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
+  const scheme = useColorScheme() ?? 'light';
+  const colors = Colors[scheme];
+  const [currentPage, setCurrentPage] = useState(0);
+  const scrollX = useSharedValue(0);
 
-type PromoCardProps = {
-  content: PromoCardContent;
-  style?: StyleProp<ViewStyle>;
-  onPrimaryPress?: () => void;
-  onSecondaryPress?: () => void;
+  const ITEMS_PER_PAGE = 8;
+  const pages = [];
+  for (let i = 0; i < items.length; i += ITEMS_PER_PAGE) {
+    pages.push(items.slice(i, i + ITEMS_PER_PAGE));
+  }
+
+  const handleScroll = useAnimatedScrollHandler((event) => {
+    scrollX.value = event.contentOffset.x;
+  });
+
+  const onMomentumScrollEnd = (event: any) => {
+    const pageIndex = Math.round(
+      event.nativeEvent.contentOffset.x / SCREEN_WIDTH
+    );
+    setCurrentPage(pageIndex);
+  };
+
+  return (
+    <View style={styles.actionGridContainer}>
+      <Animated.ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        scrollEventThrottle={16}
+      >
+        {pages.map((page, pageIndex) => (
+          <View
+            key={pageIndex}
+            style={{ width: SCREEN_WIDTH, paddingHorizontal: 20 }}
+          >
+            <View style={styles.actionGridPage}>
+              {page.map((item, index) => {
+                const globalIndex = pageIndex * ITEMS_PER_PAGE + index;
+                const palettes = [
+                  { bg: 'rgba(52, 152, 219, 0.1)', icon: '#3498db' },
+                  { bg: 'rgba(46, 204, 113, 0.1)', icon: '#2ecc71' },
+                  { bg: 'rgba(155, 89, 182, 0.1)', icon: '#9b59b6' },
+                  { bg: 'rgba(230, 126, 34, 0.1)', icon: '#e67e22' },
+                  { bg: 'rgba(231, 76, 60, 0.1)', icon: '#e74c3c' },
+                  { bg: 'rgba(26, 188, 156, 0.1)', icon: '#1abc9c' },
+                  { bg: 'rgba(241, 196, 15, 0.1)', icon: '#f1c40f' },
+                  { bg: 'rgba(52, 73, 94, 0.1)', icon: '#34495e' },
+                ];
+                const { bg, icon } = palettes[globalIndex % palettes.length];
+
+                return (
+                  <Pressable
+                    key={item.id}
+                    style={styles.actionItem}
+                    onPress={() => onPressItem(item.id)}
+                  >
+                    <View style={[styles.actionIcon, { backgroundColor: bg }]}>
+                      <MaterialCommunityIcons
+                        name={item.icon as any}
+                        size={26}
+                        color={icon}
+                      />
+                    </View>
+                    <ThemedText
+                      type="label-small"
+                      align="center"
+                      style={styles.actionLabel}
+                      lightColor={colors.textSecondary}
+                    >
+                      {item.label}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        ))}
+      </Animated.ScrollView>
+
+      {pages.length > 1 && (
+        <View style={styles.paginationContainer}>
+          {pages.map((_, index) => {
+            const isActive = currentPage === index;
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.paginationDot,
+                  isActive ? styles.paginationDotActive : null,
+                  {
+                    backgroundColor: isActive
+                      ? colors.primary
+                      : colors.borderStrong,
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
 };
-
-const PromoCard: React.FC<PromoCardProps> = ({
-  content,
-  style,
-  onPrimaryPress,
-  onSecondaryPress,
-}) => (
-  <LinearGradient
-    colors={['#6A3DFB', '#9D4EDD']}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-    style={[styles.promoBase, style]}
-  >
-    <ThemedText type="sub-title-small" weight="bold" lightColor="#FFFFFF">
-      {content.title}
-    </ThemedText>
-    <ThemedText
-      type="body-small"
-      lightColor="rgba(255,255,255,0.9)"
-      style={styles.promoDescription}
-    >
-      {content.description}
-    </ThemedText>
-    <View style={styles.promoActions}>
-      <Pressable
-        style={[styles.ctaButton, styles.ctaSecondary]}
-        onPress={onPrimaryPress}
-      >
-        <ThemedText type="label-small" weight="semi-bold" lightColor="#20123A">
-          {content.primaryCta}
-        </ThemedText>
-      </Pressable>
-      <Pressable
-        style={[styles.ctaButton, styles.ctaPrimary]}
-        onPress={onSecondaryPress}
-      >
-        <ThemedText type="label-small" weight="semi-bold" lightColor="#fff">
-          {content.secondaryCta}
-        </ThemedText>
-      </Pressable>
-    </View>
-  </LinearGradient>
-);
-
-type QuickLinkRowProps = {
-  link: QuickLink;
-  onPress?: (link: QuickLink) => void;
-};
-
-const QuickLinkRow: React.FC<QuickLinkRowProps> = ({ link, onPress }) => (
-  <Pressable style={styles.quickLinkRow} onPress={() => onPress?.(link)}>
-    <View style={styles.quickLinkIconContainer}>
-      <MaterialCommunityIcons name={link.icon} size={22} color="#F86B4F" />
-    </View>
-    <View style={styles.quickLinkContent}>
-      <ThemedText type="body-medium" weight="semi-bold" lightColor="#FCFCFC">
-        {link.title}
-      </ThemedText>
-      <ThemedText
-        type="body-extra-small"
-        lightColor="rgba(255,255,255,0.78)"
-      >
-        {link.description}
-      </ThemedText>
-    </View>
-    <ThemedText type="body-medium" lightColor="rgba(255,255,255,0.5)">
-      {'>'}
-    </ThemedText>
-  </Pressable>
-);
-
-const SectionError = ({ message }: { message?: string }) =>
-  message ? (
-    <ThemedText type="label-small" lightColor="#FFB4A2">
-      {message}
-    </ThemedText>
-  ) : null;
-
-const EmptyState = ({
-  icon,
-  message,
-}: {
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-  message: string;
-}) => (
-  <View style={styles.emptyState}>
-    <MaterialCommunityIcons
-      name={icon}
-      size={22}
-      color="rgba(255,255,255,0.6)"
-      style={styles.emptyIcon}
-    />
-    <ThemedText type="label-small" lightColor="rgba(255,255,255,0.7)">
-      {message}
-    </ThemedText>
-  </View>
-);
-
-const SpotsSkeleton = () => (
-  <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
-    {Array.from({ length: 3 }).map((_, index) => (
-      <View key={`spot-skeleton-${index}`} style={styles.spotSkeleton} />
-    ))}
-  </View>
-);
-
-const BusinessSkeleton = () => (
-  <View style={[styles.horizontalList, { flexDirection: 'row' }]}>
-    {Array.from({ length: 3 }).map((_, index) => (
-      <View key={`business-skeleton-${index}`} style={styles.businessSkeleton} />
-    ))}
-  </View>
-);
-
-const EventSkeleton = () => (
-  <>
-    {Array.from({ length: 3 }).map((_, index) => (
-      <View key={`event-skeleton-${index}`} style={styles.eventSkeleton} />
-    ))}
-  </>
-);
-
-const NewsSkeleton = () => (
-  <>
-    {Array.from({ length: 2 }).map((_, index) => (
-      <View key={`news-skeleton-${index}`} style={styles.newsSkeleton} />
-    ))}
-  </>
-);
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#05050A',
   },
-  heroSpacer: {
-    minHeight: HERO_HEIGHT + HEADER_BASE_HEIGHT * 0.05,
-    justifyContent: 'flex-end',
-    paddingHorizontal: 20,
-    paddingTop: HEADER_BASE_HEIGHT - 6,
-    paddingBottom: 24,
-  },
-  mainCard: {
-    marginTop: -16,
-    gap: 28,
-  },
-  sectionHeading: {
-    marginBottom: 20,
-  },
-  actionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  actionItem: {
-    width: GRID_ITEM_WIDTH,
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  actionIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  actionLabel: {
-    marginTop: 8,
-  },
-  promoBase: {
-    borderRadius: 28,
-    padding: 24,
-    gap: 10,
-  },
-  promoCard: {
-    marginTop: 4,
-  },
-  promoDescription: {
-    lineHeight: 20,
-  },
-  promoActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 10,
-  },
-  ctaButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 999,
-    alignItems: 'center',
-  },
-  ctaSecondary: {
-    backgroundColor: '#fff',
-  },
-  ctaPrimary: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  quickLinksCard: {
-    backgroundColor: '#151426',
-    borderRadius: 24,
-    padding: 20,
-    gap: 8,
-  },
-  quickLinkDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginVertical: 16,
-  },
-  quickLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 14,
-  },
-  quickLinkIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: 'rgba(248,107,79,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickLinkContent: {
-    flex: 1,
-  },
-  horizontalList: {
-    paddingRight: 8,
-  },
-  spotSkeleton: {
-    width: 300,
-    height: 210,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginRight: 16,
-  },
-  businessSkeleton: {
-    width: 200,
-    height: 220,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginRight: 16,
-  },
-  eventSkeleton: {
-    height: 96,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 12,
-  },
-  newsSkeleton: {
-    height: 200,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginBottom: 14,
-  },
-  emptyState: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: '#151426',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  emptyIcon: {
-    marginBottom: 4,
-  },
-  header: {
+  stickyHeader: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 10,
+    zIndex: 100,
+  },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  profileIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  iconRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  searchBarWrapper: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  searchBarContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    borderWidth: 0,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  contentSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+    minHeight: 1000,
+    overflow: 'hidden',
+  },
+  sectionContainer: {
+    paddingHorizontal: 20,
+    gap: 30,
+    marginTop: 10,
+  },
+  actionGridContainer: {
+    paddingTop: 0,
+    marginBottom: 20,
+  },
+  actionGridPage: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: '100%',
+  },
+  actionItem: {
+    width: '25%',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  actionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  actionLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -8,
+    gap: 6,
+  },
+  paginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 4,
+  },
+  paginationDotActive: {
+    width: 24,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#E74C3C',
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  notificationBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });
 

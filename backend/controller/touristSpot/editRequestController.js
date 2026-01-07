@@ -8,10 +8,10 @@ export const submitEditRequest = async (req, res) => {
     const {
       name, description, barangay_id,
       latitude, longitude, contact_phone, contact_email, website,
-      entry_fee, type_id, spot_status, is_featured
+      entry_fee, spot_status, is_featured, category_ids
     } = req.body;
 
-    if (!id || !name || !description || !barangay_id || !type_id) {
+    if (!id || !name || !description || !barangay_id) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
@@ -34,27 +34,39 @@ export const submitEditRequest = async (req, res) => {
       contact_email: normalize(current.contact_email) !== normalize(contact_email),
       website: normalize(current.website) !== normalize(website),
       entry_fee: Number(current.entry_fee) !== Number(entry_fee),
-      spot_status: current.spot_status !== spot_status,
-      type_id: Number(current.type_id) !== Number(type_id)
+      spot_status: current.spot_status !== spot_status
     };
 
-  const approvalFields = [changed.name, changed.description, changed.address, changed.type_id];
+    const approvalFields = [changed.name, changed.description, changed.address];
     const directFields = [changed.latitude, changed.longitude, changed.contact_phone, changed.contact_email, changed.website, changed.entry_fee, changed.spot_status];
 
+    const userRole = (req.user?.role || '').toLowerCase();
+    const isAdmin = userRole === 'admin';
+    const submittedBy = req.user?.id || null;
+
     let categoriesChanged = false;
-    if (Array.isArray(req.body.category_ids)) {
+    if (Array.isArray(category_ids)) {
       const [currentCategoriesRows] = await db.query('CALL GetTouristSpotCategoryIds(?)', [id]);
       const currentCategoryIds = (currentCategoriesRows[0] || []).map(row => row.category_id).sort();
-      const newCategoryIds = req.body.category_ids.map(Number).sort();
+      const newCategoryIds = category_ids.map(Number).sort();
       categoriesChanged = JSON.stringify(currentCategoryIds) !== JSON.stringify(newCategoryIds);
       if (categoriesChanged) {
         // Delete all current categories
         await db.query('CALL DeleteCategoriesByTouristSpot(?)', [id]);
         // Insert each new category
         for (const catId of newCategoryIds) {
-          await db.query('CALL InsertTouristSpotCategory(?, ?)', [id, catId]);
+          await db.query('CALL InsertTouristSpotCategory(?, ?, ?)', [id, catId, false]);
         }
       }
+    }
+
+    if (isAdmin) {
+      await db.query('CALL UpdateTouristSpot(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+          id, name, description, barangay_id, 
+          latitude, longitude, contact_phone, contact_email, website, entry_fee,
+          spot_status, is_featured ? 1 : 0
+      ]);
+      return res.json({ success: true, message: "Tourist spot updated successfully" });
     }
 
     if (!Object.values(changed).some(Boolean) && categoriesChanged) {
@@ -93,7 +105,7 @@ export const submitEditRequest = async (req, res) => {
       entry_fee ?? current.entry_fee,
       spot_status ?? current.spot_status,
       Number(current.is_featured) ? 1 : 0,
-      type_id ?? current.type_id,
+      submittedBy
     ]);
     return res.json({ success: true, message: "Core information changes submitted for approval!" });
   } catch (error) {

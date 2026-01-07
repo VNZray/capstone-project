@@ -1,30 +1,39 @@
 import React, { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, Plus } from "lucide-react";
 import Typography from "../Typography";
 import IconButton from "../IconButton";
 import Container from "../Container";
 import { colors } from "../../utils/Colors";
+import { Tooltip } from "@mui/joy";
 
 interface CalendarEvent {
   date: Date;
-  status: "Available" | "Reserved" | "Occupied" | "Maintenance";
+  status: "Available" | "Reserved" | "Occupied" | "Maintenance" | "Blocked";
   label?: string;
+  bookingId?: string;
+  blockId?: string;
 }
 
 interface CalendarProps {
   events?: CalendarEvent[];
-  onDateClick?: (date: Date) => void;
+  onDateClick?: (date: Date, event?: CalendarEvent) => void;
+  onBlockClick?: (date: Date) => void;
   selectedDate?: Date;
   minDate?: Date;
   maxDate?: Date;
+  showBlockButton?: boolean;
+  interactive?: boolean;
 }
 
 const Calendar: React.FC<CalendarProps> = ({
   events = [],
   onDateClick,
+  onBlockClick,
   selectedDate,
   minDate,
   maxDate,
+  showBlockButton = false,
+  interactive = true,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -157,6 +166,8 @@ const Calendar: React.FC<CalendarProps> = ({
         return colors.warning;
       case "Maintenance":
         return colors.error;
+      case "Blocked":
+        return colors.info;
       default:
         return "transparent";
     }
@@ -170,15 +181,28 @@ const Calendar: React.FC<CalendarProps> = ({
     return false;
   };
 
-  const handleDateClick = (date: Date | null) => {
-    if (!date || isDisabled(date)) return;
+  const handleDateClick = (date: Date | null, event?: CalendarEvent) => {
+    if (!date || isDisabled(date) || !interactive) return;
     if (onDateClick) {
-      onDateClick(date);
+      onDateClick(date, event);
     }
+  };
+
+  const handleBlockClick = (date: Date | null, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!date || !onBlockClick) return;
+    onBlockClick(date);
   };
 
   return (
     <Container padding="clamp(12px, 3vw, 20px)" gap="clamp(12px, 2vw, 16px)">
+      <style>
+        {`
+          .calendar-day:hover .block-button {
+            opacity: 1 !important;
+          }
+        `}
+      </style>
       {/* Calendar Header */}
       <Container
         direction="row"
@@ -219,6 +243,7 @@ const Calendar: React.FC<CalendarProps> = ({
           gridTemplateColumns: "repeat(7, 1fr)",
           gap: "clamp(4px, 1vw, 8px)",
           width: "100%",
+          marginBottom: 16,
         }}
       >
         {/* Day Names */}
@@ -245,14 +270,17 @@ const Calendar: React.FC<CalendarProps> = ({
           const disabled = isDisabled(date);
           const today = isToday(date);
           const selected = isSelected(date);
+          const isBlocked = event?.status === "Blocked";
+          const canBlock = showBlockButton && date && !disabled && !event;
 
-          return (
+          const dayContent = (
             <Container
-              hover
+              className="calendar-day"
+              hover={interactive && !disabled}
               hoverEffect="highlight"
               hoverBackground={colors.primary}
               key={index}
-              onClick={() => handleDateClick(date)}
+              onClick={() => handleDateClick(date, event)}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -260,7 +288,8 @@ const Calendar: React.FC<CalendarProps> = ({
                 aspectRatio: "1",
                 padding: "clamp(4px, 1vw, 6px)",
                 borderRadius: "8px",
-                cursor: date && !disabled ? "pointer" : "default",
+                cursor:
+                  date && !disabled && interactive ? "pointer" : "default",
                 backgroundColor: event
                   ? getStatusColor(event.status)
                   : "transparent",
@@ -276,23 +305,59 @@ const Calendar: React.FC<CalendarProps> = ({
                 position: "relative",
               }}
             >
-              {event ? (
-                <Typography.Body size="md">{date?.getDate()}</Typography.Body>
-              ) : (
-                <Typography.Body size="md">{date?.getDate()}</Typography.Body>
+              {isBlocked && (
+                <Lock
+                  size={10}
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    right: 2,
+                    opacity: 0.7,
+                  }}
+                />
               )}
+              {canBlock && (
+                <div
+                  onClick={(e) => handleBlockClick(date, e)}
+                  style={{
+                    position: "absolute",
+                    top: 2,
+                    right: 2,
+                    opacity: 0,
+                    transition: "opacity 0.2s",
+                    cursor: "pointer",
+                  }}
+                  className="block-button"
+                >
+                  <Plus size={10} />
+                </div>
+              )}
+              <Typography.Body size="md">{date?.getDate()}</Typography.Body>
             </Container>
           );
+
+          if (event?.label) {
+            return (
+              <Tooltip key={index} title={event.label} placement="top">
+                {dayContent}
+              </Tooltip>
+            );
+          }
+
+          return dayContent;
         })}
       </div>
 
       {/* Legend */}
-      <Container padding="clamp(8px, 2vw, 12px)" gap="clamp(6px, 1.5vw, 8px)">
-        <Typography.Label size="xs" sx={{ marginBottom: "4px" }}>
-          Status Legend
-        </Typography.Label>
-        <Container direction="row" justify="space-between">
-          <Container direction="row" align="center" gap="6px">
+      <Container padding="0" gap="clamp(6px, 1.5vw, 8px)">
+        <Typography.Label size="xs">Status Legend</Typography.Label>
+        <Container
+          padding="0"
+          direction="row"
+          justify="space-between"
+          style={{ flexWrap: "wrap", gap: "8px" }}
+        >
+          <Container padding="0" direction="row" align="center" gap="6px">
             <div
               style={{
                 width: "clamp(12px, 2.5vw, 16px)",
@@ -305,7 +370,7 @@ const Calendar: React.FC<CalendarProps> = ({
             <Typography.Body size="xs">Reserved</Typography.Body>
           </Container>
 
-          <Container direction="row" align="center" gap="6px">
+          <Container padding="0" direction="row" align="center" gap="6px">
             <div
               style={{
                 width: "clamp(12px, 2.5vw, 16px)",
@@ -318,7 +383,7 @@ const Calendar: React.FC<CalendarProps> = ({
             <Typography.Body size="xs">Occupied</Typography.Body>
           </Container>
 
-          <Container direction="row" align="center" gap="6px">
+          <Container padding="0" direction="row" align="center" gap="6px">
             <div
               style={{
                 width: "clamp(12px, 2.5vw, 16px)",
@@ -329,6 +394,19 @@ const Calendar: React.FC<CalendarProps> = ({
               }}
             />
             <Typography.Body size="xs">Maintenance</Typography.Body>
+          </Container>
+
+          <Container padding="0" direction="row" align="center" gap="6px">
+            <div
+              style={{
+                width: "clamp(12px, 2.5vw, 16px)",
+                height: "clamp(12px, 2.5vw, 16px)",
+                borderRadius: "4px",
+                backgroundColor: colors.info,
+                flexShrink: 0,
+              }}
+            />
+            <Typography.Body size="xs">Blocked</Typography.Body>
           </Container>
         </Container>
       </Container>

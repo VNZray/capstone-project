@@ -9,14 +9,17 @@ import type { TourismStaff } from "@/src/types/TourismStaff";
 import { apiService } from "@/src/utils/api";
 import ResetPasswordModal from "@/src/features/admin/tourism-staff/components/ResetPasswordModal";
 import EditStaffModal from "@/src/features/admin/tourism-staff/components/EditStaffModal";
+import ConfirmDialog from "@/src/components/modals/ConfirmDialog";
 import type { UserRoles } from "@/src/types/User";
 import StaffSkeleton from "@/src/features/admin/tourism-staff/components/StaffSkeleton";
 import Button from "@/src/components/Button";
 import IconButton from "@/src/components/IconButton";
 import NoDataFound from "@/src/components/NoDataFound";
 import DynamicTab from "@/src/components/ui/DynamicTab";
-import { Table as TableIcon, LayoutGrid, Search, ListChecks, CheckCircle, XCircle, UserCheck, UserX } from "lucide-react";
+import { Search, ListChecks, CheckCircle, XCircle, UserCheck, UserX } from "lucide-react";
 import { IoAdd } from "react-icons/io5";
+import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
+import TableRowsRoundedIcon from "@mui/icons-material/TableRowsRounded";
 
 type DisplayMode = 'table' | 'cards';
 
@@ -38,6 +41,10 @@ const TourismStaffManagement: React.FC = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetTempPassword, setResetTempPassword] = useState<string | undefined>(undefined);
   const [resetEmail, setResetEmail] = useState<string | undefined>(undefined);
+
+  // Delete state
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchStaff = useCallback(async () => {
     setLoading(true);
@@ -83,8 +90,6 @@ const TourismStaffManagement: React.FC = () => {
     { id: "all", label: "All", icon: <ListChecks size={16} /> },
     { id: "active", label: "Active", icon: <CheckCircle size={16} /> },
     { id: "inactive", label: "Inactive", icon: <XCircle size={16} /> },
-    { id: "verified", label: "Verified", icon: <UserCheck size={16} /> },
-    { id: "unverified", label: "Unverified", icon: <UserX size={16} /> },
   ];
 
   const handleSearch = (q: string) => { 
@@ -97,8 +102,6 @@ const TourismStaffManagement: React.FC = () => {
       rows = rows.filter((s) => {
         if (selectedStatus === 'active') return !!s.is_active;
         if (selectedStatus === 'inactive') return !s.is_active;
-        if (selectedStatus === 'verified') return !!s.is_verified;
-        if (selectedStatus === 'unverified') return !s.is_verified;
         return true;
       });
     }
@@ -135,6 +138,26 @@ const TourismStaffManagement: React.FC = () => {
     setSelected(s);
     setResetTempPassword(undefined);
     setShowReset(true);
+  };
+
+  const handleDelete = (s: TourismStaff) => {
+    setSelected(s);
+    setShowDelete(true);
+  };
+
+  const doDelete = async () => {
+    if (!selected) return;
+    setDeleteLoading(true);
+    try {
+      await apiService.deleteTourismStaff(selected.tourism_id);
+      setShowDelete(false);
+      setSelected(null);
+      fetchStaff();
+    } catch (e: any) {
+      console.error("Failed to delete staff", e);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const doResetPassword = async () => {
@@ -232,7 +255,6 @@ const TourismStaffManagement: React.FC = () => {
           direction="row"
           justify="space-between"
           align="center"
-          gap="16px"
         >
           <Input
             startDecorator={<Search />}
@@ -241,60 +263,42 @@ const TourismStaffManagement: React.FC = () => {
             fullWidth
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
+            sx={{ flex: 1 }}
           />
           
-          <div style={{ display: 'inline-flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid #0A1B47' }}>
-            <Button
-              size="sm"
-              variant={display === 'table' ? 'solid' : 'plain'}
-              colorScheme="primary"
-              aria-label="Table view"
-              title="Table view"
-              onClick={() => setDisplay('table')}
-              sx={{
-                borderRadius: 0,
-                minWidth: 36,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                px: 1.2,
-                ...(display !== 'table' && { background: 'transparent' }),
-              }}
-            >
-              <TableIcon size={16} />
-            </Button>
-            <Button
-              size="sm"
-              variant={display === 'cards' ? 'solid' : 'plain'}
-              colorScheme="primary"
+          <Container direction="row" padding="0" gap="0.5rem" align="center" style={{ marginLeft: "12px" }}>
+            <IconButton
+              size="lg"
+              variant={display === "cards" ? "solid" : "soft"}
+              colorScheme={display === "cards" ? "primary" : "secondary"}
               aria-label="Cards view"
-              title="Cards view"
-              onClick={() => setDisplay('cards')}
-              sx={{
-                borderRadius: 0,
-                minWidth: 36,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                px: 1.2,
-                ...(display !== 'cards' && { background: 'transparent' }),
-                borderLeft: '1px solid #E5E7EB',
-              }}
+              onClick={() => setDisplay("cards")}
             >
-              <LayoutGrid size={16} />
-            </Button>
-          </div>
+              <DashboardRoundedIcon />
+            </IconButton>
+            <IconButton
+              size="lg"
+              variant={display === "table" ? "solid" : "soft"}
+              colorScheme={display === "table" ? "primary" : "secondary"}
+              aria-label="Table view"
+              onClick={() => setDisplay("table")}
+            >
+              <TableRowsRoundedIcon />
+            </IconButton>
+          </Container>
         </Container>
 
         {/* Tabs */}
-        <DynamicTab
-          tabs={tabs}
-          activeTabId={selectedStatus}
-          onChange={(tabId) => {
-            setSelectedStatus(String(tabId));
-          }}
-        />
-      </Container>
+        <Container padding="0">
+          <DynamicTab
+            tabs={tabs}
+            activeTabId={selectedStatus}
+            onChange={(tabId) => {
+              setSelectedStatus(String(tabId));
+            }}
+            padding="16px 20px 4px 20px"
+          />
+        </Container>
 
       {/* Error State */}
       {error && (
@@ -306,10 +310,7 @@ const TourismStaffManagement: React.FC = () => {
       )}
 
       {/* Staff List */}
-      <Container padding="0 16px 16px 16px">
-        <Typography.Header size="sm" weight="semibold">
-          Staff Members
-        </Typography.Header>
+      <Container background="transparent" padding={display === "table" ? "20px" : "0"}>
         {loading ? (
           <StaffSkeleton variant={display} />
         ) : staff.length === 0 ? (
@@ -334,32 +335,54 @@ const TourismStaffManagement: React.FC = () => {
             title="No Results Found"
             message={`No staff members match your search criteria. Try adjusting your filters.`}
           />
+        ) : display === 'table' ? (
+          <TourismStaffTable
+            staff={filtered}
+            onEdit={handleEdit}
+            onResetPassword={handleResetPassword}
+            onDelete={handleDelete}
+          />
         ) : (
-          <div
-            style={{
-              display: display === 'cards' ? "grid" : "block",
-              gridTemplateColumns: display === 'cards' ? "repeat(auto-fill,minmax(280px,1fr))" : undefined,
-              gap: display === 'cards' ? 20 : undefined,
-            }}
-          >
-            {display === 'table' ? (
-              <TourismStaffTable
+          <>
+            <style>
+              {`
+                .custom-scrollbar::-webkit-scrollbar {
+                  width: 6px;
+                  height: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                  background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                  background: rgba(0, 0, 0, 0.2);
+                  border-radius: 3px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                  background: rgba(0, 0, 0, 0.3);
+                }
+              `}
+            </style>
+            <div
+              className="custom-scrollbar"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                gap: "20px",
+                padding: "20px",
+                maxHeight: "calc(100vh - 280px)",
+                overflowY: "auto",
+              }}
+            >
+              <TourismStaffCards
                 staff={filtered}
                 onEdit={handleEdit}
                 onResetPassword={handleResetPassword}
+                onDelete={handleDelete}
               />
-            ) : (
-              filtered.map((s) => (
-                <TourismStaffCards
-                  key={s.tourism_id}
-                  staff={[s]}
-                  onEdit={handleEdit}
-                  onResetPassword={handleResetPassword}
-                />
-              ))
-            )}
-          </div>
+            </div>
+          </>
         )}
+      </Container>
       </Container>
 
       {/* Reset password */}
@@ -370,6 +393,17 @@ const TourismStaffManagement: React.FC = () => {
         loading={resetLoading}
         onClose={() => { setShowReset(false); setSelected(null); setResetTempPassword(undefined); setResetEmail(undefined); }}
         onConfirm={doResetPassword}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={showDelete}
+        title="Delete Staff Member"
+        description={`Are you sure you want to delete ${selected?.first_name} ${selected?.last_name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        loading={deleteLoading}
+        onClose={() => setShowDelete(false)}
+        onConfirm={doDelete}
       />
 
       {/* Create/Edit */}

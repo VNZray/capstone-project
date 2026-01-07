@@ -21,7 +21,9 @@ exports.up = async function (knex) {
       .references("id")
       .inTable("discount")
       .onDelete("SET NULL");
-    table.timestamp("pickup_datetime").notNullable();
+    // Use datetime instead of timestamp to avoid DEFAULT current_timestamp()
+    // and ON UPDATE current_timestamp() behaviors that cause bugs
+    table.datetime("pickup_datetime").notNullable();
     table.text("special_instructions").nullable();
     table.enu("status", [
       "pending", 
@@ -33,13 +35,31 @@ exports.up = async function (knex) {
       "cancelled_by_business", 
       "failed_payment"
     ]).defaultTo("pending");
-    table.enu("payment_status", ["pending", "paid", "failed", "refunded"]).defaultTo("pending");
-    table.enu("payment_method", ["cash_on_pickup", "paymongo"]).defaultTo("cash_on_pickup");
-    table.string("payment_method_type", 50).nullable(); // gcash, card, paymaya, grab_pay, qrph when paymongo
+    // Payment info is in the payment table (single source of truth)
+    // Query via: SELECT * FROM payment WHERE payment_for = 'order' AND payment_for_id = order.id
+    
+    // Customer arrival tracking
+    table.string("arrival_code", 10).notNullable().defaultTo("000000"); // 6-digit code for customer to show on arrival
+    table.timestamp("customer_arrived_at").nullable();
+    
+    // Order lifecycle tracking
+    table.timestamp("confirmed_at").nullable();
+    table.timestamp("preparation_started_at").nullable();
+    table.timestamp("ready_at").nullable();
+    table.timestamp("picked_up_at").nullable();
+    
+    // Cancellation details
+    table.timestamp("cancelled_at").nullable();
+    table.text("cancellation_reason").nullable();
+    table.enu("cancelled_by", ["user", "business", "system"]).nullable();
+    table.decimal("refund_amount", 10, 2).nullable();
+    table.boolean("no_show").defaultTo(false);
+    
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
     
     table.index("business_id", "idx_order_business");
+    table.index("arrival_code", "idx_order_arrival_code");
     table.index("user_id", "idx_order_user");
     table.index("status", "idx_order_status");
     table.index("pickup_datetime", "idx_order_pickup");
@@ -47,8 +67,6 @@ exports.up = async function (knex) {
     // Performance indices for queries with time filtering
     table.index(["business_id", "created_at"], "idx_order_business_created");
     table.index(["user_id", "created_at"], "idx_order_user_created");
-    table.index("payment_method", "idx_order_payment_method");
-    table.index("payment_status", "idx_order_payment_status");
   });
 
   // Create order_item table

@@ -14,7 +14,6 @@ import {
   Alert,
   FlatList,
   ListRenderItem,
-  Modal,
   Platform,
   Pressable,
   TextInput as RNTextInput,
@@ -27,6 +26,7 @@ import {
 } from 'react-native';
 import Button from './Button';
 import { ThemedText } from './themed-text';
+import BaseModal from './BaseModal';
 
 export type DateInputMode = 'single' | 'range';
 
@@ -451,7 +451,12 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
       (d: Date) => {
         if (minDate && isBefore(d, minDate)) return true;
         if (maxDate && isAfter(d, maxDate)) return true;
-        if (disablePast && isBefore(d, new Date())) return true;
+        // Allow booking on current day - only disable dates BEFORE today (not including today)
+        if (disablePast) {
+          const today = startOfDay(new Date());
+          const dateToCheck = startOfDay(d);
+          if (dateToCheck.getTime() < today.getTime()) return true;
+        }
         if (disableFuture && isAfter(d, new Date())) return true;
         if (disabledDates && disabledDates(d)) return true;
         return false;
@@ -633,7 +638,7 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
       <View style={style} testID={testID}>
         {label && (
           <ThemedText
-            type="label-small"
+            type="label-medium"
             weight="semi-bold"
             mb={6}
             style={{ color: subTextColor }}
@@ -656,7 +661,6 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
               justifyContent: 'space-between',
             },
             variantStyles(),
-            elevationStyle,
             disabled && { opacity: 0.6 },
             pressed && !disabled && { opacity: 0.85 },
             triggerStyle,
@@ -841,471 +845,431 @@ const DateInput = React.forwardRef<DateInputRef, DateInputProps>(
           </ThemedText>
         )}
 
-        <Modal
+        <BaseModal
           visible={open}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setOpen(false)}
+          onClose={() => setOpen(false)}
+          title={mode === 'single' ? 'Select Date' : 'Select Date Range'}
+          showCloseButton={true}
+          scrollable={false}
+          primaryButtonLabel={
+            mode === 'range' || requireConfirmation
+              ? mode === 'range'
+                ? 'Apply'
+                : 'Done'
+              : undefined
+          }
+          onPrimaryPress={() => setOpen(false)}
+          secondaryButtonLabel={mode === 'range' ? 'Clear' : undefined}
+          onSecondaryPress={clear}
         >
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
-          <View
-            pointerEvents="box-none"
-            style={[StyleSheet.absoluteFill, styles.centerWrap]}
-          >
-            <View
-              style={[
-                styles.panel,
-                styles.centeredModal,
-                getElevation(5),
-                { backgroundColor: surface, borderColor },
-                panelStyle,
-              ]}
-            >
-              <View style={styles.modalHeaderBar}>
-                <View style={styles.modalHeaderSpacer} />
-              </View>
-              <View style={[styles.header, { borderColor }]}>
-                <Pressable
-                  onPress={goPrevMonth}
-                  onPressIn={() => handleNavPressIn('prev')}
-                  onPressOut={() => handleNavPressOut('prev')}
-                  hitSlop={12}
-                  style={[styles.navCircle, prevDisabled && { opacity: 0.35 }]}
-                  disabled={prevDisabled}
-                >
-                  <FontAwesome5
-                    name="chevron-left"
-                    size={14}
-                    color={textColor}
-                  />
-                </Pressable>
-                {mode === 'single' ? (
-                  <View style={styles.monthYearWrap}>
-                    <Pressable
-                      style={styles.monthYearPress}
-                      onPress={() =>
-                        setPickerMode((m) => (m === 'month' ? 'none' : 'month'))
-                      }
-                    >
-                      <ThemedText
-                        type="body-medium"
-                        weight="medium"
-                        style={[styles.monthYearText, { color: textColor }]}
-                      >
-                        {monthName}
-                      </ThemedText>
-                    </Pressable>
-                    <Pressable
-                      style={styles.monthYearPress}
-                      onPress={() =>
-                        setPickerMode((m) => (m === 'year' ? 'none' : 'year'))
-                      }
-                    >
-                      <ThemedText
-                        type="body-medium"
-                        weight="medium"
-                        style={[
-                          styles.monthYearText,
-                          { textAlign: 'center', color: textColor },
-                        ]}
-                      >
-                        {navYear}
-                      </ThemedText>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <ThemedText
-                    type="label-medium"
-                    weight="semi-bold"
-                    style={{ color: textColor }}
-                  >
-                    {monthLabel}
-                  </ThemedText>
-                )}
-                <Pressable
-                  onPress={goNextMonth}
-                  onPressIn={() => handleNavPressIn('next')}
-                  onPressOut={() => handleNavPressOut('next')}
-                  hitSlop={12}
-                  style={styles.navCircle}
-                >
-                  <FontAwesome5
-                    name="chevron-right"
-                    size={14}
-                    color={textColor}
-                  />
-                </Pressable>
-              </View>
-              <View style={[styles.divider, { borderColor }]} />
-              {mode === 'single' && pickerMode === 'none' && (
-                <View style={styles.quickBar}>
+          <View style={styles.calendarContent}>
+            {/* Header with navigation */}
+            <View style={[styles.header, { borderColor }]}>
+              <Pressable
+                onPress={goPrevMonth}
+                onPressIn={() => handleNavPressIn('prev')}
+                onPressOut={() => handleNavPressOut('prev')}
+                hitSlop={12}
+                style={[styles.navCircle, prevDisabled && { opacity: 0.35 }]}
+                disabled={prevDisabled}
+              >
+                <FontAwesome5 name="chevron-left" size={14} color={textColor} />
+              </Pressable>
+              {mode === 'single' ? (
+                <View style={styles.monthYearWrap}>
                   <Pressable
-                    style={styles.quickBtn}
-                    onPress={() => {
-                      const raw = startOfDay(new Date());
-                      const today = new Date(
-                        raw.getFullYear(),
-                        raw.getMonth(),
-                        raw.getDate(),
-                        12,
-                        0,
-                        0,
-                        0
-                      );
-                      setNavYear(today.getFullYear());
-                      setNavMonth(today.getMonth());
-                      if (!controlledSingle) setInternalDate(today);
-                      onChange?.(today);
-                      if (closeOnSelect && !requireConfirmation) setOpen(false);
-                    }}
+                    style={styles.monthYearPress}
+                    onPress={() =>
+                      setPickerMode((m) => (m === 'month' ? 'none' : 'month'))
+                    }
                   >
-                    <Text style={styles.quickBtnText}>Today</Text>
+                    <ThemedText
+                      type="body-medium"
+                      weight="medium"
+                      style={[styles.monthYearText, { color: textColor }]}
+                    >
+                      {monthName}
+                    </ThemedText>
                   </Pressable>
                   <Pressable
-                    style={styles.quickBtn}
-                    onPress={() => setPickerMode('month')}
+                    style={styles.monthYearPress}
+                    onPress={() =>
+                      setPickerMode((m) => (m === 'year' ? 'none' : 'year'))
+                    }
                   >
-                    <Text style={styles.quickBtnText}>Months</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.quickBtn}
-                    onPress={() => setPickerMode('year')}
-                  >
-                    <Text style={styles.quickBtnText}>Years</Text>
+                    <ThemedText
+                      type="body-medium"
+                      weight="medium"
+                      style={[
+                        styles.monthYearText,
+                        { textAlign: 'center', color: textColor },
+                      ]}
+                    >
+                      {navYear}
+                    </ThemedText>
                   </Pressable>
                 </View>
+              ) : (
+                <ThemedText
+                  type="label-medium"
+                  weight="semi-bold"
+                  style={{ color: textColor }}
+                >
+                  {monthLabel}
+                </ThemedText>
               )}
-              {pickerMode === 'month' && mode === 'single' ? (
-                <View style={styles.monthPickerGrid}>
-                  {monthNames.map((m, i) => {
-                    const active = i === navMonth;
-                    return (
-                      <Pressable
-                        key={m}
-                        onPress={() => {
-                          setNavMonth(i);
-                          setPickerMode('none');
-                        }}
+              <Pressable
+                onPress={goNextMonth}
+                onPressIn={() => handleNavPressIn('next')}
+                onPressOut={() => handleNavPressOut('next')}
+                hitSlop={12}
+                style={styles.navCircle}
+              >
+                <FontAwesome5
+                  name="chevron-right"
+                  size={14}
+                  color={textColor}
+                />
+              </Pressable>
+            </View>
+            <View style={[styles.divider, { borderColor }]} />
+            {mode === 'single' && pickerMode === 'none' && (
+              <View style={styles.quickBar}>
+                <Pressable
+                  style={styles.quickBtn}
+                  onPress={() => {
+                    const raw = startOfDay(new Date());
+                    const today = new Date(
+                      raw.getFullYear(),
+                      raw.getMonth(),
+                      raw.getDate(),
+                      12,
+                      0,
+                      0,
+                      0
+                    );
+                    setNavYear(today.getFullYear());
+                    setNavMonth(today.getMonth());
+                    if (!controlledSingle) setInternalDate(today);
+                    onChange?.(today);
+                    if (closeOnSelect && !requireConfirmation) setOpen(false);
+                  }}
+                >
+                  <Text style={styles.quickBtnText}>Today</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.quickBtn}
+                  onPress={() => setPickerMode('month')}
+                >
+                  <Text style={styles.quickBtnText}>Months</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.quickBtn}
+                  onPress={() => setPickerMode('year')}
+                >
+                  <Text style={styles.quickBtnText}>Years</Text>
+                </Pressable>
+              </View>
+            )}
+            {pickerMode === 'month' && mode === 'single' ? (
+              <View style={styles.monthPickerGrid}>
+                {monthNames.map((m, i) => {
+                  const active = i === navMonth;
+                  return (
+                    <Pressable
+                      key={m}
+                      onPress={() => {
+                        setNavMonth(i);
+                        setPickerMode('none');
+                      }}
+                      style={[
+                        styles.monthItem,
+                        active && { backgroundColor: accent },
+                      ]}
+                    >
+                      <Text
                         style={[
-                          styles.monthItem,
-                          active && { backgroundColor: accent },
+                          styles.monthItemText,
+                          {
+                            color: active ? '#fff' : textColor,
+                            fontWeight: active ? '700' : '500',
+                          },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.monthItemText,
-                            {
-                              color: active ? '#fff' : textColor,
-                              fontWeight: active ? '700' : '500',
-                            },
-                          ]}
-                        >
-                          {m}
-                        </Text>
-                      </Pressable>
+                        {m}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : pickerMode === 'year' && mode === 'single' ? (
+              <View style={styles.yearScrollWrap}>
+                <FlatList
+                  ref={yearListRef}
+                  data={years}
+                  keyExtractor={(y) => String(y)}
+                  renderItem={renderYearItem}
+                  getItemLayout={(_, index) => ({
+                    index,
+                    length: 48,
+                    offset: 48 * index,
+                  })}
+                  style={{ maxHeight: 250 }}
+                  showsVerticalScrollIndicator={false}
+                />
+              </View>
+            ) : (
+              <>
+                <View style={styles.weekdaysRow}>
+                  {Array.from({ length: 7 }).map((_, i) => {
+                    const dayIndex = (firstDayOfWeek + i) % 7;
+                    const lbl = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][dayIndex];
+                    return (
+                      <Text
+                        key={i}
+                        style={[styles.weekday, { color: subTextColor }]}
+                      >
+                        {lbl}
+                      </Text>
                     );
                   })}
                 </View>
-              ) : pickerMode === 'year' && mode === 'single' ? (
-                <View style={styles.yearScrollWrap}>
-                  <FlatList
-                    ref={yearListRef}
-                    data={years}
-                    keyExtractor={(y) => String(y)}
-                    renderItem={renderYearItem}
-                    getItemLayout={(_, index) => ({
-                      index,
-                      length: 48,
-                      offset: 48 * index,
-                    })}
-                    style={{ maxHeight: 250 }}
-                    showsVerticalScrollIndicator={false}
-                  />
+                <View style={styles.daysWrap}>
+                  {matrix.map((week, wi) => (
+                    <View key={wi} style={styles.weekRow}>
+                      {week.map((cell, di) => {
+                        const { date: d, inCurrentMonth } = cell;
+                        if (!showAdjacentMonths && !inCurrentMonth)
+                          return <View key={di} style={styles.dayCellEmpty} />;
+                        const ymd = formatLocalYMD(d);
+                        const dayStatus = dateStatuses?.[ymd];
+                        // Block selection for any status (unavailable, reserved, occupied)
+                        const disabledDay =
+                          dayStatus === 'unavailable' ||
+                          dayStatus === 'reserved' ||
+                          dayStatus === 'occupied' ||
+                          isDisabledDate(d) ||
+                          (!inCurrentMonth && !showAdjacentMonths);
+                        const selectedSingle =
+                          mode === 'single' &&
+                          currentDate &&
+                          isSameDay(d, currentDate);
+                        const inRange = isInRange(d) && inCurrentMonth;
+                        const startR = isRangeStart(d) && inCurrentMonth;
+                        const endR = isRangeEnd(d) && inCurrentMonth;
+                        // Visual styles
+                        const isSelectedEdge = selectedSingle || startR || endR;
+                        let bg = 'transparent';
+                        let outline: ViewStyle | undefined;
+                        if (mode === 'single' && selectedSingle) {
+                          if (selectionVariant === 'filled') bg = accent;
+                          else
+                            outline = { borderWidth: 2, borderColor: accent };
+                        } else if (mode === 'range') {
+                          if (isSelectedEdge) bg = accent;
+                          else if (inRange) bg = isDark ? '#223047' : '#E3EDF8';
+                        }
+                        const showStatusVisuals = mode === 'range';
+                        const showSingleStatus =
+                          mode === 'single' &&
+                          enableSingleStatusVisuals &&
+                          !!dateStatuses;
+                        if (
+                          (showStatusVisuals || showSingleStatus) &&
+                          !isSelectedEdge &&
+                          !inRange &&
+                          dayStatus
+                        ) {
+                          // subtle background tint ONLY for unavailable (keep other statuses just dots)
+                          if (dayStatus === 'unavailable') {
+                            bg =
+                              statusColors.unavailable + (isDark ? '33' : '22');
+                          }
+                        }
+                        const txtColor =
+                          isSelectedEdge &&
+                          (selectionVariant === 'filled' || mode === 'range')
+                            ? '#fff'
+                            : disabledDay
+                            ? subTextColor + '55'
+                            : inCurrentMonth
+                            ? textColor
+                            : subTextColor + '88';
+                        const radiusStyle: ViewStyle =
+                          startR && endR
+                            ? { borderRadius: 20 }
+                            : startR
+                            ? {
+                                borderTopLeftRadius: 20,
+                                borderBottomLeftRadius: 20,
+                              }
+                            : endR
+                            ? {
+                                borderTopRightRadius: 20,
+                                borderBottomRightRadius: 20,
+                              }
+                            : { borderRadius: 20 };
+                        return (
+                          <Pressable
+                            key={di}
+                            disabled={disabledDay}
+                            onPress={() => handleSelectDay(d, inCurrentMonth)}
+                            style={({ pressed }) => [
+                              styles.dayCell,
+                              radiusStyle,
+                              outline,
+                              {
+                                backgroundColor: bg,
+                                opacity: disabledDay ? 0.4 : 1,
+                              },
+                              pressed && !disabledDay && { opacity: 0.85 },
+                            ]}
+                          >
+                            <View style={styles.dayInner}>
+                              <Text
+                                style={{
+                                  color: txtColor,
+                                  fontSize: 13,
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {d.getDate()}
+                              </Text>
+                              {(showStatusVisuals || showSingleStatus) &&
+                                dayStatus &&
+                                !isSelectedEdge && (
+                                  <View
+                                    style={[
+                                      styles.statusDot,
+                                      {
+                                        backgroundColor:
+                                          statusColors[dayStatus],
+                                      },
+                                    ]}
+                                  />
+                                )}
+                            </View>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  ))}
                 </View>
-              ) : (
-                <>
-                  <View style={styles.weekdaysRow}>
-                    {Array.from({ length: 7 }).map((_, i) => {
-                      const dayIndex = (firstDayOfWeek + i) % 7;
-                      const lbl = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][dayIndex];
-                      return (
-                        <Text
-                          key={i}
-                          style={[styles.weekday, { color: subTextColor }]}
-                        >
-                          {lbl}
-                        </Text>
-                      );
-                    })}
+              </>
+            )}
+            {(mode === 'range' ||
+              (mode === 'single' && enableSingleStatusVisuals)) &&
+              showStatusLegend && (
+                <View style={styles.legendRow}>
+                  <View style={styles.legendItem}>
+                    <View
+                      style={[
+                        styles.legendSwatch,
+                        { backgroundColor: statusColors.unavailable },
+                      ]}
+                    />
+                    <Text style={[styles.legendText, { color: subTextColor }]}>
+                      Not Available
+                    </Text>
                   </View>
-                  <View style={styles.daysWrap}>
-                    {matrix.map((week, wi) => (
-                      <View key={wi} style={styles.weekRow}>
-                        {week.map((cell, di) => {
-                          const { date: d, inCurrentMonth } = cell;
-                          if (!showAdjacentMonths && !inCurrentMonth)
-                            return (
-                              <View key={di} style={styles.dayCellEmpty} />
-                            );
-                          const ymd = formatLocalYMD(d);
-                          const dayStatus = dateStatuses?.[ymd];
-                          // Block selection for any status (unavailable, reserved, occupied)
-                          const disabledDay =
-                            dayStatus === 'unavailable' ||
-                            dayStatus === 'reserved' ||
-                            dayStatus === 'occupied' ||
-                            isDisabledDate(d) ||
-                            (!inCurrentMonth && !showAdjacentMonths);
-                          const selectedSingle =
-                            mode === 'single' &&
-                            currentDate &&
-                            isSameDay(d, currentDate);
-                          const inRange = isInRange(d) && inCurrentMonth;
-                          const startR = isRangeStart(d) && inCurrentMonth;
-                          const endR = isRangeEnd(d) && inCurrentMonth;
-                          // Visual styles
-                          const isSelectedEdge =
-                            selectedSingle || startR || endR;
-                          let bg = 'transparent';
-                          let outline: ViewStyle | undefined;
-                          if (mode === 'single' && selectedSingle) {
-                            if (selectionVariant === 'filled') bg = accent;
-                            else
-                              outline = { borderWidth: 2, borderColor: accent };
-                          } else if (mode === 'range') {
-                            if (isSelectedEdge) bg = accent;
-                            else if (inRange)
-                              bg = isDark ? '#223047' : '#E3EDF8';
-                          }
-                          const showStatusVisuals = mode === 'range';
-                          const showSingleStatus =
-                            mode === 'single' &&
-                            enableSingleStatusVisuals &&
-                            !!dateStatuses;
-                          if (
-                            (showStatusVisuals || showSingleStatus) &&
-                            !isSelectedEdge &&
-                            !inRange &&
-                            dayStatus
-                          ) {
-                            // subtle background tint ONLY for unavailable (keep other statuses just dots)
-                            if (dayStatus === 'unavailable') {
-                              bg =
-                                statusColors.unavailable +
-                                (isDark ? '33' : '22');
-                            }
-                          }
-                          const txtColor =
-                            isSelectedEdge &&
-                            (selectionVariant === 'filled' || mode === 'range')
-                              ? '#fff'
-                              : disabledDay
-                              ? subTextColor + '55'
-                              : inCurrentMonth
-                              ? textColor
-                              : subTextColor + '88';
-                          const radiusStyle: ViewStyle =
-                            startR && endR
-                              ? { borderRadius: 20 }
-                              : startR
-                              ? {
-                                  borderTopLeftRadius: 20,
-                                  borderBottomLeftRadius: 20,
-                                }
-                              : endR
-                              ? {
-                                  borderTopRightRadius: 20,
-                                  borderBottomRightRadius: 20,
-                                }
-                              : { borderRadius: 20 };
-                          return (
-                            <Pressable
-                              key={di}
-                              disabled={disabledDay}
-                              onPress={() => handleSelectDay(d, inCurrentMonth)}
-                              style={({ pressed }) => [
-                                styles.dayCell,
-                                radiusStyle,
-                                outline,
-                                {
-                                  backgroundColor: bg,
-                                  opacity: disabledDay ? 0.4 : 1,
-                                },
-                                pressed && !disabledDay && { opacity: 0.85 },
-                              ]}
-                            >
-                              <View style={styles.dayInner}>
-                                <Text
-                                  style={{
-                                    color: txtColor,
-                                    fontSize: 13,
-                                    fontWeight: '600',
-                                  }}
-                                >
-                                  {d.getDate()}
-                                </Text>
-                                {(showStatusVisuals || showSingleStatus) &&
-                                  dayStatus &&
-                                  !isSelectedEdge && (
-                                    <View
-                                      style={[
-                                        styles.statusDot,
-                                        {
-                                          backgroundColor:
-                                            statusColors[dayStatus],
-                                        },
-                                      ]}
-                                    />
-                                  )}
-                              </View>
-                            </Pressable>
-                          );
-                        })}
+                  <View style={styles.legendItem}>
+                    <View
+                      style={[
+                        styles.legendSwatch,
+                        { backgroundColor: statusColors.reserved },
+                      ]}
+                    />
+                    <Text style={[styles.legendText, { color: subTextColor }]}>
+                      Reserved
+                    </Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View
+                      style={[
+                        styles.legendSwatch,
+                        { backgroundColor: statusColors.occupied },
+                      ]}
+                    />
+                    <Text style={[styles.legendText, { color: subTextColor }]}>
+                      Occupied
+                    </Text>
+                  </View>
+                </View>
+              )}
+            {showBookedRooms &&
+              mode === 'single' &&
+              currentDate &&
+              (() => {
+                const key = formatLocalYMD(currentDate);
+                const rooms = bookedRoomsByDate?.[key];
+                if (!rooms || rooms.length === 0) return null;
+                return (
+                  <View style={styles.bookedWrap}>
+                    <Text style={[styles.bookedTitle, { color: textColor }]}>
+                      Booked Rooms ({rooms.length})
+                    </Text>
+                    {rooms.map((r) => (
+                      <View key={r.id} style={styles.bookedItem}>
+                        <View
+                          style={[
+                            styles.bookedDot,
+                            {
+                              backgroundColor: r.status
+                                ? (statusColors as any)[r.status] || accent
+                                : accent,
+                            },
+                          ]}
+                        />
+                        <Text
+                          style={[styles.bookedName, { color: subTextColor }]}
+                        >
+                          {r.name}
+                        </Text>
                       </View>
                     ))}
                   </View>
-                </>
-              )}
-              {(mode === 'range' ||
-                (mode === 'single' && enableSingleStatusVisuals)) &&
-                showStatusLegend && (
-                  <View style={styles.legendRow}>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.legendSwatch,
-                          { backgroundColor: statusColors.unavailable },
-                        ]}
-                      />
-                      <Text
-                        style={[styles.legendText, { color: subTextColor }]}
-                      >
-                        Not Available
-                      </Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.legendSwatch,
-                          { backgroundColor: statusColors.reserved },
-                        ]}
-                      />
-                      <Text
-                        style={[styles.legendText, { color: subTextColor }]}
-                      >
-                        Reserved
-                      </Text>
-                    </View>
-                    <View style={styles.legendItem}>
-                      <View
-                        style={[
-                          styles.legendSwatch,
-                          { backgroundColor: statusColors.occupied },
-                        ]}
-                      />
-                      <Text
-                        style={[styles.legendText, { color: subTextColor }]}
-                      >
-                        Occupied
-                      </Text>
-                    </View>
+                );
+              })()}
+            {showBookedRooms &&
+              mode === 'range' &&
+              currentRange.start &&
+              currentRange.end &&
+              (() => {
+                const days: string[] = [];
+                const s = startOfDay(currentRange.start);
+                const e = startOfDay(currentRange.end);
+                for (
+                  let d = new Date(s);
+                  !isAfter(d, e);
+                  d.setDate(d.getDate() + 1)
+                )
+                  days.push(formatLocalYMD(d));
+                const aggregated: Record<string, number> = {};
+                days.forEach((k) => {
+                  const list = bookedRoomsByDate?.[k];
+                  if (list) aggregated[k] = list.length;
+                });
+                const keys = Object.keys(aggregated);
+                if (!keys.length) return null;
+                return (
+                  <View style={styles.bookedWrap}>
+                    <Text style={[styles.bookedTitle, { color: textColor }]}>
+                      Booked Rooms in Range
+                    </Text>
+                    {keys.map((k) => (
+                      <View key={k} style={styles.bookedItem}>
+                        <Text
+                          style={[styles.bookedName, { color: subTextColor }]}
+                        >
+                          {k}: {aggregated[k]}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
-                )}
-              {showBookedRooms &&
-                mode === 'single' &&
-                currentDate &&
-                (() => {
-                  const key = formatLocalYMD(currentDate);
-                  const rooms = bookedRoomsByDate?.[key];
-                  if (!rooms || rooms.length === 0) return null;
-                  return (
-                    <View style={styles.bookedWrap}>
-                      <Text style={[styles.bookedTitle, { color: textColor }]}>
-                        Booked Rooms ({rooms.length})
-                      </Text>
-                      {rooms.map((r) => (
-                        <View key={r.id} style={styles.bookedItem}>
-                          <View
-                            style={[
-                              styles.bookedDot,
-                              {
-                                backgroundColor: r.status
-                                  ? (statusColors as any)[r.status] || accent
-                                  : accent,
-                              },
-                            ]}
-                          />
-                          <Text
-                            style={[styles.bookedName, { color: subTextColor }]}
-                          >
-                            {r.name}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  );
-                })()}
-              {showBookedRooms &&
-                mode === 'range' &&
-                currentRange.start &&
-                currentRange.end &&
-                (() => {
-                  const days: string[] = [];
-                  const s = startOfDay(currentRange.start);
-                  const e = startOfDay(currentRange.end);
-                  for (
-                    let d = new Date(s);
-                    !isAfter(d, e);
-                    d.setDate(d.getDate() + 1)
-                  )
-                    days.push(formatLocalYMD(d));
-                  const aggregated: Record<string, number> = {};
-                  days.forEach((k) => {
-                    const list = bookedRoomsByDate?.[k];
-                    if (list) aggregated[k] = list.length;
-                  });
-                  const keys = Object.keys(aggregated);
-                  if (!keys.length) return null;
-                  return (
-                    <View style={styles.bookedWrap}>
-                      <Text style={[styles.bookedTitle, { color: textColor }]}>
-                        Booked Rooms in Range
-                      </Text>
-                      {keys.map((k) => (
-                        <View key={k} style={styles.bookedItem}>
-                          <Text
-                            style={[styles.bookedName, { color: subTextColor }]}
-                          >
-                            {k}: {aggregated[k]}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  );
-                })()}
-              {(mode === 'range' || requireConfirmation) && (
-                <View style={[styles.footerBar, { borderColor }]}>
-                  {mode === 'range' && (
-                    <Button
-                      variant="soft"
-                      color="secondary"
-                      label="Clear"
-                      onPress={() => {
-                        clear();
-                      }}
-                    />
-                  )}
-                  <Button
-                    variant="solid"
-                    color="primary"
-                    label={mode === 'range' ? 'Apply' : 'Done'}
-                    onPress={() => setOpen(false)}
-                  />
-                </View>
-              )}
-            </View>
+                );
+              })()}
           </View>
-        </Modal>
+        </BaseModal>
       </View>
     );
   }
@@ -1315,25 +1279,9 @@ export default DateInput;
 
 const styles = StyleSheet.create({
   trigger: { borderWidth: 1 },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+  calendarContent: {
+    paddingVertical: 8,
   },
-  panel: {
-    borderWidth: 1,
-    borderRadius: 24,
-    paddingBottom: 8,
-    overflow: 'hidden',
-  },
-  centeredModal: { maxWidth: 350, width: '92%', alignSelf: 'center' },
-  centerWrap: { justifyContent: 'center', alignItems: 'center' },
-  modalHeaderBar: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 8,
-    paddingTop: 6,
-  },
-  modalHeaderSpacer: { flex: 1 },
   closeBtn: { padding: 6 },
   header: {
     flexDirection: 'row',

@@ -2,9 +2,12 @@ export type Booking = {
     id?: string;
     room_id?: string;
     tourist_id?: string;
-    check_in_date?: Date;
-    check_out_date?: Date;
+    check_in_time?: Date | String;
+    check_out_time?: Date | String;
+    check_in_date?: Date | String;
+    check_out_date?: Date | String;
     booking_status?: 'Pending' | 'Reserved' | 'Checked-In' | 'Checked-Out' | 'Canceled';
+    booking_type?: 'overnight' | 'short-stay';
     pax: number;
     total_price?: number;
     created_at?: Date;
@@ -19,19 +22,11 @@ export type Booking = {
     trip_purpose?: string;
     balance?: number;
     business_id?: string;
+    applied_promotions?: string[]; // Array of promotion IDs used in this booking
+
 }
 
 export type Bookings = Booking[];
-
-export type Guest = {
-    id?: number;
-    booking_id: string;
-    name: string;
-    age: number | null;
-    gender: 'Male' | 'Female' | string;
-}
-
-export type Guests = Guest[];
 
 
 export type BookingPayment = {

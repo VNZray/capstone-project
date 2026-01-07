@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import Animated, {
   Extrapolate,
   SharedValue,
@@ -84,16 +84,26 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({
 
   return (
     <Animated.View style={[styles.container, style, containerAnimatedStyle]}>
-      <Animated.View style={helloAnimatedStyle}>
+      <View style={styles.greetingContainer}>
+        <Animated.View style={helloAnimatedStyle}>
+          <ThemedText
+            type="title-small"
+            weight="bold"
+            lightColor="#FEFCFF"
+            style={styles.greetingText}
+          >
+            {helloText}
+          </ThemedText>
+        </Animated.View>
         <ThemedText
           type="title-small"
           weight="bold"
           lightColor="#FEFCFF"
           style={styles.greetingText}
         >
-          {helloText}, {displayName}!
+          , {displayName}!
         </ThemedText>
-      </Animated.View>
+      </View>
       <ThemedText
         type="body-small"
         lightColor="rgba(255,255,255,0.9)"
@@ -108,6 +118,11 @@ const WelcomeSection: React.FC<WelcomeSectionProps> = ({
 const styles = StyleSheet.create({
   container: {
     gap: 12,
+  },
+  greetingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap', // Allow wrapping if text is too long
   },
   greetingText: {
     textShadowColor: 'rgba(0,0,0,0.45)',

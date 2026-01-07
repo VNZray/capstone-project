@@ -1,18 +1,48 @@
 // See spec.md §5 - Order State Machine & §6 - Data Model
+// Note: Mobile app uses UPPERCASE status values for consistency
+// Backend normalizes status to UPPERCASE for /api/orders/user/:userId endpoint
 
-export type OrderStatus = 
-  | 'PENDING' 
-  | 'ACCEPTED' 
-  | 'PREPARING' 
-  | 'READY_FOR_PICKUP' 
-  | 'PICKED_UP' 
-  | 'CANCELLED_BY_USER' 
-  | 'CANCELLED_BY_BUSINESS' 
+/**
+ * Order statuses in UPPERCASE format (mobile convention)
+ * Maps to lowercase database values:
+ * - PENDING -> pending
+ * - ACCEPTED -> accepted
+ * - PREPARING -> preparing
+ * - READY_FOR_PICKUP -> ready_for_pickup
+ * - PICKED_UP -> picked_up
+ * - CANCELLED_BY_USER -> cancelled_by_user
+ * - CANCELLED_BY_BUSINESS -> cancelled_by_business
+ * - FAILED_PAYMENT -> failed_payment
+ */
+export type OrderStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'PREPARING'
+  | 'READY_FOR_PICKUP'
+  | 'PICKED_UP'
+  | 'CANCELLED_BY_USER'
+  | 'CANCELLED_BY_BUSINESS'
   | 'FAILED_PAYMENT';
 
-export type PaymentStatus = 'PENDING' | 'PAID' | 'REFUNDED' | 'FAILED';
+/**
+ * Payment statuses in UPPERCASE format (mobile convention)
+ * Maps to lowercase database values:
+ * - PENDING/UNPAID -> unpaid/pending
+ * - PAID -> paid
+ * - FAILED -> failed
+ * - REFUNDED -> refunded
+ */
+export type PaymentStatus = 'PENDING' | 'UNPAID' | 'PAID' | 'REFUNDED' | 'FAILED';
 
-export type PaymentMethod = 'cash_on_pickup' | 'paymongo';
+/**
+ * Payment methods - actual types sent to backend
+ * Backend validates: ['gcash', 'paymaya', 'card', 'cash_on_pickup']
+ * Note: 'paymongo' is deprecated - use specific types instead
+ */
+export type PaymentMethod = 'cash_on_pickup' | 'gcash' | 'paymaya' | 'card';
+
+/** @deprecated Use PaymentMethod instead - backend now expects actual payment types */
+export type LegacyPaymentMethod = 'cash_on_pickup' | 'paymongo';
 
 export interface Order {
   id: string;
@@ -28,6 +58,8 @@ export interface Order {
   special_instructions?: string;
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
+  /** @deprecated payment_method now contains the actual type */
+  payment_method_type?: 'gcash' | 'card' | 'paymaya';
   status: OrderStatus;
   arrival_code: string;
   created_at: string;
@@ -61,8 +93,11 @@ export interface CreateOrderPayload {
   discount_id?: string | null;
   pickup_datetime: string; // ISO 8601
   special_instructions?: string;
+  /**
+   * Payment method - actual type sent to backend
+   * Backend validates: ['gcash', 'paymaya', 'card', 'cash_on_pickup']
+   */
   payment_method: PaymentMethod;
-  payment_method_type?: 'gcash' | 'card' | 'paymaya' | 'grab_pay' | 'qrph';
 }
 
 // Response from POST /api/orders (spec.md §7)
@@ -73,5 +108,9 @@ export interface CreateOrderResponse {
   status: string;
   payment_status: string;
   total_amount: number;
-  checkout_url?: string; // PayMongo checkout URL (when payment_method=paymongo)
+  // PIPM Flow fields (recommended)
+  payment_intent_id?: string;  // PayMongo Payment Intent ID
+  client_key?: string;         // Client key for attaching payment method
+  // Legacy field - kept for backward compatibility
+  checkout_url?: string;       // @deprecated - use Payment Intent flow instead
 }

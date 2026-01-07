@@ -13,10 +13,11 @@ import {
   clearStoredBusinessId,
   fetchBusinessDetails,
 } from "@/src/services/BusinessService";
+import { useAuth } from "./AuthContext";
 
 interface BusinessContextType {
   selectedBusinessId: string | null;
-  businessDetails: Business | null;
+  businessDetails: Business | null | undefined;
   loading: boolean;
   setBusinessId: (id: string) => void;
   clearBusinessId: () => void;
@@ -34,16 +35,22 @@ interface BusinessProviderProps {
 export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   children,
 }) => {
+  const { user } = useAuth();
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
 
-  // Load stored business ID on mount
+  // Load stored business ID on mount, but only if user is authenticated
   useEffect(() => {
     const loadStoredBusinessId = async () => {
+      if (!user) {
+        // Clear stored business ID if user logs out
+        setSelectedBusinessId(null);
+        return;
+      }
       const id = await getStoredBusinessId();
       setSelectedBusinessId(id);
     };
     loadStoredBusinessId();
-  }, []);
+  }, [user]);
 
   const [businessDetails, setBusinessDetails] = useState<Business | null>(null);
   const [loading, setLoading] = useState(false);
@@ -63,7 +70,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   /** Fetch business details from API */
   const fetchBusiness = useCallback(async () => {
-    if (!selectedBusinessId) return;
+    if (!selectedBusinessId || !user) return;
     setLoading(true);
     try {
       const data = await fetchBusinessDetails(selectedBusinessId);
@@ -74,7 +81,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [selectedBusinessId]);
+  }, [selectedBusinessId, user]);
 
   
 

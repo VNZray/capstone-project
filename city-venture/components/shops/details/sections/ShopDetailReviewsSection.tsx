@@ -4,12 +4,21 @@ import {
   ShopDetailRatingBreakdown,
   ShopDetailReviewCard,
   WriteReviewModal,
+  ShopDetailFilterChips,
 } from '@/components/shops/details/elements';
+import type { ShopDetailFilterChipsProps } from '@/components/shops/details/elements/ShopDetailFilterChips';
 import type { BusinessProfileView } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
+import { ShopColors } from '@/constants/color';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useCallback, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useState, useMemo } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View, LayoutAnimation, Platform, UIManager } from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+type FilterType = ShopDetailFilterChipsProps['activeFilter'];
 
 interface ShopDetailReviewsSectionProps {
   shop: BusinessProfileView;
@@ -30,6 +39,39 @@ const ShopDetailReviewsSection: React.FC<ShopDetailReviewsSectionProps> = ({
   const [reviewText, setReviewText] = useState('');
   const [reviewerName, setReviewerName] = useState('');
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+
+  // Sorting and Filtering Logic
+  const filteredReviews = useMemo(() => {
+    let reviews = [...shop.reviews];
+
+    // Filtering
+    if (activeFilter === 'photos') {
+      reviews = reviews.filter((r) => r.images && r.images.length > 0);
+    }
+
+    // Sorting
+    switch (activeFilter) {
+      case 'recent':
+        reviews.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        break;
+      case 'highest':
+        reviews.sort((a, b) => b.rating - a.rating);
+        break;
+      case 'lowest':
+        reviews.sort((a, b) => a.rating - b.rating);
+        break;
+      default:
+        break;
+    }
+    return reviews;
+  }, [shop.reviews, activeFilter]);
+
+  const toggleFilters = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsFilterVisible(!isFilterVisible);
+  };
 
   const validateReview = useCallback(() => {
     if (!rating) {
@@ -81,26 +123,47 @@ const ShopDetailReviewsSection: React.FC<ShopDetailReviewsSectionProps> = ({
   };
 
   return (
-    <View style={styles.sectionContainer}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Reviews</Text>
-          <Text style={styles.sectionSubtitle}>What locals and visitors say</Text>
-        </View>
-        <TouchableOpacity style={styles.writeReviewButton} onPress={() => setWriteReviewVisible(true)}>
-          <Text style={styles.writeReviewText}>Write a Review</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <View style={styles.spacer} />
 
       <ShopDetailRatingBreakdown
         rating={shop.rating}
         ratingCount={shop.ratingCount}
         breakdown={shop.ratingBreakdown}
+        onWriteReviewPress={() => setWriteReviewVisible(true)}
       />
 
+      <View style={styles.filterspacer} />
+
+      {/* Filter Header Row */}
+      <View style={styles.filterHeaderRow}>
+        <TouchableOpacity style={styles.filterTrigger} onPress={toggleFilters}>
+          <Ionicons name="options-outline" size={20} color={ShopColors.accent} />
+          <Text style={styles.filterTriggerText}>Filters & Sort</Text>
+          <Ionicons 
+            name={isFilterVisible ? "chevron-up" : "chevron-down"} 
+            size={16} 
+            color={ShopColors.textSecondary} 
+          />
+        </TouchableOpacity>
+        
+        <Text style={styles.reviewCountText}>
+          {filteredReviews.length} of {shop.reviews.length} reviews
+        </Text>
+      </View>
+
+      {isFilterVisible && (
+        <View style={styles.filterContent}>
+          <ShopDetailFilterChips
+            activeFilter={activeFilter}
+            onFilterSelect={setActiveFilter}
+          />
+        </View>
+      )}
+
       <View style={styles.reviewsList}>
-        {shop.reviews.length ? (
-          shop.reviews.map((review) => (
+        {filteredReviews.length ? (
+          filteredReviews.map((review) => (
             <ShopDetailReviewCard
               key={review.id}
               review={review}
@@ -109,9 +172,15 @@ const ShopDetailReviewsSection: React.FC<ShopDetailReviewsSectionProps> = ({
             />
           ))
         ) : (
-          <Text style={styles.emptyState}>No reviews yet. Be the first to share!</Text>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              No reviews found matching your filter.
+            </Text>
+          </View>
         )}
       </View>
+
+      <View style={styles.bottomSpacer} />
 
       <WriteReviewModal
         visible={writeReviewVisible}
@@ -143,50 +212,58 @@ const ShopDetailReviewsSection: React.FC<ShopDetailReviewsSectionProps> = ({
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    backgroundColor: ShopColors.cardBackground,
-    margin: 16,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 1,
+  container: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
   },
-  sectionHeader: {
+  spacer: {
+    height: 0,
+  },
+  filterspacer: {
+    height: 16,
+  },
+  bottomSpacer: {
+    height: 40,
+  },
+  filterHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+    paddingTop: 8,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontFamily: 'Poppins-Bold',
-    color: ShopColors.textPrimary,
+  filterTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  sectionSubtitle: {
+  filterTriggerText: {
     fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+    color: ShopColors.accent,
+  },
+  reviewCountText: {
+    fontSize: 12,
     fontFamily: 'Poppins-Regular',
     color: ShopColors.textSecondary,
   },
-  writeReviewButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: ShopColors.accent,
-  },
-  writeReviewText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: 'Poppins-SemiBold',
+  filterContent: {
+    marginBottom: 8,
   },
   reviewsList: {
-    marginTop: 20,
+    marginTop: 8,
   },
   emptyState: {
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateText: {
     fontSize: 14,
-    fontFamily: 'Poppins-Regular',
+    fontFamily: 'Poppins-Medium',
     color: ShopColors.textSecondary,
+    textAlign: 'center',
   },
 });
 

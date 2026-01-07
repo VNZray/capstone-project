@@ -14,7 +14,7 @@ import PageContainer from '@/components/PageContainer';
 import Container from '@/components/Container';
 import Chip from '@/components/Chip';
 import { useTouristSpot } from '@/context/TouristSpotContext';
-import MapView, { Marker } from 'react-native-maps';
+import { MapView, Marker } from '@/components/map/MapWrapper';
 
 const dayNames = [
   'Sunday',
@@ -113,7 +113,7 @@ const Details = () => {
             {selectedSpot.categories.map((c) => (
               <Chip
                 key={c.id}
-                label={c.category}
+                label={c.category_title}
                 variant="solid"
                 size="medium"
               />
@@ -197,7 +197,9 @@ const Details = () => {
                 const time =
                   closed || !s.open_time || !s.close_time
                     ? 'Closed'
-                    : `${formatTime(s.open_time)} - ${formatTime(s.close_time)}`;
+                    : `${formatTime(s.open_time)} - ${formatTime(
+                        s.close_time
+                      )}`;
                 return (
                   <View key={s.id || label} style={styles.scheduleRow}>
                     <ThemedText type="body-small" style={[styles.scheduleDay]}>

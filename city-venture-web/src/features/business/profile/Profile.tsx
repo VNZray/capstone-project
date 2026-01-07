@@ -4,11 +4,15 @@ import Container from "@/src/components/Container";
 import { useAuth } from "@/src/context/AuthContext";
 import Header from "../../landing-page/components/Header";
 import { useState, useEffect } from "react";
-import axios from "axios";
-import api from "@/src/services/api";
-import { Grid, Stack } from "@mui/joy";
+import apiClient from "@/src/services/apiClient";
+import { Box, Grid, Stack } from "@mui/joy";
 import type { Permit } from "@/src/types/Permit";
-import { getPermitsByBusiness } from "@/src/services/approval/PermitService";
+import {
+  getPermitsByBusiness,
+  updatePermit,
+  insertPermit,
+  deletePermit,
+} from "@/src/services/approval/PermitService";
 
 // Import components
 import HeaderSection from "./components/HeaderSection";
@@ -161,7 +165,7 @@ const OwnerProfile = () => {
 
     try {
       setLoadingBusinesses(true);
-      const { data } = await axios.get(`${api}/business/owner/${user.id}`);
+      const { data } = await apiClient.get(`/business/owner/${user.id}`);
       const businessList = Array.isArray(data) ? data : [data];
       setBusinesses(businessList);
       if (businessList.length > 0) {
@@ -247,14 +251,14 @@ const OwnerProfile = () => {
       };
 
       if (selectedPermit) {
-        await axios.put(`${api}/permit/${selectedPermit.id}`, payload);
+        await updatePermit(selectedPermit.id as string, payload);
         setAlertConfig({
           type: "success",
           title: "Permit Updated",
           message: `${permitForm.permit_type} has been updated successfully.`,
         });
       } else {
-        await axios.post(`${api}/permit`, payload);
+        await insertPermit(payload);
         setAlertConfig({
           type: "success",
           title: "Permit Uploaded",
@@ -282,7 +286,7 @@ const OwnerProfile = () => {
     }
 
     try {
-      await axios.delete(`${api}/permit/${permitId}`);
+      await deletePermit(permitId);
       setAlertConfig({
         type: "success",
         title: "Permit Deleted",
@@ -372,7 +376,15 @@ const OwnerProfile = () => {
     <>
       <Header />
 
-      <PageContainer padding={"80px 16px 16px 16px"} gap={0}>
+      <Box
+        gap={0}
+        sx={{
+          paddingTop: 10,
+          paddingLeft: { xs: 2, sm: 2, md: 30, lg: 40 },
+          paddingRight: { xs: 2, sm: 2, md: 30, lg: 40 },
+          paddingBottom: 10,
+        }}
+      >
         {/* Header Section */}
         <HeaderSection
           profileData={profileData}
@@ -400,7 +412,8 @@ const OwnerProfile = () => {
                   onChange={handleProfileDataChange}
                 />
 
-                {(user?.role_name === "Owner" || user?.role_name === 'Business Owner') && (
+                {(user?.role_name === "Owner" ||
+                  user?.role_name === "Business Owner") && (
                   <Permits
                     businesses={businesses}
                     permits={permits}
@@ -486,7 +499,7 @@ const OwnerProfile = () => {
           showCancel={false}
           confirmText="OK"
         />
-      </PageContainer>
+      </Box>
     </>
   );
 };

@@ -1,5 +1,6 @@
 :root {
   --primary: #0A1B47;
+  --secondary: #0077B6;
   --text: #1a1a1a;
   --muted: #6B7280;
   --tileRadius: 16px;
@@ -13,7 +14,6 @@
 
 .main-hero {
   position: relative;
-  overflow: hidden;
   background:
     radial-gradient(600px 600px at 10% 12%, var(--blobCool) 0%, transparent 60%),
     radial-gradient(720px 720px at 95% 28%, var(--blobWarm) 0%, transparent 64%),
@@ -25,14 +25,13 @@
 }
 
 .hero-inner {
-  max-width: 1400px;
+  max-width: 1500px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1.1fr 1fr;
   gap: 32px;
   align-items: center;
   justify-content: center;
-  padding-top: 60px;
 }
 
 @media (max-width: 980px) {
@@ -586,6 +585,168 @@
   }
 }
 
+/* Why Visit Section - Masonry Grid */
+.why-visit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  width: 100%;
+  max-width: 1100px;
+}
+
+@media (max-width: 768px) {
+  .why-visit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animated Background Elements for Why Visit Section */
+.why-visit-bg-elements {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.floating-shape {
+  position: absolute;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 145, 77, 0.08));
+  animation: float 20s ease-in-out infinite;
+  filter: blur(60px);
+}
+
+.floating-shape.shape-1 {
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.floating-shape.shape-2 {
+  width: 300px;
+  height: 300px;
+  bottom: -80px;
+  right: 10%;
+  animation-delay: 7s;
+  background: linear-gradient(135deg, rgba(40, 199, 111, 0.08), rgba(255, 145, 77, 0.08));
+}
+
+.floating-shape.shape-3 {
+  width: 250px;
+  height: 250px;
+  top: 40%;
+  right: -80px;
+  animation-delay: 14s;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: pulse 8s ease-in-out infinite;
+}
+
+.gradient-orb.orb-1 {
+  width: 500px;
+  height: 500px;
+  top: 20%;
+  left: 5%;
+  background: radial-gradient(circle, rgba(255, 145, 77, 0.12) 0%, transparent 70%);
+  animation-delay: 0s;
+}
+
+.gradient-orb.orb-2 {
+  width: 450px;
+  height: 450px;
+  bottom: 10%;
+  right: 8%;
+  background: radial-gradient(circle, rgba(40, 199, 111, 0.10) 0%, transparent 70%);
+  animation-delay: 4s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  33% {
+    transform: translate(30px, -30px) rotate(120deg);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) rotate(240deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+
+  to {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes wave {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+/* Card Shine Effect */
+@keyframes card-shine {
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 200%;
+  }
+}
+
+/* Responsive adjustments for animations */
+@media (max-width: 768px) {
+
+  .floating-shape,
+  .gradient-orb,
+  .floating-circle {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .floating-shape,
+  .gradient-orb,
+  .floating-circle,
+  .wave-pattern {
+    animation: none;
+  }
+}
+
 /* Scoped zoom for LandingPage only */
 .landing-zoom {
   /* Preferred scaling in Chromium/Edge */
@@ -602,5 +763,117 @@
   /* When using transform scaling, prevent horizontal scrollbars */
   .landing-zoom>* {
     width: 100%;
+  }
+}
+
+/* Device Frame Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-20px) scale(1.02);
+  }
+}
+
+@keyframes dynamicIsland {
+  0%, 100% {
+    width: 126px;
+  }
+
+  50% {
+    width: 200px;
+  }
+}
+
+@keyframes shadowPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: translateX(-50%) scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: translateX(-50%) scale(1.1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+/* Interactive Device Frames */
+.device-frame {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.device-frame:hover {
+  transform: scale(1.05) perspective(1000px) rotateY(5deg);
+}
+
+/* Screen Content Transitions */
+.screen-transition-enter {
+  animation: slideIn 0.5s ease-out;
+}
+
+.screen-transition-exit {
+  animation: slideOut 0.5s ease-out;
+}
+
+.carousel-indicator {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.carousel-indicator:hover {
+  transform: scale(1.2);
+}
+
+.carousel-indicator.active {
+  background: rgba(255, 255, 255, 0.9);
+  width: 24px;
+}
+
+/* Responsive Device Adjustments */
+@media (max-width: 768px) {
+  .device-frame {
+    transform: scale(0.85);
+  }
+
+  .device-frame:hover {
+    transform: scale(0.9);
   }
 }

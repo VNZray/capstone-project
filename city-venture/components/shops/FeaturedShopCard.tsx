@@ -1,21 +1,18 @@
-import { card, colors } from '@/constants/color';
-import { useTypography } from '@/constants/typography';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ShopColors } from '@/constants/color';
 import { moderateScale } from '@/utils/responsive';
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
 import {
   Image,
   ImageSourcePropType,
-  Platform,
   Pressable,
   StyleProp,
   StyleSheet,
   Text,
   TextStyle,
-  useWindowDimensions,
   View,
   ViewStyle,
+  useWindowDimensions,
 } from 'react-native';
 
 export type FeaturedShopCardProps = {
@@ -25,7 +22,6 @@ export type FeaturedShopCardProps = {
   rating?: number;
   reviews?: number;
   featured?: boolean;
-  elevation?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
   nameStyle?: StyleProp<TextStyle>;
@@ -38,214 +34,84 @@ const FeaturedShopCard: React.FC<FeaturedShopCardProps> = ({
   rating = 4.5,
   reviews = 120,
   featured = true,
-  elevation = 2,
   onPress,
   style,
   nameStyle,
 }) => {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
-  const palette = {
-    bg: isDark ? card.dark : card.light,
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
-    sub: isDark ? '#9BA1A6' : '#6B7280',
-    badge: colors.secondary,
-    border: isDark ? '#2A2F36' : '#E5E8EC',
-    overlay: isDark ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.4)',
-  };
   const { width } = useWindowDimensions();
-  const type = useTypography();
 
-  const RADIUS = moderateScale(16, 0.55, width);
-  const CARD_HEIGHT = moderateScale(200, 0.55, width);
-  const CARD_WIDTH = moderateScale(280, 0.55, width);
+  const RADIUS = 8;
+  const CARD_WIDTH = width * 0.75;
+  const IMAGE_HEIGHT = moderateScale(180, 0.55, width);
 
   const imageSource = typeof image === 'string' ? { uri: image } : image;
 
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
       style={({ pressed }) => [
-        styles.wrapper,
-        getElevation(elevation),
-        { borderRadius: RADIUS },
-        pressed && { opacity: 0.88 },
+        styles.container,
+        { width: CARD_WIDTH },
+        pressed && styles.pressed,
         style,
       ]}
     >
       <View
         style={[
-          styles.container,
-          {
-            backgroundColor: palette.bg,
-            borderColor: palette.border,
-            borderRadius: RADIUS,
-            width: CARD_WIDTH,
-            height: CARD_HEIGHT,
-          },
+          styles.imageContainer,
+          { height: IMAGE_HEIGHT, borderRadius: RADIUS },
         ]}
       >
-        {/* Background Image */}
-        <Image
-          source={imageSource}
-          style={{
-            width: '100%',
-            height: '100%',
-            borderRadius: RADIUS,
-            position: 'absolute',
-          }}
-          resizeMode="cover"
-        />
-
-        {/* Dark Overlay */}
-        <View
-          style={[
-            styles.overlay,
-            {
-              backgroundColor: palette.overlay,
-              borderRadius: RADIUS,
-            },
-          ]}
-        />
-
-        {/* Featured Badge */}
+        <Image source={imageSource} style={styles.image} resizeMode="cover" />
         {featured && (
           <View style={styles.badgeContainer}>
-            <View
-              style={[
-                styles.badge,
-                { backgroundColor: colors.secondary },
-              ]}
-            >
-              <Text
-                style={{
-                  color: '#fff',
-                  fontSize: moderateScale(11, 0.45, width),
-                  fontWeight: '700',
-                }}
-              >
-                FEATURED
-              </Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Featured</Text>
             </View>
           </View>
         )}
+      </View>
 
-        {/* Content - Bottom Positioned */}
-        <View style={styles.contentContainer}>
-          <Text
-            numberOfLines={2}
-            style={[
-              {
-                color: '#fff',
-                fontSize: type.h4,
-                fontWeight: '700',
-                marginBottom: 4,
-              },
-              nameStyle,
-            ]}
-          >
+      <View style={styles.contentContainer}>
+        <View style={styles.headerRow}>
+          <Text style={[styles.name, nameStyle]} numberOfLines={1}>
             {name}
           </Text>
-
-          {category && (
-            <Text
-              numberOfLines={1}
-              style={{
-                color: 'rgba(255, 255, 255, 0.85)',
-                fontSize: moderateScale(13, 0.45, width),
-                fontWeight: '500',
-                marginBottom: 8,
-              }}
-            >
-              {category}
-            </Text>
-          )}
-
-          {/* Rating */}
-          <View style={styles.ratingContainer}>
-            <FontAwesome5
-              name="star"
-              size={moderateScale(12, 0.45, width)}
-              color="#FFD700"
-              solid
-            />
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: moderateScale(12, 0.45, width),
-                fontWeight: '600',
-                marginLeft: 4,
-              }}
-            >
-              {rating.toFixed(1)} ({reviews})
-            </Text>
+          <View style={styles.ratingRow}>
+            <FontAwesome5 name="star" size={12} color="#FFD700" solid />
+            <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
           </View>
         </View>
+
+        {category && (
+          <Text style={styles.category} numberOfLines={1}>
+            {category}
+          </Text>
+        )}
       </View>
     </Pressable>
   );
 };
 
-function getElevation(level: number): ViewStyle | undefined {
-  if (!level) return undefined;
-  if (Platform.OS === 'android') return { elevation: level } as ViewStyle;
-  const map: Record<number, ViewStyle> = {
-    1: {
-      shadowColor: '#000',
-      shadowOpacity: 0.08,
-      shadowRadius: 2,
-      shadowOffset: { width: 0, height: 1 },
-    },
-    2: {
-      shadowColor: '#000',
-      shadowOpacity: 0.12,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 2 },
-    },
-    3: {
-      shadowColor: '#000',
-      shadowOpacity: 0.15,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 3 },
-    },
-    4: {
-      shadowColor: '#000',
-      shadowOpacity: 0.18,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 4 },
-    },
-    5: {
-      shadowColor: '#000',
-      shadowOpacity: 0.2,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 5 },
-    },
-    6: {
-      shadowColor: '#000',
-      shadowOpacity: 0.22,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 6 },
-    },
-  };
-  return map[level];
-}
-
 const styles = StyleSheet.create({
-  wrapper: {
-    overflow: 'visible',
-  },
   container: {
-    borderWidth: 1,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
+    marginRight: 16,
+    backgroundColor: 'transparent',
   },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  pressed: {
+    opacity: 0.95,
+  },
+  imageContainer: {
+    width: '100%',
+    overflow: 'hidden',
+    marginBottom: 12,
+    backgroundColor: ShopColors.inputBackground,
+    borderWidth: 1,
+    borderColor: ShopColors.border,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   badgeContainer: {
     position: 'absolute',
@@ -254,17 +120,52 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   badge: {
+    backgroundColor: ShopColors.surface,
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
+    paddingVertical: 6,
+    borderRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  badgeText: {
+    color: ShopColors.textPrimary,
+    fontSize: 11,
+    fontFamily: 'Poppins-Medium',
   },
   contentContainer: {
-    padding: 16,
-    zIndex: 10,
+    paddingHorizontal: 0,
   },
-  ratingContainer: {
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  name: {
+    color: ShopColors.textPrimary,
+    fontSize: 16,
+    fontFamily: 'Poppins-SemiBold',
+    flex: 1,
+    marginRight: 8,
+    letterSpacing: -0.3,
+  },
+  category: {
+    color: ShopColors.textSecondary,
+    fontSize: 14,
+    fontFamily: 'Poppins-Regular',
+  },
+  ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    color: ShopColors.textPrimary,
+    fontSize: 12,
+    fontFamily: 'Poppins-Medium',
   },
 });
 

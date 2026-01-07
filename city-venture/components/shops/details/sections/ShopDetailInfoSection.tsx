@@ -3,11 +3,11 @@ import {
   ShopDetailBusinessHours,
   ShopDetailContactInfo,
   ShopDetailMapPreview,
+  ShopDetailAbout,
 } from '@/components/shops/details/elements';
 import type { BusinessProfileView } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 interface ShopDetailInfoSectionProps {
   shop: BusinessProfileView;
@@ -19,11 +19,17 @@ const ShopDetailInfoSection: React.FC<ShopDetailInfoSectionProps> = ({
   onDirectionsPress,
 }) => (
   <View style={styles.container}>
-    <ShopDetailContactInfo shop={shop} onDirectionsPress={onDirectionsPress} />
-
+    <View style={styles.topSpacer} />
+    
+    <ShopDetailAbout shop={shop} />
+    
     <View style={styles.spacer} />
 
     <ShopDetailMapPreview shop={shop} onDirectionsPress={onDirectionsPress} />
+
+    <View style={styles.spacer} />
+    
+    <ShopDetailContactInfo shop={shop} onDirectionsPress={onDirectionsPress} />
 
     <View style={styles.spacer} />
 
@@ -41,9 +47,13 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 0,
     paddingVertical: 0,
+    paddingBottom: 64,
+  },
+  topSpacer: {
+    height: 24,
   },
   spacer: {
-    height: 12,
+    height: 20,
   },
   bottomSpacer: {
     height: 20,

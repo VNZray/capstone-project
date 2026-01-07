@@ -45,7 +45,7 @@ export async function createTourismStaff(req, res) {
     position,
     user_role_id,
     role_name,
-    is_verified = false,
+    is_verified = true,
     is_active = true,
     barangay_id = null,
   } = req.body || {};
@@ -280,6 +280,17 @@ export async function resetTourismStaffPassword(req, res) {
     ];
     await db.query("CALL UpdateUser(?,?,?,?,?,?,?,?,?,?,?)", userParams);
     return res.json({ message: "Temporary password generated", credentials: { temporary_password: temp } });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Delete tourism staff
+export async function deleteTourismStaff(req, res) {
+  const { id } = req.params;
+  try {
+    await db.query("CALL DeleteTourismStaff(?)", [id]);
+    return res.json({ message: "Tourism staff deleted successfully" });
   } catch (error) {
     return handleDbError(error, res);
   }

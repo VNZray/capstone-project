@@ -5,8 +5,12 @@ import RatingStatsCard from '@/components/reviews/RatingStatsCard';
 import ReviewCard from '@/components/reviews/ReviewCard';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import FeedbackService from '@/services/FeedbackService';
+import FeedbackService, {
+  getAverageRating,
+  getTotalReviews,
+} from '@/services/FeedbackService';
 import type { CreateReviewPayload, ReviewWithAuthor } from '@/types/Feedback';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
@@ -36,6 +40,7 @@ const Ratings = () => {
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const { user } = useAuth();
+  const requireAuth = useRequireAuth();
   const params = useLocalSearchParams();
   const { accommodationDetails } = useAccommodation();
   const { roomDetails } = useRoom();
@@ -154,8 +159,11 @@ const Ratings = () => {
   };
 
   const handleAddReview = () => {
-    setEditingReview(null);
-    setShowAddReview(true);
+    // Require authentication before allowing review submission
+    requireAuth(() => {
+      setEditingReview(null);
+      setShowAddReview(true);
+    }, 'write a review');
   };
 
   const handleEditReview = (review: ReviewWithAuthor) => {
@@ -236,7 +244,7 @@ const Ratings = () => {
 
   return (
     <>
-      <PageContainer style={{ paddingTop: 0, marginBottom: 40 }}>
+      <PageContainer style={{ paddingTop: 0 }}>
         <FlatList
           data={reviews}
           keyExtractor={(item) => item.id}
@@ -278,9 +286,7 @@ const Ratings = () => {
 export default Ratings;
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: 12,
-  },
+  header: {},
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,18 +1,26 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import type { ReactNode } from "react";
 import {
   loginUser,
   logoutUser,
-  getStoredUser,
-  getToken,
+  initializeAuth,
 } from "@/src/services/auth/AuthService";
-import axios from "axios";
 import type { UserDetails } from "@/src/types/User";
-import api from "@/src/services/api";
+
 interface AuthContextType {
   user: UserDetails | null;
   loading: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<UserDetails>;
+  login: (
+    email: string,
+    password: string,
+    rememberMe?: boolean
+  ) => Promise<UserDetails>;
   logout: () => void;
 }
 
@@ -26,123 +34,100 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  /** Load user from storage and sync across tabs */
+  /** Load user and init session */
   useEffect(() => {
     (async () => {
-      const storedUser = getStoredUser();
-      const token = getToken();
-      
-      if (storedUser && token) {
-        setUser(storedUser);
-        // Ensure axios Authorization header is set on app load if token exists
-        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Try to restore session from cookie (refresh token)
+      const success = await initializeAuth();
 
-        // If we have a user but no permissions cached (e.g., from older login), fetch them
-        if (!storedUser.permissions || storedUser.permissions.length === 0) {
-          try {
-            const { data } = await axios.get<{ permissions: string[] }>(`${api}/permissions/me`);
-            const updatedUser: UserDetails = { ...storedUser, permissions: data?.permissions || [] };
-            setUser(updatedUser);
-          } catch (err) {
-            // Non-fatal: keep going without permissions; UI will hide items
-            console.warn("[AuthContext] Failed to refresh permissions on load", err);
-          }
+      if (success) {
+        try {
+          // Fetch fresh user data from API
+          const { fetchCurrentUser } = await import(
+            "@/src/services/auth/AuthService"
+          );
+          const user = await fetchCurrentUser();
+          setUser(user);
+        } catch (error) {
+          console.error("[AuthContext] Failed to fetch user profile", error);
+          // If fetch fails, maybe logout?
+          // logoutUser();
         }
       }
-
       setLoading(false);
     })();
 
     // Listen for storage changes to sync auth state across tabs
-    const handleStorageChange = (e: StorageEvent) => {
-      // Handle logout from another tab - force logout this tab
+    const handleStorageChange = async (e: StorageEvent) => {
+      // Handle logout from another tab
       if (e.key === "logout-event") {
-        console.log('[AuthContext] Logout detected from another tab');
+        console.log("[AuthContext] Logout detected from another tab");
         setUser(null);
-        delete axios.defaults.headers.common["Authorization"];
-        
-        // Clear all auth data
+
+        // Clear session storage too just in case
         sessionStorage.clear();
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("rememberMe");
-        localStorage.removeItem("sessionId");
-        
-        // Reload page to clear any cached state
-        window.location.href = '/login';
+
+        // Reload to reset state completely
+        window.location.href = "/login";
         return;
       }
 
-      // Handle session changes - if active session changes, logout this tab
-      if (e.key === "active_session_id") {
-        const currentSessionId = localStorage.getItem("sessionId") || sessionStorage.getItem("sessionId");
-        const newActiveSession = e.newValue;
-        
-        if (currentSessionId && newActiveSession && currentSessionId !== newActiveSession) {
-          console.log('[AuthContext] Session changed in another tab, logging out');
-          logoutUser(); // Use imported function instead of context function
-          window.location.href = '/login';
-        }
-      }
-
-      // Handle login from another tab - allow access but keep same session
-      if (e.key === "token" && e.newValue) {
-        const storedUser = getStoredUser();
-        const token = getToken();
-        
-        if (storedUser && token) {
-          console.log('[AuthContext] Login detected from another tab, syncing...');
-          setUser(storedUser);
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Handle login from another tab
+      if (e.key === "login-event") {
+        console.log(
+          "[AuthContext] Login detected from another tab, syncing..."
+        );
+        const success = await initializeAuth();
+        if (success) {
+          try {
+            const { fetchCurrentUser } = await import(
+              "@/src/services/auth/AuthService"
+            );
+            const user = await fetchCurrentUser();
+            setUser(user);
+          } catch (e) {
+            console.error("Failed to sync user", e);
+          }
         }
       }
     };
 
-    // Monitor tab visibility to prevent background tab issues
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // Verify session is still valid when tab becomes visible
-        const storedUser = getStoredUser();
-        const token = getToken();
-        
-        // If no stored user/token but page is not login, redirect
-        if (!storedUser || !token) {
-          const currentPath = window.location.pathname;
-          if (currentPath !== '/login' && currentPath !== '/register') {
-            console.log('[AuthContext] Session invalid, logging out');
-            logoutUser();
-            window.location.href = '/login';
-          }
-        }
+    // Monitor tab visibility to ensure session validity
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        // Re-verify session if needed (optional)
+        // For now, we rely on apiClient interceptors to catch 401
       }
     };
 
     window.addEventListener("storage", handleStorageChange);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** LOGIN */
-  const login = useCallback(async (email: string, password: string, rememberMe = false) => {
-    const loggedInUser = await loginUser(email, password, rememberMe);
-    setUser(loggedInUser);
-    return loggedInUser;
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string, rememberMe = false) => {
+      const loggedInUser = await loginUser(email, password, rememberMe);
+      setUser(loggedInUser);
+      return loggedInUser;
+    },
+    []
+  );
 
   /** LOGOUT */
-  const logout = useCallback(() => {
-    logoutUser();
+  const logout = useCallback(async () => {
+    await logoutUser();
     setUser(null);
   }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>
-      {children}
+      {loading ? null : children}
     </AuthContext.Provider>
   );
 }

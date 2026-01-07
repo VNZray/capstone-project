@@ -26,7 +26,10 @@ export async function getReviewById(req, res) {
     let photos = [];
     try {
       const [p] = await db.query("CALL GetReviewPhotosByReviewId(?)", [id]);
-      photos = Array.isArray(p) ? p : [];
+      // Filter out any OkPacket or non-photo objects
+      photos = Array.isArray(p)
+        ? p.filter((item) => item && typeof item === 'object' && 'photo_url' in item)
+        : [];
     } catch (_) {
       // If photo procedures are not present yet, ignore
     }
@@ -42,27 +45,30 @@ export async function getReviewsByTypeAndEntityId(req, res) {
   const { review_type, review_type_id } = req.params;
   try {
     const [reviews] = await db.query("CALL GetReviewsByTypeAndEntityId(?, ?)", [review_type, review_type_id]);
-    
+
     // Fetch photos and replies for each review
     const enrichedReviews = await Promise.all(
       (reviews || []).map(async (review) => {
         let photos = [];
         let replies = [];
-        
+
         try {
           const [p] = await db.query("CALL GetReviewPhotosByReviewId(?)", [review.id]);
-          photos = Array.isArray(p) ? p : [];
+          // Filter out any OkPacket or non-photo objects
+          photos = Array.isArray(p)
+            ? p.filter((item) => item && typeof item === 'object' && 'photo_url' in item)
+            : [];
         } catch (_) {}
-        
+
         try {
           const [r] = await db.query("CALL GetRepliesByReviewId(?)", [review.id]);
           replies = Array.isArray(r) ? r : [];
         } catch (_) {}
-        
+
         return { ...review, photos, replies };
       })
     );
-    
+
     res.json(enrichedReviews);
   } catch (error) {
     return handleDbError(error, res);
@@ -79,7 +85,7 @@ export async function insertReview(req, res) {
     if (!review_type || !review_type_id || !rating || !message || !tourist_id) {
       return res.status(400).json({ message: "review_type, review_type_id, rating, message, and tourist_id are required" });
     }
-    
+
     const numRating = Number(rating);
     if (!Number.isFinite(numRating) || numRating < 1 || numRating > 5) {
       return res.status(400).json({ message: "Rating must be a number between 1 and 5" });
@@ -156,6 +162,58 @@ export async function deleteReview(req, res) {
   try {
     await db.query("CALL DeleteReview(?)", [id]);
     res.json({ message: "Review deleted" });
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// calculate average rating for a given type and entity id
+export async function getAverageRating(req, res) {
+  const { review_type, review_type_id } = req.params;
+  try {
+    const [data] = await db.query("CALL CalculateAverageRating(?, ?)", [review_type, review_type_id]);
+    const average_rating = data[0] ? data[0] : null;
+    res.json(average_rating);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// calculate total reviews for a given type and entity id
+export async function getTotalReviews(req, res) {
+  const { review_type, review_type_id } = req.params;
+  try {
+    const [data] = await db.query("CALL CalculateTotalReviews(?, ?)", [review_type, review_type_id]);
+    const total_reviews = data[0] ? data[0] : 0;
+    res.json(total_reviews);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Get all reviews by tourist id with enriched entity names
+export async function getReviewsByTouristId(req, res) {
+  const { touristId } = req.params;
+  try {
+    const [reviews] = await db.query("CALL GetReviewsByTouristId(?)", [touristId]);
+
+    // Fetch photos for each review
+    const enrichedReviews = await Promise.all(
+      (reviews || []).map(async (review) => {
+        let photos = [];
+        try {
+          const [p] = await db.query("CALL GetReviewPhotosByReviewId(?)", [review.id]);
+          // Filter out any OkPacket or non-photo objects
+          photos = Array.isArray(p)
+            ? p.filter((item) => item && typeof item === 'object' && 'photo_url' in item)
+            : [];
+        } catch (_) {}
+
+        return { ...review, photos };
+      })
+    );
+
+    res.json(enrichedReviews);
   } catch (error) {
     return handleDbError(error, res);
   }

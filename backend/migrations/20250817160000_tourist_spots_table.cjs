@@ -10,14 +10,15 @@ exports.up = async function(knex) {
     table.string('contact_email', 255).nullable();
     table.string('website', 255).nullable();
     table.decimal('entry_fee', 10, 2).nullable();
-    table.enu('spot_status', ['pending', 'active', 'inactive']).notNullable().defaultTo('pending');
+    table.enu('spot_status', ['pending', 'active', 'inactive', 'rejected', 'pending_deletion']).notNullable().defaultTo('pending');
     table.boolean('is_featured').defaultTo(0);
-    table.integer('type_id').nullable();
+    table.uuid('submitted_by').nullable();
+    table.uuid('deletion_requested_by').nullable();
+    // Note: type_id removed - using entity_categories table instead
     table.timestamp('created_at').defaultTo(knex.fn.now());
     table.timestamp('updated_at').defaultTo(knex.raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
 
     // indexes
-    table.index('type_id', 'idx_type');
     table.index('barangay_id', 'idx_barangay');
   });
 

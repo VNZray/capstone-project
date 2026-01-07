@@ -1,26 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { Dimensions, FlatList, Image, StyleSheet, View } from 'react-native';
-import { useNavigation } from 'expo-router';
-import Tabs from '@/components/Tabs';
-import { ThemedText } from '@/components/themed-text';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+// useNavigation is used for setOptions (header customization)
+// For navigation actions, use useRouter or usePreventDoubleNavigation hook
 import Container from '@/components/Container';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { background } from '@/constants/color';
+import { ThemedText } from '@/components/themed-text';
+import { Tab, TabContainer } from '@/components/ui/Tabs';
+import { Colors } from '@/constants/color';
 import { useTouristSpot } from '@/context/TouristSpotContext';
-import type { Tab } from '@/types/Tab';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from 'expo-router';
 import Details from './details';
 import Ratings from './ratings';
 
 const { width, height } = Dimensions.get('window');
+type TabType = 'details' | 'ratings';
 
 const TouristSpotProfile = () => {
   const navigation = useNavigation();
   const { selectedSpot, addressDetails } = useTouristSpot();
   const averageRating = 0;
   const [activeTab, setActiveTab] = useState('details');
-  const colorScheme = useColorScheme();
-  const bg = colorScheme === 'dark' ? background.dark : background.light;
+  const colors = Colors.light;
+  const bg = '#fff';
 
   useEffect(() => {
     if (selectedSpot?.name && selectedSpot?.id) {
@@ -28,10 +29,9 @@ const TouristSpotProfile = () => {
     }
   }, [navigation, selectedSpot?.name, selectedSpot?.id]);
 
-  const TABS: Tab[] = [
-    { key: 'details', label: 'Details', icon: '' },
-    { key: 'reviews', label: 'Reviews', icon: '' },
-  ];
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as TabType);
+  };
 
   if (!selectedSpot) {
     return (
@@ -58,7 +58,11 @@ const TouristSpotProfile = () => {
         ListHeaderComponent={
           <>
             <Image
-              source={{ uri: primaryImage?.file_url || 'https://via.placeholder.com/400x300' }}
+              source={{
+                uri:
+                  primaryImage?.file_url ||
+                  'https://via.placeholder.com/400x300',
+              }}
               style={styles.image}
               resizeMode="cover"
             />
@@ -76,20 +80,34 @@ const TouristSpotProfile = () => {
                   <ThemedText type="body-small">
                     {[
                       addressDetails?.barangay || selectedSpot?.barangay,
-                      addressDetails?.municipality || selectedSpot?.municipality,
+                      addressDetails?.municipality ||
+                        selectedSpot?.municipality,
                       addressDetails?.province || selectedSpot?.province,
-                    ].filter(Boolean).join(', ')}
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
                   </ThemedText>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <ThemedText type="body-small">
-                    <MaterialCommunityIcons name="star" size={20} color="#FFB007" />
+                    <MaterialCommunityIcons
+                      name="star"
+                      size={20}
+                      color={colors.accent}
+                    />
                     {averageRating.toFixed(1)}
                   </ThemedText>
                 </View>
               </Container>
-              <Tabs tabs={TABS} onTabChange={(t) => setActiveTab(t.key)} />
             </Container>
+            <TabContainer
+              backgroundColor={bg}
+              initialTab="details"
+              onTabChange={handleTabChange}
+            >
+              <Tab tab="details" label="Details" />
+              <Tab tab="ratings" label="Ratings" />
+            </TabContainer>
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
               {activeTab === 'reviews' && <Ratings />}
@@ -97,14 +115,13 @@ const TouristSpotProfile = () => {
           </>
         }
       />
-      
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   image: { width: width * 1, height: height * 0.4 },
-  tabContent: { marginBottom: 150, overflow: 'visible' },
+  tabContent: { marginBottom: 150, overflow: 'visible', marginTop: 16 },
   notFoundContainer: {
     flex: 1,
     justifyContent: 'center',

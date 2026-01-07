@@ -1,31 +1,118 @@
 import express from "express";
-import * as paymentController from "../controller/paymentController.js";
+import * as paymentController from "../controller/payment/index.js";
 import { authenticate } from "../middleware/authenticate.js";
-import { authorizeRole } from "../middleware/authorizeRole.js";
+import { authorizeRole, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
 
 const router = express.Router();
 
-// ============= PayMongo Integration Routes =============
+// ============= UNIFIED PAYMENT WORKFLOW (RECOMMENDED) =============
+// Use these endpoints for BOTH Orders and Bookings
+// Frontend calls this single API for all payment types
 
-// Initiate payment (Tourist only)
-router.post("/initiate", authenticate, authorizeRole("Tourist"), paymentController.initiatePayment);
+// PRIMARY: Initiate payment for any resource (order or booking)
+// Body: { payment_for: 'order' | 'booking', reference_id: string, payment_method?: string }
+// Any authenticated user can initiate payment for their own order/booking
+router.post(
+  "/initiate",
+  authenticate,
+  paymentController.initiateUnifiedPayment
+);
+
+// Get payment status by Payment Intent ID (any authenticated user - controller validates ownership)
+router.get(
+  "/intent/:paymentIntentId",
+  authenticate,
+  paymentController.getUnifiedPaymentStatus
+);
+
+// Verify and fulfill payment after redirect
+// Body: { payment_for: 'order' | 'booking', reference_id: string, payment_id: string }
+router.post(
+  "/verify",
+  authenticate,
+  paymentController.verifyUnifiedPayment
+);
+
+// ============= Webhook Routes =============
 
 // Webhook endpoint (no auth, signature-based verification)
+// Handles: payment.paid, payment.failed, refund.updated
 router.post("/webhook", paymentController.handleWebhook);
 
-// Initiate refund (Admin only)
-router.post("/:id/refund", authenticate, authorizeRole("Admin"), paymentController.initiateRefund);
+// ============= Refund Routes =============
 
-// ============= Legacy Payment Routes =============
-// Add authentication and authorization to legacy routes (Phase 4)
+// Initiate refund (platform admin only - requires manage_payments permission)
+router.post(
+  "/:id/refund",
+  authenticate,
+  authorizeRole('Admin', 'Tourism Officer'),
+  authorize('manage_payments'),
+  paymentController.initiateRefund
+);
 
-router.post("/", authenticate, authorizeRole("Admin", "Business Owner", "Staff"), paymentController.insertPayment);
-router.get("/:id", authenticate, paymentController.getPaymentById); // Ownership checked in controller
-router.get("/", authenticate, authorizeRole("Admin"), paymentController.getAllPayments);
-router.delete("/:id", authenticate, authorizeRole("Admin"), paymentController.deletePayment);
-router.put("/:id", authenticate, authorizeRole("Admin"), paymentController.updatePayment);
-router.get("/payer/:payer_id", authenticate, paymentController.getPaymentByPayerId); // Should add ownership check
-router.get("/for/:payment_for_id", authenticate, paymentController.getPaymentByPaymentForId); // Should add ownership check
-router.get("/business/:business_id", authenticate, authorizeRole("Business Owner", "Staff", "Admin"), paymentController.getPaymentByBusinessId);
+// Get refund status (business access or platform admin)
+router.get(
+  "/:id/refund",
+  authenticate,
+  paymentController.getRefundStatus
+);
+
+// ============= Payment Query Routes =============
+
+// Get all payments (controller filters by access level)
+router.get(
+  "/",
+  authenticate,
+  paymentController.getAllPayments
+);
+
+// Get payment by ID (controller validates ownership/business access)
+router.get(
+  "/:id",
+  authenticate,
+  paymentController.getPaymentById
+);
+
+// Get payments by payer ID (controller validates ownership)
+router.get(
+  "/payer/:payer_id",
+  authenticate,
+  paymentController.getPaymentByPayerId
+);
+
+// Get payments by payment_for_id (order/booking/subscription ID)
+router.get(
+  "/for/:payment_for_id",
+  authenticate,
+  paymentController.getPaymentByPaymentForId
+);
+
+// Get payments by business ID
+router.get(
+  "/business/:business_id",
+  authenticate,
+  authorizeBusinessAccess('business_id'),
+  paymentController.getPaymentByBusinessId
+);
+
+// ============= Admin: Abandoned Order Cleanup =============
+
+// Manually trigger abandoned order cleanup (platform admin only)
+router.post(
+  "/admin/cleanup-abandoned",
+  authenticate,
+  authorizeRole('Admin', 'Tourism Officer'),
+  authorize('manage_payments'),
+  paymentController.triggerAbandonedOrderCleanup
+);
+
+// Get abandoned order statistics (platform admin only)
+router.get(
+  "/admin/abandoned-stats",
+  authenticate,
+  authorizeRole('Admin', 'Tourism Officer'),
+  authorize('manage_payments'),
+  paymentController.getAbandonedOrderStats
+);
 
 export default router;

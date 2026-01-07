@@ -4,6 +4,7 @@
 export async function createTouristSpotEditProcedures(knex) {
   // Submits an edit request for a tourist spot.
   // Returns: The ID of the newly created edit request
+  // Note: type_id removed - using entity_categories table instead
   await knex.raw(`
     CREATE PROCEDURE SubmitTouristSpotEditRequest(
       IN p_tourist_spot_id CHAR(36),
@@ -18,18 +19,18 @@ export async function createTouristSpotEditProcedures(knex) {
       IN p_entry_fee DECIMAL(10,2),
       IN p_spot_status ENUM('pending','active','inactive'),
       IN p_is_featured BOOLEAN,
-      IN p_type_id INT
+      IN p_submitted_by CHAR(36)
     )
     BEGIN
       SET @editId = UUID();
       INSERT INTO tourist_spot_edits (
         id, tourist_spot_id, name, description, barangay_id,
         latitude, longitude, contact_phone, contact_email, website, entry_fee,
-        spot_status, is_featured, type_id, approval_status
+        spot_status, is_featured, approval_status, submitted_by
       ) VALUES (
         @editId, p_tourist_spot_id, p_name, p_description, p_barangay_id,
         p_latitude, p_longitude, p_contact_phone, p_contact_email, p_website, p_entry_fee,
-        p_spot_status, p_is_featured, p_type_id, 'pending'
+        p_spot_status, p_is_featured, 'pending', p_submitted_by
       );
       SELECT @editId AS id;
     END;

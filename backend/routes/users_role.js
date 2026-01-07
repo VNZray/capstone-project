@@ -11,7 +11,4 @@ router.post("/", userController.insertUserRole);
 router.put("/:id", userController.updateUserRole);
 router.put("/role", userController.updateUserRoleByName);
 
-// Login
-router.post("/login", userController.loginUser);
-
 export default router;

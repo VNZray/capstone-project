@@ -1,24 +1,48 @@
 import jwt from 'jsonwebtoken';
 
-// Authentication middleware: verifies JWT and attaches req.user
+// SECURITY: JWT secrets MUST be set via environment variables. No fallbacks.
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+if (!JWT_ACCESS_SECRET) {
+  throw new Error('CRITICAL: JWT_ACCESS_SECRET environment variable is not set. Authentication cannot function securely.');
+}
+
 export function authenticate(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  
+  if (!authHeader) {
+    console.error('[authenticate] No authorization header');
+    return res.status(401).json({ message: 'Authorization header required' });
+  }
+
+  if (!authHeader.startsWith('Bearer ')) {
+    console.error('[authenticate] Invalid token format:', authHeader.substring(0, 20));
+    return res.status(401).json({ message: 'Invalid token format (Bearer required)' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
   try {
-    const auth = req.headers['authorization'] || '';
-    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-    if (!token) {
-      return res.status(401).json({ message: 'Missing Bearer token' });
-    }
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    // Attach minimal user context
+    // SECURITY: Explicitly pin algorithm to prevent algorithm confusion attacks
+    const payload = jwt.verify(token, JWT_ACCESS_SECRET, {
+      algorithms: ['HS256'],
+    });
+    
+    console.log('[authenticate] Token verified for user:', payload.id, 'role:', payload.role);
+    
     req.user = {
       id: payload.id,
-      user_role_id: payload.user_role_id ?? null,
-      email: payload.email ?? null,
-      // Some clients embed role/role_name directly in the token; pass through if present
-      role: payload.role || payload.role_name || null,
+      email: payload.email,
+      user_role_id: payload.role, // Mapped from 'role' in token
+      role: payload.role,
     };
-    return next();
+
+    next();
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid or expired token' });
+    if (err.name === 'TokenExpiredError') {
+      console.error('[authenticate] Token expired for request');
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    console.error('[authenticate] Invalid token:', err.message);
+    return res.status(403).json({ message: 'Invalid token' });
   }
 }

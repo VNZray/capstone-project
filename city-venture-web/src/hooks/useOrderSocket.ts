@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/src/context/AuthContext';
+import { getAccessToken } from '@/src/services/apiClient';
 import type { Order } from '@/src/types/Order';
 
 interface OrderSocketCallbacks {
@@ -48,11 +49,11 @@ export const useOrderSocket = (businessId: string | null, callbacks: OrderSocket
     console.log('[useOrderSocket] Connecting to Socket.IO:', socketUrl);
     console.log('[useOrderSocket] Business ID:', businessId);
 
-    // Get token from localStorage or sessionStorage
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    // Get access token from the new auth system (in-memory token)
+    const token = getAccessToken();
     
     if (!token) {
-      console.warn('[useOrderSocket] No auth token found, socket may fail to authenticate');
+      console.warn('[useOrderSocket] No access token available, socket may fail to authenticate');
     }
 
     // Initialize socket connection

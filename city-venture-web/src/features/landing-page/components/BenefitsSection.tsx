@@ -4,14 +4,44 @@ import Typography from "@/src/components/Typography";
 import { FaMapMarkerAlt, FaStore, FaBed } from "react-icons/fa";
 import { Chip, Grid } from "@mui/joy";
 import { colors } from "@/src/utils/Colors";
+import Section from "@/src/components/ui/Section";
+import { DetailsOutlined } from "@mui/icons-material";
 
 const BenefitsSection: React.FC = () => {
   return (
-    <section id="about" style={{ scrollMarginTop: 80, padding: 16 }}>
-      <Container padding="0" align="center" style={{ margin: "60px 0" }}>
-        <Chip size="lg" color="primary">
-          About
-        </Chip>
+    <Section
+      height="auto"
+      id="about"
+      padding="90px 0"
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        background: "linear-gradient(180deg, #FAFBFC 0%, #F0F4F8 100%)",
+      }}
+    >
+      <Container padding="0" align="center">
+        <Container
+          padding="10px 20px"
+          radius="999px"
+          direction="row"
+          style={{
+            background:
+              "linear-gradient(135deg, #FF6B6B15, #FF914D15, #28C76F15)",
+            border: "1px solid #FF914D30",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            alignSelf: "center",
+          }}
+        >
+          <DetailsOutlined fontSize="small" color="warning" />
+          <Typography.Label
+            size="xs"
+            sx={{ color: "#FF914D", letterSpacing: 1.5 }}
+          >
+            DISCOVER NAGA
+          </Typography.Label>
+        </Container>
 
         <Typography.Header
           size="md"
@@ -43,7 +73,7 @@ const BenefitsSection: React.FC = () => {
             <Container hover gap="8px" direction="row" elevation={2}>
               <Container padding="0" align="center" justify="center">
                 <Container background={colors.primary} padding="16px">
-                  <FaMapMarkerAlt size={24} />
+                  <FaMapMarkerAlt color="white" size={24} />
                 </Container>
               </Container>
 
@@ -62,7 +92,7 @@ const BenefitsSection: React.FC = () => {
             <Container hover gap="8px" direction="row" elevation={2}>
               <Container padding="0" align="center" justify="center">
                 <Container background={colors.primary} padding="16px">
-                  <FaStore size={24} />
+                  <FaStore color="white" size={24} />
                 </Container>
               </Container>
 
@@ -80,7 +110,7 @@ const BenefitsSection: React.FC = () => {
             <Container hover gap="8px" direction="row" elevation={2}>
               <Container padding="0" align="center" justify="center">
                 <Container background={colors.primary} padding="16px">
-                  <FaBed size={24} />
+                  <FaBed color="white" size={24} />
                 </Container>
               </Container>
 
@@ -96,7 +126,7 @@ const BenefitsSection: React.FC = () => {
           </Grid>
         </Grid>
       </Container>
-    </section>
+    </Section>
   );
 };
 

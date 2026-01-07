@@ -1,3 +1,5 @@
+import type { EntityCategory } from './Category';
+
 export interface TouristSpot {
   id: string;
   name: string;
@@ -11,17 +13,18 @@ export interface TouristSpot {
   contact_email: string | null;
   website: string | null;
   entry_fee: number | null;
-  spot_status: 'pending' | 'active' | 'inactive';
+  spot_status: 'pending' | 'active' | 'inactive' | 'rejected' | 'pending_deletion';
+  submitted_by?: string;
+  deletion_requested_by?: string;
   is_featured: boolean;
-  categories: Category[];
-  type: string;
-  type_id: number;
+  categories: EntityCategory[];
   created_at: string;
   updated_at: string;
   province: string;
   municipality: string;
   barangay: string;
   images?: TouristSpotImage[];
+  rejection_reason?: string;
 }
 
 export interface Province {
@@ -41,16 +44,6 @@ export interface Barangay {
   municipality_id: number;
 }
 
-export interface Category {
-  id: number;
-  category: string;
-}
-
-export interface Type {
-  id: number;
-  type: string;
-  category_id: number;
-}
 
 export interface TouristSpotSchedule {
   id?: string;
@@ -74,14 +67,14 @@ export interface TouristSpotFormData {
   website: string;
   entry_fee: string;
   category_ids: number[];
-  type_id: string;
-  spot_status: "" | "pending" | "active" | "inactive";
+  spot_status: "" | "pending" | "active" | "inactive" | "rejected" | "pending_deletion";
   is_featured: boolean;
 }
 
 export interface FormOption {
   id: number;
   label: string;
+  group?: string;
 }
 
 export interface DaySchedule {

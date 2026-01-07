@@ -1,53 +1,35 @@
-import FeaturedShopCard from '@/components/shops/FeaturedShopCard';
-import ShopListCard from '@/components/shops/ShopListCard';
-import ShopCategoryChip from '@/components/shops/ShopCategoryChip';
-import SpecialOfferCard from '@/components/shops/SpecialOfferCard';
-import SearchBar from '@/components/SearchBar';
-import PageContainer from '@/components/PageContainer';
 import Container from '@/components/Container';
+import PageContainer from '@/components/PageContainer';
+import SearchBar from '@/components/SearchBar';
+import FeaturedShopCard from '@/components/shops/FeaturedShopCard';
+import Chip from '@/components/Chip';
+import ShopListCard from '@/components/shops/ShopListCard';
 import { ThemedText } from '@/components/themed-text';
-import { background, colors } from '@/constants/color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { SHOP_CATEGORIES } from '@/constants/ShopCategories';
+import { ShopColors } from '@/constants/color';
+import { fetchAllBusinessDetails } from '@/services/BusinessService';
+import type { Business } from '@/types/Business';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useRouter } from 'expo-router';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
-  FlatList,
-  NativeSyntheticEvent,
+  ActivityIndicator,
   NativeScrollEvent,
+  NativeSyntheticEvent,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
-  RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { fetchAllBusinessDetails } from '@/services/BusinessService';
-import type { Business } from '@/types/Business';
-
-// Category mapping similar to Accommodation
-const SHOP_CATEGORIES: Record<string, { label: string; icon: string }> = {
-  restaurant: { label: 'Restaurants', icon: 'utensils' },
-  cafe: { label: 'Cafés', icon: 'coffee' },
-  shopping: { label: 'Shopping', icon: 'shopping-bag' },
-  grocery: { label: 'Groceries', icon: 'shopping-basket' },
-  pharmacy: { label: 'Pharmacy', icon: 'pills' },
-  salon: { label: 'Salons', icon: 'cut' },
-  hotel: { label: 'Hotels', icon: 'hotel' },
-  entertainment: { label: 'Entertainment', icon: 'gamepad' },
-  all: { label: 'All Shops', icon: 'th-large' },
-};
-
-const SPECIAL_OFFERS_PLACEHOLDERS = [
-  require('@/assets/images/placeholder.png'),
-  require('@/assets/images/placeholder.png'),
-  require('@/assets/images/placeholder.png'),
-];
 
 const ShopDirectory = () => {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const bg = colorScheme === 'dark' ? background.dark : background.light;
-  const isDark = colorScheme === 'dark';
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,14 +37,6 @@ const ShopDirectory = () => {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
-
-  const palette = {
-    bg,
-    card: isDark ? '#1C2833' : '#FFFFFF',
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
-    subText: isDark ? '#9BA1A6' : '#6B7280',
-    border: isDark ? '#2A2F36' : '#E5E8EC',
-  };
 
   const lastScrollOffset = useRef(0);
   const atTopRef = useRef(true);
@@ -73,10 +47,13 @@ const ShopDirectory = () => {
     try {
       setError(null);
       const data = await fetchAllBusinessDetails();
-      const activeBusinesses = data.filter(
-        (b) => b.status === 'Approved' || b.status === 'Active'
+      // Filter for active businesses that have a store (products/services)
+      const storeBusinesses = data.filter(
+        (b) =>
+          (b.status === 'Approved' || b.status === 'Active') &&
+          (b.hasStore === true || b.hasStore === 1)
       );
-      setBusinesses(activeBusinesses);
+      setBusinesses(storeBusinesses);
     } catch (err: any) {
       console.error('❌ Error loading businesses:', err);
       setError(err.message || 'Failed to load businesses');
@@ -126,9 +103,10 @@ const ShopDirectory = () => {
     // Filter by search term
     if (search.trim()) {
       const term = search.toLowerCase();
-      filtered = filtered.filter((b) =>
-        b.business_name?.toLowerCase().includes(term) ||
-        b.description?.toLowerCase().includes(term)
+      filtered = filtered.filter(
+        (b) =>
+          b.business_name?.toLowerCase().includes(term) ||
+          b.description?.toLowerCase().includes(term)
       );
     }
 
@@ -136,7 +114,10 @@ const ShopDirectory = () => {
   }, [businesses, search]);
 
   // Get featured shops (first 3)
-  const featuredShops = useMemo(() => filteredShops.slice(0, 3), [filteredShops]);
+  const featuredShops = useMemo(
+    () => filteredShops.slice(0, 3),
+    [filteredShops]
+  );
 
   // Get shops for discover more section (remaining)
   const discoverMoreShops = useMemo(
@@ -158,29 +139,30 @@ const ShopDirectory = () => {
   const renderFeaturedSection = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <ThemedText type="title-small" weight="bold" style={{ color: palette.text }}>
-          Featured Shops
-        </ThemedText>
         <ThemedText
-          type="body-small"
-          style={{ color: colors.secondary, fontWeight: '600' }}
-          onPress={() => {}} // "View All" action
+          type="sub-title-extra-small"
+          weight="bold"
+          style={styles.sectionTitle}
         >
-          View All →
+          Featured Shops
         </ThemedText>
       </View>
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 12, paddingHorizontal: 0 }}
-        scrollEventThrottle={16}
+        contentContainerStyle={styles.horizontalListContent}
+        snapToInterval={300} // Approximation
+        decelerationRate="fast"
       >
         {featuredShops.length > 0 ? (
           featuredShops.map((shop) => (
             <FeaturedShopCard
               key={shop.id}
-              image={shop.business_image || require('@/assets/images/placeholder.png')}
+              image={
+                shop.business_image ||
+                require('@/assets/images/placeholder.png')
+              }
               name={shop.business_name}
               category={shop.description}
               rating={4.5}
@@ -191,7 +173,10 @@ const ShopDirectory = () => {
           ))
         ) : (
           <View style={styles.emptyPlaceholder}>
-            <ThemedText type="body-small" style={{ color: palette.subText }}>
+            <ThemedText
+              type="body-small"
+              style={{ color: ShopColors.textSecondary }}
+            >
               No featured shops available
             </ThemedText>
           </View>
@@ -200,66 +185,42 @@ const ShopDirectory = () => {
     </View>
   );
 
-  const renderSpecialOffersSection = () => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <ThemedText type="title-small" weight="bold" style={{ color: palette.text }}>
-          Special Offers
-        </ThemedText>
-        <ThemedText
-          type="body-small"
-          style={{ color: colors.secondary, fontWeight: '600' }}
-        >
-          View All →
-        </ThemedText>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 10, paddingHorizontal: 0 }}
-        scrollEventThrottle={16}
-      >
-        {SPECIAL_OFFERS_PLACEHOLDERS.map((image, idx) => (
-          <SpecialOfferCard
-            key={idx}
-            image={image}
-            onPress={() => {
-              // Handle offer tap
-            }}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
-
   const renderCategoriesSection = () => (
-    <View style={styles.section}>
-      <ThemedText type="title-small" weight="bold" style={{ color: palette.text, marginBottom: 12 }}>
-        Shop Categories
-      </ThemedText>
-
+    <View style={styles.categorySection}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8, paddingHorizontal: 0 }}
-        scrollEventThrottle={16}
+        contentContainerStyle={styles.horizontalListContent}
       >
-        {Object.entries(SHOP_CATEGORIES).map(([key, { label, icon }]) => (
-          <ShopCategoryChip
-            key={key}
-            label={label}
-            icon={icon}
-            active={activeCategory === key}
-            onPress={() => handleCategoryChange(key)}
-          />
-        ))}
+        <Chip
+          label="All"
+          variant={activeCategory === 'all' ? 'solid' : 'soft'}
+          color={activeCategory === 'all' ? 'primary' : 'neutral'}
+          size="small"
+          onPress={() => handleCategoryChange('all')}
+          style={{ marginRight: 8 }}
+        />
+        {Object.entries(SHOP_CATEGORIES)
+          .slice(0, 8)
+          .map(([key, { label, icon }]) => (
+            <Chip
+              key={key}
+              label={label}
+              startIconName={icon as any}
+              variant={activeCategory === key ? 'solid' : 'soft'}
+              color={activeCategory === key ? 'primary' : 'neutral'}
+              size="small"
+              onPress={() => handleCategoryChange(key)}
+              style={{ marginRight: 8 }}
+            />
+          ))}
       </ScrollView>
     </View>
   );
 
-  const renderDiscoverMoreItem = ({ item }: { item: Business }) => (
+  const renderDiscoverMoreItem = (item: Business) => (
     <ShopListCard
+      key={item.id}
       image={item.business_image || require('@/assets/images/placeholder.png')}
       name={item.business_name}
       category={item.description}
@@ -267,6 +228,7 @@ const ShopDirectory = () => {
       rating={4.2 + Math.random() * 0.8}
       reviews={50 + Math.floor(Math.random() * 150)}
       location={item.address}
+      tags={['Open Now', 'Popular']}
       onPress={() => handleShopPress(item)}
     />
   );
@@ -274,12 +236,19 @@ const ShopDirectory = () => {
   const renderListHeader = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <ThemedText type="title-small" weight="bold" style={{ color: palette.text }}>
+        <ThemedText
+          type="sub-title-extra-small"
+          weight="bold"
+          style={styles.sectionTitle}
+        >
           Discover More
         </ThemedText>
         {discoverMoreShops.length > 0 && (
-          <ThemedText type="body-small" style={{ color: palette.subText }}>
-            {discoverMoreShops.length} shops
+          <ThemedText
+            type="body-extra-small"
+            style={{ color: ShopColors.textSecondary }}
+          >
+            {discoverMoreShops.length} shops found
           </ThemedText>
         )}
       </View>
@@ -288,21 +257,21 @@ const ShopDirectory = () => {
 
   const renderEmpty = () => (
     <View style={styles.emptyStateContainer}>
-      <FontAwesome5 name="store" size={48} color={colors.secondary} />
+      <FontAwesome5 name="store" size={48} color={ShopColors.disabled} />
       <ThemedText
         type="title-medium"
         weight="bold"
         align="center"
-        style={{ color: palette.text, marginTop: 16 }}
+        style={{ color: ShopColors.textPrimary, marginTop: 16 }}
       >
         No Shops Found
       </ThemedText>
       <ThemedText
         type="body-small"
         align="center"
-        style={{ color: palette.subText, marginTop: 8 }}
+        style={{ color: ShopColors.textSecondary, marginTop: 8 }}
       >
-        Try adjusting your search or check back later for new shops.
+        Try adjusting your search or check back later.
       </ThemedText>
     </View>
   );
@@ -311,12 +280,12 @@ const ShopDirectory = () => {
     return (
       <PageContainer>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={ShopColors.accent} />
           <ThemedText
             type="body-medium"
-            style={{ color: palette.text, marginTop: 16 }}
+            style={{ color: ShopColors.textSecondary, marginTop: 16 }}
           >
-            Loading shops...
+            Finding the best spots...
           </ThemedText>
         </View>
       </PageContainer>
@@ -327,17 +296,21 @@ const ShopDirectory = () => {
     return (
       <PageContainer>
         <View style={styles.loadingContainer}>
-          <FontAwesome5 name="exclamation-circle" size={48} color={colors.error} />
+          <FontAwesome5
+            name="exclamation-circle"
+            size={48}
+            color={ShopColors.error}
+          />
           <ThemedText
             type="title-medium"
             weight="bold"
-            style={{ color: colors.error, marginTop: 16 }}
+            style={{ color: ShopColors.error, marginTop: 16 }}
           >
-            Error
+            Something went wrong
           </ThemedText>
           <ThemedText
             type="body-small"
-            style={{ color: palette.subText, marginTop: 8 }}
+            style={{ color: ShopColors.textSecondary, marginTop: 8 }}
           >
             {error}
           </ThemedText>
@@ -347,85 +320,120 @@ const ShopDirectory = () => {
   }
 
   return (
-    <PageContainer padding={0} gap={0} style={{ backgroundColor: bg }}>
-      {/* Main Scrollable Content (SearchBar moved into header to avoid overlap) */}
-      <FlatList
-        data={discoverMoreShops}
-        renderItem={renderDiscoverMoreItem}
-        keyExtractor={(item) => item.id || ''}
-        ListHeaderComponent={
-          <>
-            <Container gap={0} paddingHorizontal={16} paddingTop={12} paddingBottom={8} backgroundColor="transparent">
-              <SearchBar
-                shape="square"
-                containerStyle={{ flex: 1 }}
-                value={search}
-                onChangeText={(text) => setSearch(text)}
-                onSearch={() => {}}
-                placeholder="Search shops or location..."
-              />
-            </Container>
-            {renderFeaturedSection()}
-            {renderSpecialOffersSection()}
-            {renderCategoriesSection()}
-            {renderListHeader()}
-          </>
-        }
-        ListEmptyComponent={renderEmpty}
+    <PageContainer
+      padding={0}
+      gap={0}
+      style={{ backgroundColor: ShopColors.background }}
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         scrollEventThrottle={32}
         onScroll={handleScroll}
         onScrollEndDrag={handleScrollEndDrag}
+        stickyHeaderIndices={[1]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[ShopColors.accent]}
+          />
         }
-        showsVerticalScrollIndicator={false}
-      />
-
-      {/* Loading indicator for more items */}
-      {false && (
-        <View style={styles.loadMoreContainer}>
-          <ActivityIndicator size="small" color={colors.primary} />
+      >
+        {/* Header Title */}
+        <View style={{ marginTop: 8, paddingHorizontal: 16 }}>
+          <ThemedText type="header-large" style={{ fontSize: 32 }}>
+            Shops
+          </ThemedText>
         </View>
-      )}
+
+        {/* Sticky Search Bar */}
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            onSearch={() => {}}
+            placeholder="Search shops, categories..."
+            variant="plain"
+            size="md"
+            containerStyle={{
+              flex: 1,
+              backgroundColor: ShopColors.inputBackground,
+              borderRadius: 12,
+              borderWidth: 0,
+            }}
+            inputStyle={{ fontSize: 15 }}
+            enableFiltering={true}
+          />
+        </View>
+
+        {/* Content */}
+        {renderCategoriesSection()}
+        {renderFeaturedSection()}
+
+        {renderListHeader()}
+
+        {discoverMoreShops.length > 0 ? (
+          <View style={{ paddingBottom: 20 }}>
+            {discoverMoreShops.map(renderDiscoverMoreItem)}
+          </View>
+        ) : (
+          renderEmpty()
+        )}
+      </ScrollView>
     </PageContainer>
   );
 };
 
 const styles = StyleSheet.create({
   listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
     paddingBottom: 100,
-    gap: 0,
+  },
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    backgroundColor: ShopColors.background,
+    zIndex: 100,
   },
   section: {
+    marginBottom: 32,
+  },
+  categorySection: {
     marginBottom: 24,
+    marginTop: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: ShopColors.textPrimary,
+    fontSize: 20,
+    letterSpacing: -0.5,
+  },
+  horizontalListContent: {
+    paddingHorizontal: 16,
+    paddingRight: 8,
   },
   emptyPlaceholder: {
     paddingHorizontal: 16,
     paddingVertical: 32,
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
   },
   emptyStateContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 80,
+    paddingVertical: 60,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadMoreContainer: {
-    paddingVertical: 16,
     alignItems: 'center',
   },
 });

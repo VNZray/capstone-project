@@ -1,59 +1,130 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+// useNavigation is used for setOptions (header customization)
+// For navigation actions, use useRouter or usePreventDoubleNavigation hook
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from 'expo-router';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Dimensions,
   FlatList,
   Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Platform,
+  RefreshControl,
   StyleSheet,
   View,
-  RefreshControl,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  Platform,
 } from 'react-native';
 
-import Tabs from '@/components/Tabs';
-import { ThemedText } from '@/components/themed-text';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
+import placeholder from '@/assets/images/placeholder.png';
 import Container from '@/components/Container';
-import { background } from '@/constants/color';
+import { ThemedText } from '@/components/themed-text';
+import AccommodationProfileSkeleton from '@/components/skeleton/AccommodationProfileSkeleton';
+import { Colors } from '@/constants/color';
 import { useAccommodation } from '@/context/AccommodationContext';
 import { useAuth } from '@/context/AuthContext';
-import { Tab } from '@/types/Tab';
 import Details from './details';
 import Ratings from './ratings';
 import Rooms from './rooms';
-import placeholder from '@/assets/images/placeholder.png';
+import { AppHeader } from '@/components/header/AppHeader';
+import HeaderButton from '@/components/header/HeaderButton';
 import Button from '@/components/Button';
+import { AddReview } from '@/components/reviews';
+import { createReview } from '@/services/FeedbackService';
+import {
+  checkFavoriteExists,
+  addFavorite,
+  deleteFavorite,
+} from '@/services/FavoriteService';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AddReview from '@/components/reviews/AddReview';
-import FeedbackService from '@/services/FeedbackService';
-import Chip from '@/components/Chip';
+import { Tab, TabContainer } from '@/components/ui/Tabs';
+
+type TabType = 'details' | 'rooms' | 'ratings';
 
 const { width, height } = Dimensions.get('window');
 
 const AccommodationProfile = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState<string>('details');
-  const colorScheme = useColorScheme();
+  const insets = useSafeAreaInsets();
+
+  const colors = Colors.light;
   const { user } = useAuth();
   const {
     accommodationDetails,
+    loading,
     refreshAccommodation,
     refreshAllAccommodations,
   } = useAccommodation();
-  const actionLabel = activeTab === 'ratings' ? 'Write a Review' : 'Book Now';
-  const primaryIcon = activeTab === 'ratings' ? 'comment' : 'calendar-check';
+  const [favorite, setFavorite] = React.useState(false);
+  const [favoriteId, setFavoriteId] = React.useState<string | null>(null);
+  const [favoriteLoading, setFavoriteLoading] = React.useState(false);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+
   // Refresh & scroll state
   const [refreshing, setRefreshing] = useState(false);
   const lastOffset = useRef(0);
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
 
+  // Check if accommodation is favorited on mount
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!user?.id || !accommodationDetails?.id) return;
+
+      try {
+        const result = await checkFavoriteExists(
+          user.id,
+          'accommodation',
+          accommodationDetails.id
+        );
+        setFavorite(result.exists);
+        setFavoriteId(result.favoriteId);
+      } catch (error) {
+        console.error('Error checking favorite status:', error);
+      }
+    };
+
+    checkFavoriteStatus();
+  }, [user?.id, accommodationDetails?.id]);
+
+  const toggleFavorite = async () => {
+    if (!user?.id) {
+      Alert.alert('Login Required', 'Please log in to add favorites');
+      return;
+    }
+
+    if (!accommodationDetails?.id) return;
+
+    setFavoriteLoading(true);
+
+    try {
+      if (favorite && favoriteId) {
+        // Remove from favorites
+        await deleteFavorite(favoriteId);
+        setFavorite(false);
+        setFavoriteId(null);
+      } else {
+        // Add to favorites
+        const result = await addFavorite(
+          user.id,
+          'accommodation',
+          accommodationDetails.id
+        );
+        setFavorite(true);
+        setFavoriteId(result.id);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      Alert.alert('Error', 'Failed to update favorite. Please try again.');
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
     try {
       // Refresh the focused accommodation + optionally the list (safe no-op if not needed)
       await Promise.all([
@@ -81,14 +152,9 @@ const AccommodationProfile = () => {
       onRefresh();
     }
   }, [onRefresh, refreshing]);
-  const insets = useSafeAreaInsets();
+  const bg = colors.background;
 
-  const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
   const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
-  const bg = colorScheme === 'dark' ? background.dark : background.light;
 
   useEffect(() => {
     if (accommodationDetails?.business_name && accommodationDetails?.id) {
@@ -102,33 +168,43 @@ const AccommodationProfile = () => {
     accommodationDetails?.id,
   ]);
 
-  const [averageAccommodationReviews, setAverageAccommodationReviews] =
-    useState(0);
-
-  const TABS: Tab[] = [
-    { key: 'details', label: 'Details', icon: '' },
-    { key: 'rooms', label: 'Rooms', icon: '' },
-    { key: 'ratings', label: 'Ratings', icon: '' },
-  ];
-
-  const handleTabChange = (tab: Tab) => {
-    setActiveTab(tab.key);
-    console.log('Filtering for:', tab.key);
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab as TabType);
   };
 
+  // Show skeleton while fetching data
+  if (loading && !accommodationDetails) {
+    return <AccommodationProfileSkeleton />;
+  }
+
   if (!accommodationDetails) {
-    return (
-      <View style={styles.notFoundContainer}>
-        <ThemedText type="title-large">Accommodation not found.</ThemedText>
-        <ThemedText type="sub-title-large" style={{ textAlign: 'center' }}>
-          Please go back and select a valid accommodation.
-        </ThemedText>
-      </View>
-    );
+    return <AccommodationProfileSkeleton />;
   }
 
   return (
     <View style={{ flex: 1 }}>
+      <AppHeader
+        backButton
+        title={accommodationDetails?.business_name}
+        background="transparent"
+        rightComponent={
+          <Container
+            padding={0}
+            direction="row"
+            backgroundColor="transparent"
+            align="center"
+            justify="flex-end"
+            gap={8}
+          >
+            <HeaderButton
+              onPress={toggleFavorite}
+              icon={favorite ? 'heart' : 'heart-outline'}
+            />
+
+            <HeaderButton icon="share-social" />
+          </Container>
+        }
+      />
       <FlatList
         data={[]}
         keyExtractor={() => 'header'}
@@ -142,131 +218,152 @@ const AccommodationProfile = () => {
         scrollEventThrottle={32}
         ListHeaderComponent={
           <>
-            <Image
-              source={
-                accommodationDetails?.business_image
-                  ? { uri: accommodationDetails.business_image }
-                  : placeholder
-              }
-              style={styles.image}
-              resizeMode="cover"
-            />
-
-            <Container padding={16} backgroundColor={bg}>
-              <Container
-                padding={0}
-                backgroundColor="transparent"
-                direction="row"
-                justify="space-between"
+            <View style={styles.imageContainer}>
+              <Image
+                source={
+                  accommodationDetails?.business_image
+                    ? { uri: accommodationDetails.business_image }
+                    : placeholder
+                }
+                style={styles.image}
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(0, 0, 0, 0.8)']}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  width: '100%',
+                  paddingTop: 40,
+                  paddingBottom: 12,
+                  paddingHorizontal: 16,
+                }}
               >
-                <View>
-                  <Container
-                    direction="row"
-                    backgroundColor="transparent"
-                    padding={0}
-                  >
-                    <ThemedText type="card-title-medium" weight="bold">
-                      {accommodationDetails?.business_name}{' '}
-                    </ThemedText>
-                  </Container>
-                  <ThemedText type="body-small">
-                    <MaterialCommunityIcons
-                      name="map-marker"
-                      size={16}
-                      color="#FFB007"
-                    />
-                    {accommodationDetails?.address},{' '}
-                    {/* {accommodationDetails?.barangay_name},{' '}
-                    {accommodationDetails?.municipality_name} */}
-                  </ThemedText>
-                  <Chip
-                    size="small"
-                    variant="soft"
-                    color="secondary"
-                    style={{ marginTop: 8, alignItems: 'flex-start' }}
-                    label={accommodationDetails?.category}
-                    padding={0}
+                <Container
+                  direction="row"
+                  backgroundColor="transparent"
+                  padding={0}
+                  align="center"
+                  gap={4}
+                >
+                  <MaterialCommunityIcons
+                    name="map-marker"
+                    size={20}
+                    color={colors.accent}
                   />
-                </View>
-
-                <View>
-                  <ThemedText type="body-small">
-                    <MaterialCommunityIcons
-                      name="star"
-                      size={20}
-                      color="#FFB007"
-                    />
-                    {averageAccommodationReviews.toFixed(1) || '0.0'}
+                  <ThemedText
+                    type="body-small"
+                    weight="semi-bold"
+                    style={{ color: '#FFFFFF' }}
+                  >
+                    {accommodationDetails?.address}
                   </ThemedText>
-                </View>
-              </Container>
+                </Container>
+                <Container
+                  direction="row"
+                  backgroundColor="transparent"
+                  padding={0}
+                  align="center"
+                  gap={4}
+                >
+                  <MaterialCommunityIcons
+                    name="star"
+                    size={20}
+                    color={colors.accent}
+                  />
+                  <ThemedText
+                    type="body-small"
+                    weight="normal"
+                    style={{ color: '#FFFFFF' }}
+                  >
+                    {accommodationDetails.ratings} (
+                    {accommodationDetails.reviews})
+                  </ThemedText>
+                </Container>
+              </LinearGradient>
+            </View>
 
-              <Tabs tabs={TABS} onTabChange={handleTabChange} />
-            </Container>
+            <TabContainer initialTab="details" onTabChange={handleTabChange}>
+              <Tab tab="details" label="Details" />
+              <Tab tab="rooms" label="Rooms" />
+              <Tab tab="ratings" label="Ratings" />
+            </TabContainer>
 
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
               {activeTab === 'rooms' && <Rooms />}
-              {activeTab === 'ratings' && <Ratings key={ratingsRefreshKey} />}
+              {activeTab === 'ratings' && (
+                <Ratings
+                  key={ratingsRefreshKey}
+                  onRefreshRequested={() =>
+                    setRatingsRefreshKey((prev) => prev + 1)
+                  }
+                />
+              )}
             </View>
           </>
         }
       />
-      {!modalVisible &&
-        (() => {
-          const baseBottom = Platform.OS === 'ios' ? 60 : 80;
-          // Only show "Write a Review" button if user is logged in and on ratings tab
-          if (activeTab === 'ratings' && !user) {
-            return null;
-          }
-          return (
-            <View
-              style={[
-                styles.fabBar,
-                { paddingBottom: baseBottom + insets.bottom },
-              ]}
-            >
-              <Button
-                label={actionLabel}
-                fullWidth
-                startIcon={primaryIcon}
-                color="primary"
-                variant="solid"
-                onPress={() => setModalVisible(true)}
-                elevation={3}
-                style={{ flex: 1 }}
-              />
-            </View>
-          );
-        })()}
 
-      {user && (
-        <AddReview
-          visible={modalVisible}
-          onClose={() => setModalVisible(false)}
-          onSubmit={async (payload) => {
-            try {
-              await FeedbackService.createReview(payload);
-              setModalVisible(false);
-              setRatingsRefreshKey((prev) => prev + 1);
-            } catch (error) {
-              console.error('Error submitting review:', error);
-              throw error;
-            }
-          }}
-          touristId={user.id || ''}
-          reviewType="accommodation"
-          reviewTypeId={accommodationDetails?.id || ''}
-        />
+      {activeTab === 'ratings' && (
+        <View
+          style={[
+            styles.fabBar,
+            {
+              paddingBottom: (Platform.OS === 'ios' ? 60 : 80) + insets.bottom,
+            },
+          ]}
+        >
+          <Button
+            label="Leave a Review"
+            fullWidth
+            color="primary"
+            variant="solid"
+            onPress={() => setReviewModalVisible(true)}
+            elevation={3}
+            style={{ flex: 1 }}
+          />
+        </View>
       )}
+
+      <AddReview
+        visible={reviewModalVisible}
+        onClose={() => {
+          setReviewModalVisible(false);
+        }}
+        onSubmit={async (payload) => {
+          try {
+            await createReview(payload);
+
+            setReviewModalVisible(false);
+            setRatingsRefreshKey((prev) => prev + 1);
+            Alert.alert(
+              'Thank You!',
+              'Your review has been submitted successfully.'
+            );
+          } catch (error) {
+            console.error('Error submitting review:', error);
+            throw error;
+          }
+        }}
+        touristId={user?.id || ''}
+        reviewType="accommodation"
+        reviewTypeId={accommodationDetails.id || ''}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  image: {
+  imageContainer: {
+    position: 'relative',
     width: width * 1,
     height: height * 0.4,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
   },
   content: {
     padding: 16,
@@ -277,23 +374,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tabContent: {
+    paddingTop: 16,
     overflow: 'visible',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   notFoundContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    padding: 16,
-    backgroundColor: 'transparent',
-    marginBottom: 80,
   },
   fabBar: {
     position: 'absolute',
@@ -304,6 +398,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    // subtle backdrop & blur alternative (blur not added by default RN)
   },
 });
 

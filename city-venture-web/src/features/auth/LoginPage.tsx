@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./styles/LoginStyle.css";
 import { useAuth } from "@/src/context/AuthContext"; // adjust path if needed
+import { useBusiness } from "@/src/context/BusinessContext"; // Import Business Context
 import PageContainer from "@/src/components/PageContainer";
 import LoginForm from "./components/LoginForm";
 import { Divider } from "@mui/joy";
@@ -14,6 +15,7 @@ const Login: React.FC = () => {
   const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
   const { login, logout } = useAuth(); // from AuthProvider
+  const { setBusinessId } = useBusiness(); // from BusinessProvider
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState(false);
@@ -36,29 +38,23 @@ const Login: React.FC = () => {
       // Delay to show loading animation
       await new Promise((resolve) => setTimeout(resolve, 4500));
 
-      // Check if user is staff (not Business Owner) and redirect to dashboard
-      const staffRoles = [
-        "Manager",
-        "Room Manager",
-        "Receptionist",
-        "Sales Associate",
-      ];
-      const tourism = ["Admin", "Tourism Officer"];
-      const tourist = "Tourist";
-      const owner = "Business Owner";
-
+      // Route based on role name (simplified RBAC: 5 fixed roles)
       const userRole = loggedInUser.role_name || "";
+      const isStaff = userRole === 'Staff';
 
-      if (staffRoles.includes(userRole)) {
-        // Staff members go directly to business dashboard
+      if (isStaff) {
+        // Staff members: Set their assigned business_id and go to dashboard
+        if (loggedInUser.business_id) {
+          setBusinessId(loggedInUser.business_id);
+        }
         navigate("/business/dashboard");
-      } else if (userRole === tourist) {
+      } else if (userRole === "Tourist") {
         // Tourist to landing page
         navigate("/");
-      } else if (tourism.includes(userRole)) {
-        // Tourism
+      } else if (userRole === "Admin" || userRole === "Tourism Officer") {
+        // Tourism/Admin roles
         navigate("/tourism/dashboard");
-      } else if (userRole === owner) {
+      } else if (userRole === "Business Owner") {
         // Business Owners go to business listing page
         navigate("/business");
       } else {
@@ -136,7 +132,7 @@ const Login: React.FC = () => {
             onRememberMeChange={setRememberMe}
             onLogin={handleLogin}
             error={loginError}
-            forgotPasswordLink="/TouristApp/(screens)/ForgotPassword"
+            forgotPasswordLink="/forget-password"
             signUpLink="/business-registration"
             size="large"
             title="Sign In"

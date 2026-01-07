@@ -1,25 +1,16 @@
-import Container from "@/src/components/Container";
-import MapInput from "@/src/components/MapInput";
-import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
-import api from "@/src/services/api";
-import type {
-  Address,
-  Barangay,
-  Municipality,
-  Province,
-} from "@/src/types/Address";
-import type { Business } from "@/src/types/Business";
-import { Add } from "@mui/icons-material";
+import MapInput from "@/src/components/MapInput";
 import {
-  Button,
-  FormControl,
-  FormLabel,
-  Option,
-  Select,
-} from "@mui/joy";
-import axios from "axios";
+  AddressService,
+  type Barangay,
+  type Municipality,
+  type Province,
+} from "@/src/services/AddressService";
+import type { Address } from "@/src/types/Address";
+import type { Business } from "@/src/types/Business";
+import { FormControl, Input, Box, Grid, Select, Option } from "@mui/joy";
 import React from "react";
+import { colors } from "@/src/utils/Colors";
 
 type Props = {
   data: Business;
@@ -40,239 +31,183 @@ const Step3: React.FC<Props> = ({
 
   const fetchProvince = async () => {
     try {
-      const response = await axios.get(`${api}/address/provinces`);
-      if (Array.isArray(response.data)) {
-        setProvince(response.data);
-        console.log(response.data);
+      const data = await AddressService.getProvinces();
+      if (Array.isArray(data)) {
+        setProvince(data);
       }
     } catch (error) {
-      console.error("Error fetching business categories:", error);
+      console.error("Error fetching provinces:", error);
     }
   };
 
   const fetchMunicipality = async (provinceId: number) => {
     try {
-      const response = await axios.get(
-        `${api}/address/municipalities/${provinceId}`
-      );
-
-      if (Array.isArray(response.data)) {
-        setMunicipality(response.data);
-        console.log(response.data);
+      const data = await AddressService.getMunicipalities(provinceId);
+      if (Array.isArray(data)) {
+        setMunicipality(data);
       }
     } catch (error) {
-      console.error("Error fetching business types:", error);
+      console.error("Error fetching municipalities:", error);
     }
   };
 
   const fetchBarangay = async (municipalityId: number) => {
     try {
-      const response = await axios.get(
-        `${api}/address/barangays/${municipalityId}`
-      );
-
-      if (Array.isArray(response.data)) {
-        setBarangay(response.data);
-        console.log(response.data);
+      const data = await AddressService.getBarangays(municipalityId);
+      if (Array.isArray(data)) {
+        setBarangay(data);
       }
     } catch (error) {
-      console.error("Error fetching business types:", error);
+      console.error("Error fetching barangays:", error);
     }
   };
 
   React.useEffect(() => {
     fetchProvince();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
     if (addressData.province_id) {
       fetchMunicipality(addressData.province_id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressData.province_id]);
 
   React.useEffect(() => {
     if (addressData.municipality_id) {
       fetchBarangay(addressData.municipality_id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addressData.municipality_id]);
 
-  const handleGetCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude.toString();
-        const lng = position.coords.longitude.toString();
-
-        setData((prev) => ({
-          ...prev,
-          latitude: lat,
-          longitude: lng,
-        }));
-      },
-      (error) => {
-        console.error("Error getting location:", error);
-        alert(
-          "Unable to retrieve your location. Please allow location access."
-        );
-      }
-    );
-  };
-
   return (
-    <PageContainer gap={0} padding={0}>
-      <Container gap="0">
-        <Typography.CardTitle>
-          Business Address
-        </Typography.CardTitle>
-        <Typography.CardSubTitle>
-          Please provide your business information.
-        </Typography.CardSubTitle>
-      </Container>
+    <Box sx={{ mb: 4 }}>
+      <Typography.Header sx={{ mb: 1, color: colors.primary }}>
+        Business Location
+      </Typography.Header>
+      <Typography.Body sx={{ mb: 4, color: colors.gray, fontSize: "0.95rem" }}>
+        Where are you located
+      </Typography.Body>
 
-      <Container>
-        <FormControl>
-          <FormLabel>First Name</FormLabel>
-          <Select
-            size="md"
-            placeholder="-- Select a province --"
-            value={addressData.province_id?.toString() ?? ""}
-            onChange={(_e, value) => {
-              if (!value) return;
-              const province_id = Number(value);
-              setAddressData((prev) => ({
-                ...prev,
-                province_id: province_id,
-              }));
-            }}
-          >
-            <Option value="">-- Select province --</Option>
-            {province.map((province) => (
-              <Option key={province.id} value={province.id.toString()}>
-                {province.province}
-              </Option>
-            ))}
-          </Select>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <FormControl required>
+          <Typography.Label>Street Address *</Typography.Label>
+          <Input
+            placeholder="123 Main Street, Suite 100"
+            fullWidth
+            value={data.address}
+            onChange={(e) =>
+              setData((prev) => ({ ...prev, address: e.target.value }))
+            }
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+          />
         </FormControl>
 
-        <FormControl>
-          <FormLabel>Middle Name</FormLabel>
-          <Select
-            size="md"
-            placeholder="-- Select municipality --"
-            value={addressData.municipality_id?.toString() ?? ""}
-            onChange={(_e, value) => {
-              if (!value) return;
-              const municipality_id = Number(value);
-              setAddressData((prev) => ({
-                ...prev,
-                municipality_id: municipality_id,
-              }));
-            }}
-            disabled={!addressData.province_id}
-          >
-            <Option value="">-- Select municipality --</Option>
-            {municipality.map((municipality) => (
-              <Option key={municipality.id} value={municipality.id.toString()}>
-                {municipality.municipality}
-              </Option>
-            ))}
-          </Select>{" "}
-        </FormControl>
+        <Grid container spacing={2}>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>City *</Typography.Label>
+              <Select
+                placeholder="Select city"
+                value={addressData.municipality_id}
+                onChange={(_, value) => {
+                  setAddressData((prev) => ({
+                    ...prev,
+                    municipality_id: value as number,
+                  }));
+                }}
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              >
+                {municipality.map((mun) => (
+                  <Option key={mun.id} value={mun.id}>
+                    {mun.municipality}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid xs={12} md={6}>
+            <FormControl required>
+              <Typography.Label>State / Province *</Typography.Label>
+              <Select
+                placeholder="Select state..."
+                value={addressData.province_id}
+                onChange={(_, value) => {
+                  setAddressData((prev) => ({
+                    ...prev,
+                    province_id: value as number,
+                    municipality_id: 0,
+                    barangay_id: 0,
+                  }));
+                  setMunicipality([]);
+                  setBarangay([]);
+                }}
+                sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
+              >
+                {province.map((prov) => (
+                  <Option key={prov.id} value={prov.id}>
+                    {prov.province}
+                  </Option>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
 
         <FormControl>
-          <FormLabel>Last Name</FormLabel>
+          <Typography.Label>Barangay</Typography.Label>
           <Select
-            size="md"
-            placeholder="-- Select barangay --"
-            value={addressData.barangay_id?.toString() ?? ""}
-            onChange={(_e, value) => {
-              if (!value) return;
-              const barangay_id = Number(value);
+            placeholder="Select barangay"
+            value={addressData.barangay_id}
+            onChange={(_, value) => {
               setAddressData((prev) => ({
                 ...prev,
-                barangay_id: barangay_id,
+                barangay_id: value as number,
               }));
-
               setData((prev) => ({
                 ...prev,
-                barangay_id: barangay_id,
+                barangay_id: value as number,
               }));
             }}
-            disabled={!addressData.municipality_id}
+            sx={{ borderRadius: "8px", fontSize: "0.95rem" }}
           >
-            <Option value="">-- Select barangay --</Option>
-            {barangay.map((barangay) => (
-              <Option key={barangay.id} value={barangay.id.toString()}>
-                {barangay.barangay}
+            {barangay.map((brgy) => (
+              <Option key={brgy.id} value={brgy.id}>
+                {brgy.barangay}
               </Option>
             ))}
           </Select>
         </FormControl>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <Button
-            variant="soft"
-            color="primary"
-            size="md"
-            startDecorator={<Add />}
-            onClick={handleGetCurrentLocation}
+        {/* Map Input */}
+        <Box>
+          <Typography.Label>Location Pin (Google Maps)</Typography.Label>
+          <Typography.Body
+            sx={{ fontSize: "0.8rem", color: colors.gray, mb: 1 }}
+          >
+            Click on the map to set your business location
+          </Typography.Body>
+          <Box
             sx={{
+              border: `1px solid ${colors.tertiary}`,
               borderRadius: "8px",
-              fontWeight: 500,
-              mt: 1,
+              overflow: "hidden",
             }}
           >
-            Get Current Location
-          </Button>
-
-          {/* Map Section - Right Side */}
-          <div style={{ marginTop: "16px" }}>
             <MapInput
               latitude={data.latitude}
               longitude={data.longitude}
-              height={"clamp(260px, 34vh, 360px)"}
-              onChange={(lat, lng) =>
+              onChange={(lat: string, lng: string) => {
                 setData((prev) => ({
                   ...prev,
                   latitude: lat,
                   longitude: lng,
-                }))
-              }
-            />
-            {/* Coordinate readout (subtle) */}
-            <div
-              style={{
-                marginTop: 8,
-                display: "flex",
-                gap: 12,
-                color: "#6b7280",
-                fontSize: 12,
+                }));
               }}
-            >
-              <span>
-                Lat:{" "}
-                <span style={{ color: "#111827", fontWeight: 600 }}>
-                  {data.latitude || "-"}
-                </span>
-              </span>
-              <span>
-                Lng:{" "}
-                <span style={{ color: "#111827", fontWeight: 600 }}>
-                  {data.longitude || "-"}
-                </span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </Container>
-    </PageContainer>
+              height={600}
+            />
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

@@ -1,15 +1,26 @@
 async function createOrderProcedures(knex) {
   // ==================== ORDERS ====================
-  
-  // Get all orders with business and user info
+  // NOTE: Payment info is now fetched from the payment table via LEFT JOIN
+  // Payment table is the single source of truth for payment status and PayMongo references
+
+  // Get all orders with business, user, and payment info
   await knex.raw(`
     CREATE PROCEDURE GetAllOrders()
     BEGIN
-      SELECT o.*, b.business_name, u.email as user_email, d.name as discount_name
+      SELECT o.*, 
+        b.business_name, 
+        u.email as user_email, 
+        d.name as discount_name,
+        -- Payment info from payment table (single source of truth)
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id,
+        p.payment_intent_id as paymongo_payment_intent_id
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN user u ON o.user_id = u.id 
       LEFT JOIN discount d ON o.discount_id = d.id 
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       ORDER BY o.created_at DESC;
     END;
   `);
@@ -19,15 +30,23 @@ async function createOrderProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetOrdersByBusinessId(IN p_businessId CHAR(64))
     BEGIN
-      SELECT o.*, u.email as user_email, d.name as discount_name,
-        COUNT(oi.id) as item_count
+      SELECT o.*, 
+        u.email as user_email, 
+        d.name as discount_name,
+        COUNT(DISTINCT oi.id) as item_count,
+        -- Payment info from payment table (single source of truth)
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id,
+        p.payment_intent_id as paymongo_payment_intent_id
       FROM \`order\` o 
       LEFT JOIN user u ON o.user_id = u.id 
       LEFT JOIN discount d ON o.discount_id = d.id 
       LEFT JOIN order_item oi ON o.id = oi.order_id
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.business_id = p_businessId
-        -- Hide PayMongo orders until payment is confirmed
-        AND (o.payment_method = 'cash_on_pickup' OR o.payment_status = 'paid')
+        -- Hide PayMongo orders until payment is confirmed (check payment table)
+        AND (p.payment_method = 'cash_on_pickup' OR p.status = 'paid')
       GROUP BY o.id
       ORDER BY o.created_at DESC;
     END;
@@ -37,12 +56,20 @@ async function createOrderProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetOrdersByUserId(IN p_userId CHAR(64))
     BEGIN
-      SELECT o.*, b.business_name, d.name as discount_name,
-        COUNT(oi.id) as item_count
+      SELECT o.*, 
+        b.business_name, 
+        d.name as discount_name,
+        COUNT(DISTINCT oi.id) as item_count,
+        -- Payment info from payment table (single source of truth)
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id,
+        p.payment_intent_id as paymongo_payment_intent_id
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN discount d ON o.discount_id = d.id 
       LEFT JOIN order_item oi ON o.id = oi.order_id
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.user_id = p_userId
       GROUP BY o.id
       ORDER BY o.created_at DESC;
@@ -53,12 +80,25 @@ async function createOrderProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetOrderById(IN p_orderId CHAR(64))
     BEGIN
-      -- Get order details
-      SELECT o.*, b.business_name, b.phone_number as business_phone, u.email as user_email, d.name as discount_name
+      -- Get order details with payment info
+      SELECT o.*, 
+        b.business_name, 
+        b.phone_number as business_phone, 
+        u.email as user_email, 
+        d.name as discount_name,
+        -- Payment info from payment table (single source of truth)
+        p.id as payment_id,
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id,
+        p.payment_intent_id as paymongo_payment_intent_id,
+        p.refund_reference as paymongo_refund_id,
+        p.metadata as payment_metadata
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN user u ON o.user_id = u.id 
       LEFT JOIN discount d ON o.discount_id = d.id 
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.id = p_orderId;
       
       -- Get order items
@@ -70,6 +110,7 @@ async function createOrderProcedures(knex) {
   `);
 
   // Insert order with items (complex transaction)
+  // NOTE: Payment info (payment_method) is stored in the payment table
   await knex.raw(`
     CREATE PROCEDURE InsertOrder(
       IN p_id CHAR(64),
@@ -81,21 +122,18 @@ async function createOrderProcedures(knex) {
       IN p_tax_amount DECIMAL(10,2),
       IN p_total_amount DECIMAL(10,2),
       IN p_discount_id CHAR(64),
-      IN p_pickup_datetime TIMESTAMP,
+      IN p_pickup_datetime DATETIME,
       IN p_special_instructions TEXT,
-      IN p_payment_method ENUM('cash_on_pickup', 'paymongo'),
-      IN p_payment_method_type VARCHAR(50),
       IN p_arrival_code VARCHAR(10)
     )
     BEGIN
       INSERT INTO \`order\` (
         id, business_id, user_id, order_number, subtotal, discount_amount, tax_amount, 
-        total_amount, discount_id, pickup_datetime, special_instructions, payment_method,
-        payment_method_type, arrival_code
+        total_amount, discount_id, pickup_datetime, special_instructions, arrival_code
       ) VALUES (
         p_id, p_business_id, p_user_id, p_order_number, p_subtotal, p_discount_amount, 
         p_tax_amount, p_total_amount, p_discount_id, p_pickup_datetime, p_special_instructions, 
-        IFNULL(p_payment_method, 'cash_on_pickup'), p_payment_method_type, p_arrival_code
+        p_arrival_code
       );
       
       SELECT o.*, b.business_name, u.email as user_email, d.name as discount_name
@@ -127,7 +165,7 @@ async function createOrderProcedures(knex) {
     END;
   `);
 
-  // Update stock for order item
+  // Update stock for order item with row-level locking to prevent race conditions
   await knex.raw(`
     CREATE PROCEDURE UpdateStockForOrder(
       IN p_product_id CHAR(64),
@@ -140,21 +178,31 @@ async function createOrderProcedures(knex) {
       DECLARE current_stock_val INT DEFAULT 0;
       DECLARE new_stock_val INT DEFAULT 0;
       
-      SELECT current_stock INTO current_stock_val FROM product_stock WHERE product_id = p_product_id;
+      -- Use SELECT FOR UPDATE to lock the row and prevent concurrent modifications
+      -- This ensures atomic read-check-update operation
+      SELECT current_stock INTO current_stock_val 
+      FROM product_stock 
+      WHERE product_id = p_product_id 
+      FOR UPDATE;
+      
       SET new_stock_val = current_stock_val - p_quantity;
       
+      -- Double-check stock availability with locked row
       IF new_stock_val < 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock for this product';
       END IF;
       
+      -- Update stock atomically while holding the lock
       UPDATE product_stock SET 
         current_stock = new_stock_val,
         updated_at = NOW()
       WHERE product_id = p_product_id;
       
+      -- Record stock history
       INSERT INTO stock_history (id, product_id, change_type, quantity_change, previous_stock, new_stock, notes, created_by)
       VALUES (p_history_id, p_product_id, 'sale', -p_quantity, current_stock_val, new_stock_val, CONCAT('Order: ', p_order_number), p_user_id);
       
+      -- Update product status based on remaining stock
       UPDATE product SET status = IF(new_stock_val = 0, 'out_of_stock', 'active') WHERE id = p_product_id;
     END;
   `);
@@ -176,27 +224,45 @@ async function createOrderProcedures(knex) {
         cancelled_at = CASE WHEN p_status IN ('cancelled_by_user', 'cancelled_by_business') THEN NOW() ELSE cancelled_at END
       WHERE id = p_orderId;
       
-      SELECT o.*, b.business_name, u.email as user_email
+      SELECT o.*, 
+        b.business_name, 
+        u.email as user_email,
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN user u ON o.user_id = u.id 
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.id = p_orderId;
     END;
   `);
 
-  // Update payment status
+  // Update payment status in payment table (single source of truth)
+  // NOTE: This updates the payment table, not the order table
   await knex.raw(`
     CREATE PROCEDURE UpdatePaymentStatus(
       IN p_orderId CHAR(64),
       IN p_payment_status ENUM('pending', 'paid', 'failed', 'refunded')
     )
     BEGIN
-      UPDATE \`order\` SET payment_status = p_payment_status, updated_at = NOW() WHERE id = p_orderId;
+      -- Update payment table (single source of truth for payment status)
+      UPDATE payment 
+      SET status = p_payment_status, 
+          updated_at = NOW() 
+      WHERE payment_for = 'order' AND payment_for_id = p_orderId;
       
-      SELECT o.*, b.business_name, u.email as user_email
+      -- Return order with updated payment info
+      SELECT o.*, 
+        b.business_name, 
+        u.email as user_email,
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN user u ON o.user_id = u.id 
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.id = p_orderId;
     END;
   `);
@@ -248,11 +314,10 @@ async function createOrderProcedures(knex) {
       END LOOP;
       CLOSE order_items_cursor;
       
-      -- Restore discount usage if applicable
-      UPDATE discount d
-      JOIN \`order\` o ON d.id = o.discount_id 
-      SET d.current_usage_count = GREATEST(0, d.current_usage_count - 1)
-      WHERE o.id = p_orderId AND o.discount_amount > 0;
+      -- Note: Discount usage restoration removed
+      -- The discount table no longer has current_usage_count column (simplified MVP schema).
+      -- Per-product discount stock is tracked in discount_product.current_stock_used.
+      -- TODO: If needed, implement per-product discount stock restoration
       
       -- Update order with cancellation details
       UPDATE \`order\` SET 
@@ -267,10 +332,27 @@ async function createOrderProcedures(knex) {
         updated_at = NOW() 
       WHERE id = p_orderId;
       
-      SELECT o.*, b.business_name, u.email as user_email
+      -- Update payment status to failed when order is cancelled and payment is pending
+      -- If payment is 'pending' and order is cancelled (by any party), mark payment as 'failed'
+      -- If payment is 'paid', leave as-is (refund handled separately in controller)
+      UPDATE payment 
+      SET status = CASE 
+          WHEN status = 'pending' THEN 'failed'
+          ELSE status
+        END,
+          updated_at = NOW()
+      WHERE payment_for = 'order' AND payment_for_id = p_orderId;
+      
+      SELECT o.*, 
+        b.business_name, 
+        u.email as user_email,
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN user u ON o.user_id = u.id 
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.id = p_orderId;
     END;
   `);
@@ -334,9 +416,16 @@ async function createOrderProcedures(knex) {
       IN p_arrivalCode VARCHAR(10)
     )
     BEGIN
-      SELECT o.*, u.first_name, u.last_name, u.phone_number as user_phone
+      SELECT o.*, 
+        u.first_name, 
+        u.last_name, 
+        u.phone_number as user_phone,
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id
       FROM \`order\` o
       LEFT JOIN user u ON o.user_id = u.id
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.business_id = p_businessId 
         AND o.arrival_code = p_arrivalCode
         AND o.status IN ('accepted', 'preparing', 'ready_for_pickup');
@@ -352,10 +441,16 @@ async function createOrderProcedures(knex) {
           updated_at = NOW()
       WHERE id = p_orderId;
       
-      SELECT o.*, b.business_name, u.email as user_email
+      SELECT o.*, 
+        b.business_name, 
+        u.email as user_email,
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN user u ON o.user_id = u.id 
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.id = p_orderId;
     END;
   `);
@@ -370,10 +465,16 @@ async function createOrderProcedures(knex) {
           updated_at = NOW()
       WHERE id = p_orderId;
       
-      SELECT o.*, b.business_name, u.email as user_email
+      SELECT o.*, 
+        b.business_name, 
+        u.email as user_email,
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN user u ON o.user_id = u.id 
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.id = p_orderId;
     END;
   `);
@@ -388,10 +489,16 @@ async function createOrderProcedures(knex) {
           updated_at = NOW()
       WHERE id = p_orderId;
       
-      SELECT o.*, b.business_name, u.email as user_email
+      SELECT o.*, 
+        b.business_name, 
+        u.email as user_email,
+        p.status as payment_status,
+        p.payment_method,
+        p.paymongo_payment_id
       FROM \`order\` o 
       LEFT JOIN business b ON o.business_id = b.id 
       LEFT JOIN user u ON o.user_id = u.id 
+      LEFT JOIN payment p ON p.payment_for = 'order' AND p.payment_for_id = o.id
       WHERE o.id = p_orderId;
     END;
   `);

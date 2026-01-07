@@ -1,21 +1,18 @@
-import React, { useEffect, useRef } from "react";
-import {
-  Modal,
-  ModalDialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
-  Typography as JoyTypography,
-  Stack,
-  Divider,
-  Sheet,
-  Box,
-} from "@mui/joy";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import "@/src/features/admin/approval/styles/ViewModal.css";
-import Button from "@/src/components/Button";
+import React, { useEffect, useState } from "react";
+import { Box, Grid, CircularProgress, Chip } from "@mui/joy";
+import DescriptionIcon from "@mui/icons-material/Description";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import PersonIcon from "@mui/icons-material/Person";
+import EventIcon from "@mui/icons-material/Event";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import BaseModal from "@/src/components/BaseModal";
 import Typography from "@/src/components/Typography";
+import Button from "@/src/components/Button";
+import { colors } from "@/src/utils/Colors";
+import placeholderImage from "@/src/assets/images/placeholder-image.png";
+import { getPermitsByBusiness } from "@/src/services/approval/PermitService";
+import type { Permit } from "@/src/types/Permit";
 
 interface ViewModalProps {
   isOpen: boolean;
@@ -34,823 +31,506 @@ const ViewModal: React.FC<ViewModalProps> = ({
   onReject,
   processingId,
 }) => {
-  const modalRef = useRef<HTMLDivElement | null>(null);
+  const [permits, setPermits] = useState<Permit[] | null>(null);
+  const [loadingPermits, setLoadingPermits] = useState(false);
 
+  // Fetch permits for businesses
   useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    setTimeout(() => modalRef.current?.focus(), 0);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [isOpen, onClose]);
+    const entityType = String((item as any)?.entityType || "").toLowerCase();
+    const businessId = String((item as any)?.id || "");
+    if (!isOpen || !item || entityType !== "businesses" || !businessId) {
+      setPermits(null);
+      return;
+    }
+    (async () => {
+      try {
+        setLoadingPermits(true);
+        const data = await getPermitsByBusiness(businessId);
+        setPermits(data || []);
+      } catch (e) {
+        console.error("Error fetching permits:", e);
+        setPermits([]);
+      } finally {
+        setLoadingPermits(false);
+      }
+    })();
+  }, [isOpen, item]);
 
   if (!isOpen || !item) return null;
 
-  const existingSpot =
-    (item.existingSpot as Record<string, unknown> | undefined) ?? null;
-
-  // canonical list removed in favor of sectioned layout
-
-  // extra fallbacks per logical field name
-  const FALLBACK_KEYS: Record<string, string[]> = {
-    category_id: ["category", "category_name", "category_id"],
-    contact_email: ["contact_email", "email"],
-    latitude: ["latitude", "lat"],
-    longitude: ["longitude", "lng", "lon", "long"],
-    contact_phone: ["contact_phone", "phone", "mobile", "contact"],
-  };
-
-  const resolveField = (
-    rec: Record<string, unknown> | null | undefined,
-    field: string
-  ) => {
-    if (!rec) return null;
-    const fallbacks = FALLBACK_KEYS[field] ?? [];
-    // For category_id prefer human-readable fallbacks before the numeric id
-    if (field === "category_id") {
-      for (const k of fallbacks) {
-        if (rec[k] != null) return rec[k];
-      }
-      if (rec[field] != null) return rec[field];
-      return null;
-    }
-
-    // default: direct hit first, then fallbacks
-    if (rec[field] != null) return rec[field];
-    for (const k of fallbacks) {
-      if (rec[k] != null) return rec[k];
-    }
-    return null;
-  };
-
-  // improved getters that use fallbacks
-  const getCurrent = (field: string) => {
-    const fromExisting = resolveField(existingSpot ?? null, field);
-    if (fromExisting != null) return fromExisting;
-    const asRecord = item as Record<string, unknown>;
-    const origKey = `original_${field}`;
-    if (asRecord[origKey] != null) return asRecord[origKey];
-    return resolveField(asRecord, field);
-  };
-
-  const getProposed = (field: string) => {
-    const asRecord = item as Record<string, unknown>;
-    const direct = resolveField(asRecord, field) ?? asRecord[field];
-    if (direct != null) return direct;
-    const alt = asRecord[`new_${field}`] ?? asRecord[`${field}_id`];
-    if (alt != null) return alt;
-    return null;
-  };
-
-  const normalize = (field: string, v: unknown) => {
-    if (v == null) return "";
-    if (field === "entry_fee") {
-      const n = Number(String(v));
-      return isNaN(n) ? "" : String(n);
-    }
-    if (field.toLowerCase().includes("phone"))
-      return String(v).replace(/\D/g, "");
-    if (
-      field === "latitude" ||
-      field === "longitude" ||
-      field === "lat" ||
-      field === "lng"
-    ) {
-      const n = Number(String(v));
-      if (isNaN(n)) return "";
-      // round to 6 decimals for comparison tolerance
-      return n.toFixed(6);
-    }
-    return String(v).trim().toLowerCase();
-  };
-
-  const isEdit = (item.action_type as string) === "edit";
-  const formatValue = (field: string, v: unknown) => {
-    if (v == null || v === "") return "-";
-    if (field === "entry_fee") return `₱${String(v)}`;
-    if (field === "created_at" || field === "submitted_at") {
-      const d = new Date(String(v));
-      return isNaN(d.getTime()) ? String(v) : d.toLocaleString();
-    }
-    if (field.toLowerCase().includes("phone"))
-      return String(v).replace(/\D/g, "");
-    return String(v);
-  };
-
   const id = String(item.id ?? "");
+  const name = String(item.name ?? item.business_name ?? "Untitled");
+  const description = String(item.description ?? "No description available");
+  const entityType = String(item.entityType ?? "").toLowerCase();
+
+  // Helper to safely get string value
+  const getString = (key: string, fallback = "-") => {
+    const val = (item as any)[key];
+    return val != null && val !== "" ? String(val) : fallback;
+  };
+
+  // Get image
+  const getImage = () => {
+    if (entityType === "businesses") {
+      return (item as any).business_image || placeholderImage;
+    }
+    if (entityType === "tourist_spots") {
+      const images = (item as any).images;
+      if (Array.isArray(images) && images.length > 0) {
+        const primary = images.find(
+          (img: any) => img.is_primary || img.isPrimary
+        );
+        return (
+          primary?.file_url ||
+          primary?.url ||
+          images[0]?.file_url ||
+          images[0]?.url ||
+          placeholderImage
+        );
+      }
+      return (
+        (item as any).primary_image ||
+        (item as any).image_url ||
+        placeholderImage
+      );
+    }
+    return placeholderImage;
+  };
+
+  const image = getImage();
+
+  // Get category
+  const getCategory = () => {
+    if (entityType === "businesses") {
+      return getString("business_category_name");
+    }
+    if (entityType === "tourist_spots") {
+      const categories = (item as any).categories;
+      if (Array.isArray(categories) && categories.length > 0) {
+        return categories[0].category || "-";
+      }
+    }
+    if (entityType === "events") {
+      return getString("category", "Food & Culture");
+    }
+    return "-";
+  };
+
+  const category = getCategory();
+
+  // Get type
+  const getType = () => {
+    if (entityType === "businesses") return "Business";
+    if (entityType === "tourist_spots") return "Tourist Spot";
+    if (entityType === "events") return "Event";
+    return getString("type", "-");
+  };
+
+  const type = getType();
+
+  // Get status
+  const status = getString("status", "pending");
+
+  // Get location
+  const getLocation = () => {
+    const address = getString("address");
+    if (address !== "-") return address;
+
+    const parts = [
+      getString("street_address", ""),
+      getString("barangay_name", getString("barangay", "")),
+      getString("municipality_name", getString("municipality", "")),
+      getString("province_name", getString("province", "")),
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(", ") : "-";
+  };
+
+  const location = getLocation();
+
+  // Get coordinates
+  const latitude = getString("latitude");
+  const longitude = getString("longitude");
+  const coordinates =
+    latitude !== "-" && longitude !== "-" ? `${latitude}, ${longitude}` : "-";
+
+  // Get submitter info
+  const submitterName = getString(
+    "submitted_by",
+    getString("owner_name", "Unknown")
+  );
+  const submitterEmail = getString("contact_email", getString("email", "-"));
+  const submitterPhone = getString("contact_phone", getString("phone", "-"));
+  const submittedDate = (() => {
+    const date = (item as any).submitted_at || (item as any).created_at;
+    if (!date) return "-";
+    try {
+      return new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return String(date);
+    }
+  })();
+
+  // Event specific details
+  const startDate = (() => {
+    const date = getString("start_date");
+    if (date === "-") return "-";
+    try {
+      return new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return date;
+    }
+  })();
+
+  const endDate = (() => {
+    const date = getString("end_date");
+    if (date === "-") return "-";
+    try {
+      return new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return date;
+    }
+  })();
+
+  const entryFee = getString("entry_fee", "Free");
+  const expectedAttendees = getString(
+    "expected_attendees",
+    getString("capacity", "-")
+  );
 
   const handleApproveClick = () => {
     if (!id) return;
     onApprove?.(id);
-    onClose();
   };
 
   const handleRejectClick = () => {
     if (!id) return;
     onReject?.(id);
-    onClose();
   };
 
-  return (
-    <Modal open={isOpen} onClose={onClose}>
-      <ModalDialog
-        variant="outlined"
-        size="lg"
-        aria-label={
-          isEdit
-            ? `Edit Request: ${String(item.name ?? "")}`
-            : String(item.name ?? "")
-        }
+  const InfoField = ({
+    label,
+    value,
+  }: {
+    label: string;
+    value: string | React.ReactNode;
+  }) => (
+    <Box sx={{ marginBottom: "clamp(0.75rem, 2vw, 1rem)" }}>
+      <Typography.Label
+        size="xs"
+        sx={{ opacity: 0.7, marginBottom: "4px", display: "block" }}
+      >
+        {label}
+      </Typography.Label>
+      <Typography.Body size="sm">{value}</Typography.Body>
+    </Box>
+  );
+
+  const SectionHeader = ({
+    icon,
+    title,
+  }: {
+    icon: React.ReactNode;
+    title: string;
+  }) => (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1,
+        marginBottom: "clamp(0.75rem, 2vw, 1rem)",
+        paddingBottom: "0.5rem",
+        borderBottom: `2px solid ${colors.primary}20`,
+      }}
+    >
+      <Box
         sx={{
-          width: "95%",
-          maxWidth: 1400,
-          borderRadius: "lg",
-          boxShadow: "lg",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "24px",
+          height: "24px",
+          borderRadius: "6px",
+          backgroundColor: colors.primary + "20",
+          color: colors.primary,
+          fontSize: "1rem",
         }}
       >
-        <DialogTitle>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-            sx={{
-              width: "100%",
-              pb: 1,
-              borderBottom: "1px solid",
-              borderColor: "divider",
-            }}
-          >
-            <Stack spacing={0.5}>
-              <Typography.Header size="md" color="primary">
-                {isEdit
-                  ? `Edit Request: ${String(item.name ?? "")}`
-                  : String(item.name ?? "")}
-              </Typography.Header>
-              <Typography.Body size="xs" color="default">
-                {isEdit ? "Review proposed changes" : "Tourist spot details"}
+        {icon}
+      </Box>
+      <Typography.CardTitle size="sm">{title}</Typography.CardTitle>
+    </Box>
+  );
+
+  return (
+    <BaseModal
+      open={isOpen}
+      onClose={onClose}
+      title="Review Submission"
+      description="Carefully review all details before approving"
+      size="md"
+      actions={[
+        {
+          label: "Cancel",
+          onClick: onClose,
+          variant: "soft",
+          colorScheme: "primary",
+        },
+        {
+          label: "Reject",
+          onClick: handleRejectClick,
+          variant: "solid",
+          colorScheme: "error",
+          disabled: !onReject || (processingId != null && processingId === id),
+        },
+        {
+          label: "Approve",
+          onClick: handleApproveClick,
+          variant: "solid",
+          colorScheme: "success",
+          disabled: !onApprove || (processingId != null && processingId === id),
+        },
+      ]}
+    >
+      {/* Image Section */}
+      <Box
+        sx={{
+          width: "100%",
+          height: {
+            xs: "clamp(200px, 50vw, 300px)",
+            sm: "clamp(250px, 40vw, 350px)",
+          },
+          overflow: "hidden",
+          backgroundColor: "#f5f5f5",
+        }}
+      >
+        <img
+          src={image}
+          alt={name}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      </Box>
+
+      {/* Information Sections */}
+      <Box sx={{ padding: "clamp(1rem, 3vw, 2rem)" }}>
+        {/* Basic Information */}
+        <Box sx={{ marginBottom: "clamp(1.5rem, 4vw, 2rem)" }}>
+          <SectionHeader icon={<DescriptionIcon />} title="Basic Information" />
+          <Grid container spacing={2}>
+            <Grid xs={12} sm={6}>
+              <InfoField label="Name" value={name} />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <InfoField label="Category" value={category} />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <InfoField label="Type" value={type} />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <InfoField label="Status" value={status} />
+            </Grid>
+            <Grid xs={12}>
+              <InfoField label="Description" value={description} />
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Location */}
+        <Box sx={{ marginBottom: "clamp(1.5rem, 4vw, 2rem)" }}>
+          <SectionHeader icon={<LocationOnIcon />} title="Location" />
+          <Grid container spacing={2}>
+            <Grid xs={12}>
+              <InfoField label="Address" value={location} />
+            </Grid>
+            {coordinates !== "-" && (
+              <Grid xs={12}>
+                <InfoField label="Coordinates" value={coordinates} />
+              </Grid>
+            )}
+          </Grid>
+        </Box>
+
+        {/* Submitter Information */}
+        <Box sx={{ marginBottom: "clamp(1.5rem, 4vw, 2rem)" }}>
+          <SectionHeader icon={<PersonIcon />} title="Submitter Information" />
+          <Grid container spacing={2}>
+            <Grid xs={12} sm={6}>
+              <InfoField label="Name" value={submitterName} />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <InfoField label="Submitted On" value={submittedDate} />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <InfoField label="Email" value={submitterEmail} />
+            </Grid>
+            <Grid xs={12} sm={6}>
+              <InfoField label="Phone" value={submitterPhone} />
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Event Details (only for events) */}
+        {entityType === "events" && (
+          <Box sx={{ marginBottom: "clamp(1.5rem, 4vw, 2rem)" }}>
+            <SectionHeader icon={<EventIcon />} title="Event Details" />
+            <Grid container spacing={2}>
+              <Grid xs={12} sm={6}>
+                <InfoField label="Start Date" value={startDate} />
+              </Grid>
+              <Grid xs={12} sm={6}>
+                <InfoField label="End Date" value={endDate} />
+              </Grid>
+              <Grid xs={12} sm={6}>
+                <InfoField label="Entry Fee" value={entryFee} />
+              </Grid>
+              <Grid xs={12} sm={6}>
+                <InfoField
+                  label="Expected Attendees"
+                  value={expectedAttendees}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+        )}
+
+        {/* Permits Section (only for businesses) */}
+        {entityType === "businesses" && (
+          <Box sx={{ marginBottom: "clamp(1.5rem, 4vw, 2rem)" }}>
+            <SectionHeader icon={<DescriptionOutlinedIcon />} title="Permits" />
+            {loadingPermits ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  py: 3,
+                }}
+              >
+                <CircularProgress size="sm" />
+              </Box>
+            ) : !permits || permits.length === 0 ? (
+              <Typography.Body
+                sx={{
+                  color: colors.gray,
+                  textAlign: "center",
+                  py: 3,
+                }}
+              >
+                No permits available
               </Typography.Body>
-            </Stack>
-            <IconButton
-              variant="soft"
-              color="neutral"
-              onClick={onClose}
-              aria-label="Close"
-              size="sm"
-              sx={{
-                borderRadius: "sm",
-                "&:hover": {
-                  backgroundColor: "danger.50",
-                  color: "danger.500",
-                },
-              }}
-            >
-              <CloseRoundedIcon />
-            </IconButton>
-          </Stack>
-        </DialogTitle>
-        <DialogContent sx={{ maxHeight: "80vh", overflow: "auto", p: 3 }}>
-          {isEdit ? (
-            <Sheet variant="plain" sx={{ p: 3, borderRadius: "lg" }}>
-              <Stack spacing={2}>
-                <Divider />
-                {/* Two-column sectioned layout: Current vs Proposed */}
-                <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                  {/* Current column */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography.Label size="sm" sx={{ mb: 1 }}>
-                      Current
-                    </Typography.Label>
-                    <Stack spacing={2}>
-                      {/* Basic Information */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Basic Information
-                        </Typography.CardTitle>
-                        <JoyTypography >
-                          <strong>Name:</strong>{" "}
-                          {formatValue("name", getCurrent("name"))}
-                        </JoyTypography>
-                        <JoyTypography >
-                          <strong>Description:</strong>{" "}
-                          {formatValue(
-                            "description",
-                            getCurrent("description")
-                          )}
-                        </JoyTypography>
-                        <JoyTypography >
-                          <strong>Entry Fee:</strong>{" "}
-                          {formatValue("entry_fee", getCurrent("entry_fee"))}
-                        </JoyTypography>
-                      </Sheet>
-
-                      {/* Location */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Location
-                        </Typography.CardTitle>
-                        <JoyTypography >
-                          <strong>Address:</strong>{" "}
-                          {formatValue("barangay", getCurrent("barangay"))},{" "}
-                          {formatValue(
-                            "municipality",
-                            getCurrent("municipality")
-                          )}
-                          , {formatValue("province", getCurrent("province"))}
-                        </JoyTypography>
-                        <JoyTypography >
-                          <strong>Coordinates:</strong>{" "}
-                          {formatValue("latitude", getCurrent("latitude"))}
-                          {getCurrent("latitude") ? ", " : ""}
-                          {formatValue("longitude", getCurrent("longitude"))}
-                        </JoyTypography>
-                      </Sheet>
-
-                      {/* Contact Information */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Contact Information
-                        </Typography.CardTitle>
-                        {getCurrent("contact_phone") ? (
-                          <Typography.Body size="sm">
-                            <strong>Phone:</strong>{" "}
-                            {formatValue(
-                              "contact_phone",
-                              getCurrent("contact_phone")
-                            )}
-                          </Typography.Body>
-                        ) : null}
-                        {getCurrent("contact_email") ? (
-                          <Typography.Body size="sm">
-                            <strong>Email:</strong>{" "}
-                            {formatValue(
-                              "contact_email",
-                              getCurrent("contact_email")
-                            )}
-                          </Typography.Body>
-                        ) : null}
-                        {getCurrent("website") ? (
-                          <Typography.Body size="sm">
-                            <strong>Website:</strong>{" "}
-                            {formatValue("website", getCurrent("website"))}
-                          </Typography.Body>
-                        ) : (
-                          !getCurrent("contact_phone") &&
-                          !getCurrent("contact_email") && (
-                            <Typography.Body size="sm">
-                              No contact information provided
-                            </Typography.Body>
-                          )
-                        )}
-                      </Sheet>
-                    </Stack>
-                  </Box>
-
-                  {/* Proposed column */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography.Label size="sm" sx={{ mb: 1 }}>
-                      Proposed
-                    </Typography.Label>
-                    <Stack spacing={2}>
-                      {/* Basic Information */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Basic Information
-                        </Typography.CardTitle>
-                        {(() => {
-                          const changed =
-                            normalize("name", getCurrent("name")) !==
-                            normalize("name", getProposed("name"));
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Name:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue("name", getProposed("name"))}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize(
-                              "description",
-                              getCurrent("description")
-                            ) !==
-                            normalize(
-                              "description",
-                              getProposed("description")
-                            );
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Description:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue(
-                                  "description",
-                                  getProposed("description")
-                                )}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize("entry_fee", getCurrent("entry_fee")) !==
-                            normalize("entry_fee", getProposed("entry_fee"));
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Entry Fee:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue(
-                                  "entry_fee",
-                                  getProposed("entry_fee")
-                                )}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                      </Sheet>
-
-                      {/* Location */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Location
-                        </Typography.CardTitle>
-                        {(() => {
-                          const changed =
-                            normalize("province", getCurrent("province")) !==
-                              normalize("province", getProposed("province")) ||
-                            normalize(
-                              "municipality",
-                              getCurrent("municipality")
-                            ) !==
-                              normalize(
-                                "municipality",
-                                getProposed("municipality")
-                              ) ||
-                            normalize("barangay", getCurrent("barangay")) !==
-                              normalize("barangay", getProposed("barangay"));
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Address:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue(
-                                  "barangay",
-                                  getProposed("barangay")
-                                )}
-                                ,{" "}
-                                {formatValue(
-                                  "municipality",
-                                  getProposed("municipality")
-                                )}
-                                ,{" "}
-                                {formatValue(
-                                  "province",
-                                  getProposed("province")
-                                )}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize("latitude", getCurrent("latitude")) !==
-                              normalize("latitude", getProposed("latitude")) ||
-                            normalize("longitude", getCurrent("longitude")) !==
-                              normalize("longitude", getProposed("longitude"));
-                          const lat = formatValue(
-                            "latitude",
-                            getProposed("latitude")
-                          );
-                          const lon = formatValue(
-                            "longitude",
-                            getProposed("longitude")
-                          );
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Coordinates:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {lat}
-                                {lat && lon ? ", " : ""}
-                                {lon}
-                              </span>
-                            </Typography.Body>
-                          );
-                        })()}
-                      </Sheet>
-
-                      {/* Contact Information */}
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Contact Information
-                        </Typography.CardTitle>
-                        {(() => {
-                          const changed =
-                            normalize(
-                              "contact_phone",
-                              getCurrent("contact_phone")
-                            ) !==
-                            normalize(
-                              "contact_phone",
-                              getProposed("contact_phone")
-                            );
-                          const v = getProposed("contact_phone");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Phone:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue("contact_phone", v)}
-                              </span>
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize(
-                              "contact_email",
-                              getCurrent("contact_email")
-                            ) !==
-                            normalize(
-                              "contact_email",
-                              getProposed("contact_email")
-                            );
-                          const v = getProposed("contact_email");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Email:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue("contact_email", v)}
-                              </span>
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const changed =
-                            normalize("website", getCurrent("website")) !==
-                            normalize("website", getProposed("website"));
-                          const v = getProposed("website");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Website:</strong>{" "}
-                              <span
-                                className={
-                                  changed ? "value-changed" : undefined
-                                }
-                              >
-                                {formatValue("website", v)}
-                              </span>
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {!getProposed("contact_phone") &&
-                          !getProposed("contact_email") &&
-                          !getProposed("website") && (
-                            <Typography.Body
-                              
-                              sx={{ color: "text.tertiary" }}
-                            >
-                              No contact information provided
-                            </Typography.Body>
-                          )}
-                      </Sheet>
-                    </Stack>
-                  </Box>
-                </Stack>
-              </Stack>
-            </Sheet>
-          ) : (
-            <Sheet variant="plain" sx={{ p: 3, borderRadius: "lg" }}>
-              <Stack spacing={2}>
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Typography.CardTitle size="md" color="primary">
-                    Tourist Spot Details
-                  </Typography.CardTitle>
-                  <Typography.Body
-                    size="xs"
+            ) : (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {permits.map((permit) => (
+                  <Box
+                    key={permit.id}
                     sx={{
-                      backgroundColor: "primary.100",
-                      color: "primary.700",
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: "sm",
-                      fontWeight: 500,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      p: 2,
+                      border: `1px solid #e0e0e0`,
+                      borderRadius: "8px",
+                      backgroundColor: colors.background,
+                      gap: 2,
+                      flexWrap: "wrap",
                     }}
                   >
-                    New Submission
-                  </Typography.Body>
-                </Stack>
-                <Divider />
-                {/* Sectioned layout mirroring the Review step */}
-                <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                  {/* Left Column */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack spacing={2}>
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                        flex: 1,
+                        minWidth: "200px",
+                      }}
+                    >
+                      <Typography.CardTitle sx={{ color: colors.text }}>
+                        {permit.permit_type || "Unknown Type"}
+                      </Typography.CardTitle>
+                      <Typography.Body
+                        sx={{
+                          color: colors.gray,
+                          fontSize: "0.875rem",
+                        }}
                       >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Basic Information
-                        </Typography.CardTitle>
-                        <Typography.Body size="sm">
-                          <strong>Name:</strong>{" "}
-                          {formatValue(
-                            "name",
-                            getProposed("name") ?? getCurrent("name")
-                          )}
-                        </Typography.Body>
-                        <Typography.Body size="sm">
-                          <strong>Description:</strong>{" "}
-                          {formatValue(
-                            "description",
-                            getProposed("description") ??
-                              getCurrent("description")
-                          )}
-                        </Typography.Body>
-                        {(() => {
-                          const cats = (item.categories as any[]) || [];
-                          const catText = cats.length
-                            ? cats
-                                .map(
-                                  (c: any) => c?.category || c?.label || c?.name
-                                )
-                                .filter(Boolean)
-                                .join(", ")
-                            : "-";
-                          return (
-                            <Typography.Body size="sm">
-                              <strong>Categories:</strong> {catText}
-                            </Typography.Body>
-                          );
-                        })()}
-                        <Typography.Body size="sm">
-                          <strong>Entry Fee:</strong>{" "}
-                          {formatValue(
-                            "entry_fee",
-                            getProposed("entry_fee") ?? getCurrent("entry_fee")
-                          )}
-                        </Typography.Body>
-                      </Sheet>
-
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
+                        {permit.file_name || "No filename"}
+                      </Typography.Body>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          mt: 0.5,
+                        }}
                       >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Location
-                        </Typography.CardTitle>
-                        <Typography.Body size="sm">
-                          <strong>Address:</strong>{" "}
-                          {formatValue(
-                            "barangay",
-                            getProposed("barangay") ?? getCurrent("barangay")
-                          )}
-                          ,{" "}
-                          {formatValue(
-                            "municipality",
-                            getProposed("municipality") ??
-                              getCurrent("municipality")
-                          )}
-                          ,{" "}
-                          {formatValue(
-                            "province",
-                            getProposed("province") ?? getCurrent("province")
-                          )}
-                        </Typography.Body>
-                        <Typography.Body size="sm">
-                          <strong>Coordinates:</strong>{" "}
-                          {formatValue(
-                            "latitude",
-                            getProposed("latitude") ?? getCurrent("latitude")
-                          )}
-                          {getProposed("latitude") ?? getCurrent("latitude")
-                            ? ", "
-                            : ""}
-                          {formatValue(
-                            "longitude",
-                            getProposed("longitude") ?? getCurrent("longitude")
-                          )}
-                        </Typography.Body>
-                      </Sheet>
-                    </Stack>
-                  </Box>
-
-                  {/* Right Column */}
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Stack spacing={2}>
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
-                      >
-                        <Typography.CardTitle size="sm"
-                          sx={{ fontWeight: 600, color: "#0A1B47", mb: 1 }}
+                        <Chip
+                          size="sm"
+                          color={
+                            permit.status === "approved"
+                              ? "success"
+                              : permit.status === "rejected"
+                              ? "danger"
+                              : "warning"
+                          }
+                          sx={{ fontSize: "0.75rem" }}
                         >
-                          Contact Information
-                        </Typography.CardTitle>
-                        {(() => {
-                          const v =
-                            getProposed("contact_phone") ??
-                            getCurrent("contact_phone");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Phone:</strong>{" "}
-                              {formatValue("contact_phone", v)}
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const v =
-                            getProposed("contact_email") ??
-                            getCurrent("contact_email");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Email:</strong>{" "}
-                              {formatValue("contact_email", v)}
-                            </Typography.Body>
-                          ) : null;
-                        })()}
-                        {(() => {
-                          const v =
-                            getProposed("website") ?? getCurrent("website");
-                          return v ? (
-                            <Typography.Body size="sm">
-                              <strong>Website:</strong>{" "}
-                              {formatValue("website", v)}
-                            </Typography.Body>
-                          ) : (
-                            !(
-                              getProposed("contact_phone") ??
-                              getCurrent("contact_phone")
-                            ) &&
-                              !(
-                                getProposed("contact_email") ??
-                                getCurrent("contact_email")
-                              ) && (
-                                <Typography.Body
-                                  
-                                  sx={{ color: "text.tertiary" }}
-                                >
-                                  No contact information provided
-                                </Typography.Body>
-                              )
-                          );
-                        })()}
-                      </Sheet>
-
-                      <Sheet
-                        variant="outlined"
-                        sx={{ p: 2, borderRadius: "md" }}
+                          {permit.status || "pending"}
+                        </Chip>
+                        {permit.expiration_date && (
+                          <Typography.Body
+                            sx={{
+                              color: colors.gray,
+                              fontSize: "0.75rem",
+                            }}
+                          >
+                            Expires:{" "}
+                            {new Date(
+                              permit.expiration_date
+                            ).toLocaleDateString()}
+                          </Typography.Body>
+                        )}
+                      </Box>
+                    </Box>
+                    {permit.file_url && (
+                      <Button
+                        colorScheme="primary"
+                        onClick={() => window.open(permit.file_url, "_blank")}
+                        sx={{
+                          minWidth: "120px",
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "center",
+                        }}
                       >
-                        <Typography.CardTitle size="sm" sx={{ mb: 1 }}>
-                          Operating Hours
-                        </Typography.CardTitle>
-                        {(() => {
-                          const schedules = (item.schedules as any[]) || [];
-                          const days = [
-                            "Monday",
-                            "Tuesday",
-                            "Wednesday",
-                            "Thursday",
-                            "Friday",
-                            "Saturday",
-                            "Sunday",
-                          ];
-                          const openDays = schedules.filter(
-                            (s: any) => !s.is_closed
-                          );
-                          if (!schedules.length) {
-                            return (
-                              <Typography.Body
-                                
-                                sx={{ color: "text.tertiary" }}
-                              >
-                                No operating hours available
-                              </Typography.Body>
-                            );
-                          }
-                          if (!openDays.length) {
-                            return (
-                              <Typography.Body
-                                
-                                sx={{ color: "text.tertiary" }}
-                              >
-                                Closed all week
-                              </Typography.Body>
-                            );
-                          }
-                          return (
-                            <>
-                              {openDays.map((s: any) => (
-                                <Typography.Body key={s.day_of_week}>
-                                  <strong>
-                                    {days[s.day_of_week] ||
-                                      `Day ${s.day_of_week}`}
-                                    :
-                                  </strong>{" "}
-                                  {String(s.open_time).slice(0, 5)} -{" "}
-                                  {String(s.close_time).slice(0, 5)}
-                                </Typography.Body>
-                              ))}
-                            </>
-                          );
-                        })()}
-                      </Sheet>
-                    </Stack>
+                        <OpenInNewIcon sx={{ fontSize: "1rem" }} />
+                        View
+                      </Button>
+                    )}
                   </Box>
-                </Stack>
-              </Stack>
-            </Sheet>
-          )}
-        </DialogContent>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            justifyContent: "flex-end",
-            p: 3,
-            pt: 2,
-            borderTop: "1px solid",
-            borderColor: "divider",
-            backgroundColor: "background.surface",
-          }}
-        >
-          <Button
-            variant="outlined"
-            colorScheme="error"
-            onClick={handleRejectClick}
-            disabled={
-              !onReject || (processingId != null && processingId === id)
-            }
-            startDecorator={<CloseRoundedIcon />}
-            size="sm"
-            sx={{ minWidth: 120, fontWeight: 500, borderRadius: "10px" }}
-          >
-            Reject
-          </Button>
-          <Button
-            variant="solid"
-            colorScheme="primary"
-            onClick={handleApproveClick}
-            disabled={
-              !onApprove || (processingId != null && processingId === id)
-            }
-            startDecorator={<CheckRoundedIcon />}
-            size="sm"
-            sx={{ minWidth: 120, fontWeight: 600, borderRadius: "10px" }}
-          >
-            Approve
-          </Button>
-        </Box>
-      </ModalDialog>
-    </Modal>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
+      </Box>
+    </BaseModal>
   );
 };
 
 export default ViewModal;
-

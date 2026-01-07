@@ -12,6 +12,8 @@ export type DebugLogOptions = {
 
 
 const debugLogger = (opts: DebugLogOptions) => {
+    if (!__DEV__) return; // Disable in production
+
     const { title, data, error, successMessage, errorCode } = opts;
     const border = '\x1b[36m' + '='.repeat(50) + '\x1b[0m'; // Cyan border
     const timestamp = new Date().toLocaleString();

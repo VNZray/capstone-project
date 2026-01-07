@@ -1,8 +1,11 @@
-import { ShopDetailPhotoGallery } from '@/components/shops/details/elements';
+import { 
+  ShopDetailPhotoGallery, 
+  PhotoGalleryModal, 
+} from '@/components/shops/details/elements';
 import type { BusinessProfileView } from '@/components/shops/details/types';
-import { ShopColors } from '@/constants/ShopColors';
-import React, { useState } from 'react';
-import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ShopColors } from '@/constants/color';
+import React, { useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 interface ShopDetailPhotosSectionProps {
   shop: BusinessProfileView;
@@ -10,12 +13,22 @@ interface ShopDetailPhotosSectionProps {
 }
 
 const ShopDetailPhotosSection: React.FC<ShopDetailPhotosSectionProps> = ({ shop, onImagePress }) => {
-  const gallery = shop.gallery ?? [];
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [initialModalIndex, setInitialModalIndex] = useState(0);
 
-  const handleImagePress = (imageUrl: string) => {
-    setSelectedImage(imageUrl);
-    onImagePress?.(imageUrl);
+  // Use all gallery items without filtering
+  const gallery = useMemo(() => shop.gallery ?? [], [shop.gallery]);
+
+  // Derive just the URLs for the modal
+  const modalImages = useMemo(() => {
+    return gallery.map(item => item.url);
+  }, [gallery]);
+
+  const handleImagePress = (imageUrl: string, index: number) => {
+    setInitialModalIndex(index);
+    setIsModalVisible(true);
+    // We deliberately do NOT call onImagePress(imageUrl) here to avoid 
+    // opening the parent's duplicate modal (ShopDetail.tsx also has a modal).
   };
 
   return (
@@ -23,44 +36,42 @@ const ShopDetailPhotosSection: React.FC<ShopDetailPhotosSectionProps> = ({ shop,
       <View style={styles.sectionHeader}>
         <View>
           <Text style={styles.sectionTitle}>Photos</Text>
-          <Text style={styles.sectionSubtitle}>Ambiance, dishes, and highlights</Text>
+          <Text style={styles.sectionSubtitle}>Explore our space and offerings</Text>
         </View>
         <Text style={styles.photoCount}>{gallery.length} photos</Text>
       </View>
 
-      <ShopDetailPhotoGallery gallery={gallery} onImagePress={handleImagePress} />
+      {/* Removed ShopDetailPhotoFilterChips per request */}
 
-      <Modal visible={!!selectedImage} transparent animationType="fade" onRequestClose={() => setSelectedImage(null)}>
-        <View style={styles.modalBackdrop}>
-          <TouchableOpacity style={styles.modalClose} onPress={() => setSelectedImage(null)}>
-            <Text style={styles.modalCloseText}>Close</Text>
-          </TouchableOpacity>
-          {selectedImage && <Image source={{ uri: selectedImage }} style={styles.modalImage} />}
-        </View>
-      </Modal>
+      <ShopDetailPhotoGallery 
+        gallery={gallery} 
+        onImagePress={handleImagePress} 
+      />
+
+      <PhotoGalleryModal
+        visible={isModalVisible}
+        images={modalImages}
+        initialIndex={initialModalIndex}
+        onClose={() => setIsModalVisible(false)}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   sectionContainer: {
-    backgroundColor: ShopColors.cardBackground,
-    margin: 16,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000000',
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 1,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 40,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontFamily: 'Poppins-Bold',
     color: ShopColors.textPrimary,
   },
@@ -73,28 +84,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Poppins-Medium',
     color: ShopColors.textSecondary,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalClose: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    padding: 8,
-  },
-  modalCloseText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'Poppins-SemiBold',
-  },
-  modalImage: {
-    width: '90%',
-    aspectRatio: 1,
-    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
 });
 

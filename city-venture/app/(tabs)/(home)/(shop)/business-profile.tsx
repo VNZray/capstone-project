@@ -13,12 +13,14 @@ import type {
   BusinessProfileHours,
   BusinessProfileRatingBreakdown,
   BusinessProfileOperatingStatus,
+  BusinessProfileService,
 } from '@/components/shops/details/types';
 import { fetchBusinessDetails } from '@/services/BusinessService';
 import { fetchProductsByBusinessId } from '@/services/ProductService';
 import { fetchPromotionsByBusinessId } from '@/services/PromotionService';
 import { fetchBusinessHours } from '@/services/BusinessHoursService';
 import { fetchBusinessAmenities } from '@/services/AmenityService';
+import { fetchServicesByBusinessId } from '@/services/ServiceService';
 import {
   fetchBusinessReviewStats,
   fetchReviewsByBusinessId,
@@ -30,6 +32,7 @@ import { Alert, Linking, Share } from 'react-native';
 import type { Business } from '@/types/Business';
 import type { Product } from '@/types/Product';
 import type { Promotion } from '@/types/Promotion';
+import type { Service } from '@/types/Service';
 
 // ============ DATA TRANSFORMATION UTILITIES ============
 
@@ -46,13 +49,18 @@ function transformMenuData(products: Product[]): BusinessProfileMenuCategory[] {
     const categoryName = product.category_name || 'Uncategorized';
     const existing = categoryMap.get(categoryName) || [];
 
-    const currentStock = typeof product.current_stock === 'string' 
-      ? parseInt(product.current_stock) 
-      : (product.current_stock || 0);
-    const isTemporarilyUnavailable = typeof product.is_unavailable === 'string'
-      ? product.is_unavailable === '1'
-      : Boolean(product.is_unavailable);
-    const isAvailable = product.status === 'active' && currentStock > 0 && !isTemporarilyUnavailable;
+    const currentStock =
+      typeof product.current_stock === 'string'
+        ? parseInt(product.current_stock)
+        : product.current_stock || 0;
+    const isTemporarilyUnavailable =
+      typeof product.is_unavailable === 'string'
+        ? product.is_unavailable === '1'
+        : Boolean(product.is_unavailable);
+    const isAvailable =
+      product.status === 'active' &&
+      currentStock > 0 &&
+      !isTemporarilyUnavailable;
 
     const menuItem: BusinessProfileMenuItem = {
       id: product.id,
@@ -71,7 +79,10 @@ function transformMenuData(products: Product[]): BusinessProfileMenuCategory[] {
         status: product.status,
         current_stock: currentStock,
         name: product.name,
-        price: typeof product.price === 'string' ? parseFloat(product.price) : product.price,
+        price:
+          typeof product.price === 'string'
+            ? parseFloat(product.price)
+            : product.price,
         image_url: product.image_url,
         is_unavailable: isTemporarilyUnavailable,
       },
@@ -93,7 +104,9 @@ function transformMenuData(products: Product[]): BusinessProfileMenuCategory[] {
 /**
  * Transform backend Promotion[] into BusinessProfilePromotion[]
  */
-function transformPromotions(promotions: Promotion[]): BusinessProfilePromotion[] {
+function transformPromotions(
+  promotions: Promotion[]
+): BusinessProfilePromotion[] {
   return promotions.map((promo) => ({
     id: promo.id,
     title: promo.title,
@@ -107,9 +120,46 @@ function transformPromotions(promotions: Promotion[]): BusinessProfilePromotion[
         })
       : undefined,
     terms: promo.terms_conditions || undefined,
-    isActive: promo.is_active,
+    isActive: Boolean(promo.is_active),
     image: promo.image_url || undefined,
   }));
+}
+
+/**
+ * Transform backend Service[] into BusinessProfileService[]
+ */
+function transformServices(services: Service[]): BusinessProfileService[] {
+  return services.map((service) => {
+    // Parse contact_methods if it's a string
+    let contactMethods: { type: string; value: string }[] = [];
+    if (service.contact_methods) {
+      if (typeof service.contact_methods === 'string') {
+        try {
+          contactMethods = JSON.parse(service.contact_methods);
+        } catch {
+          contactMethods = [];
+        }
+      } else if (Array.isArray(service.contact_methods)) {
+        contactMethods = service.contact_methods;
+      }
+    }
+    
+    return {
+      id: service.id,
+      name: service.name,
+      description: service.description || undefined,
+      image: service.image_url || undefined,
+      basePrice: typeof service.base_price === 'string' 
+        ? parseFloat(service.base_price) 
+        : service.base_price || 0,
+      priceType: service.price_type || 'fixed',
+      requirements: service.requirements || undefined,
+      contactMethods,
+      contactNotes: service.contact_notes || undefined,
+      status: service.status || 'active',
+      categoryName: service.category_name || undefined,
+    };
+  });
 }
 
 /**
@@ -119,7 +169,7 @@ function transformReviews(reviews: ProductReview[]): BusinessProfileReview[] {
   if (!Array.isArray(reviews)) {
     return [];
   }
-  
+
   return reviews.map((review, index) => ({
     id: review.id || `review-${index}`, // Fallback ID if missing
     userId: review.user_id || 'unknown',
@@ -163,7 +213,12 @@ function transformGallery(business: Business): BusinessProfileGalleryItem[] {
  * Transform backend amenities
  */
 function transformAmenities(
-  amenities: { id?: number; business_id: string; amenity_id: number; name: string }[]
+  amenities: {
+    id?: number;
+    business_id: string;
+    amenity_id: number;
+    name: string;
+  }[]
 ): BusinessProfileAmenity[] {
   return amenities.map((amenity) => ({
     id: String(amenity.amenity_id),
@@ -206,7 +261,9 @@ function transformBusinessHours(hours: any[]): BusinessProfileHours {
 /**
  * Calculate operating status from business hours
  */
-function calculateOperatingStatus(hours: BusinessProfileHours): BusinessProfileOperatingStatus {
+function calculateOperatingStatus(
+  hours: BusinessProfileHours
+): BusinessProfileOperatingStatus {
   const now = new Date();
   const dayNames: (keyof BusinessProfileHours)[] = [
     'sunday',
@@ -238,9 +295,11 @@ function calculateOperatingStatus(hours: BusinessProfileHours): BusinessProfileO
 /**
  * Transform review stats into rating breakdown
  */
-function transformRatingBreakdown(
-  stats: any
-): { breakdown: BusinessProfileRatingBreakdown; average: number; count: number } {
+function transformRatingBreakdown(stats: any): {
+  breakdown: BusinessProfileRatingBreakdown;
+  average: number;
+  count: number;
+} {
   if (!stats?.overall_statistics) {
     return {
       breakdown: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
@@ -250,7 +309,7 @@ function transformRatingBreakdown(
   }
 
   const overall = stats.overall_statistics;
-  
+
   // Use the overall statistics breakdown from backend
   const breakdown: BusinessProfileRatingBreakdown = {
     5: parseInt(overall.five_star) || 0,
@@ -288,16 +347,25 @@ export default function BusinessProfileScreen() {
       setError(null);
 
       // Fetch all data in parallel
-      const [business, products, promotions, allHours, amenities, reviewStats, reviewsData] =
-        await Promise.all([
-          fetchBusinessDetails(businessId),
-          fetchProductsByBusinessId(businessId).catch(() => []),
-          fetchPromotionsByBusinessId(businessId).catch(() => []),
-          fetchBusinessHours(businessId).catch(() => []),
-          fetchBusinessAmenities(businessId).catch(() => []),
-          fetchBusinessReviewStats(businessId).catch(() => null),
-          fetchReviewsByBusinessId(businessId).catch(() => []),
-        ]);
+      const [
+        business,
+        products,
+        promotions,
+        allHours,
+        amenities,
+        reviewStats,
+        reviewsData,
+        servicesData,
+      ] = await Promise.all([
+        fetchBusinessDetails(businessId),
+        fetchProductsByBusinessId(businessId).catch(() => []),
+        fetchPromotionsByBusinessId(businessId).catch(() => []),
+        fetchBusinessHours(businessId).catch(() => []),
+        fetchBusinessAmenities(businessId).catch(() => []),
+        fetchBusinessReviewStats(businessId).catch(() => null),
+        fetchReviewsByBusinessId(businessId).catch(() => []),
+        fetchServicesByBusinessId(businessId).catch(() => []),
+      ]);
 
       // Filter hours for this specific business (backend returns all hours)
       const hours = allHours.filter((h: any) => h.business_id === businessId);
@@ -310,7 +378,9 @@ export default function BusinessProfileScreen() {
       const amenitiesTransformed = transformAmenities(amenities);
       const businessHours = transformBusinessHours(hours);
       const operatingStatus = calculateOperatingStatus(businessHours);
-      const { breakdown, average, count } = transformRatingBreakdown(reviewStats);
+      const servicesTransformed = transformServices(servicesData);
+      const { breakdown, average, count } =
+        transformRatingBreakdown(reviewStats);
 
       const profileView: BusinessProfileView = {
         id: business.id || '',
@@ -326,10 +396,14 @@ export default function BusinessProfileScreen() {
         ratingCount: typeof count === 'number' && !isNaN(count) ? count : 0,
         ratingBreakdown: breakdown,
         distance: undefined, // Placeholder - requires user location
-        category: undefined, // Could fetch from business_category_id
-        priceRange: business.min_price && business.max_price
-          ? `₱${business.min_price} - ₱${business.max_price}`
-          : undefined,
+        category:
+          business.categories && business.categories.length > 0
+            ? business.categories[0].category_title
+            : undefined, // Uses entity_categories
+        priceRange:
+          business.min_price && business.max_price
+            ? `₱${business.min_price} - ₱${business.max_price}`
+            : undefined,
         contact: business.phone_number || undefined,
         email: business.email || undefined,
         location: business.address || undefined,
@@ -348,6 +422,7 @@ export default function BusinessProfileScreen() {
         },
         promotions: promos,
         menu,
+        services: servicesTransformed,
         reviews,
         gallery,
         amenities: amenitiesTransformed,
@@ -401,7 +476,9 @@ export default function BusinessProfileScreen() {
       return;
     }
     const { latitude, longitude } = view.mapLocation;
-    Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
+    Linking.openURL(
+      `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+    );
   }, [view]);
 
   const handleWebsite = useCallback(() => {
@@ -430,7 +507,10 @@ export default function BusinessProfileScreen() {
         ) : (
           <ErrorState
             title="Unable to Load Business"
-            message={error || 'Something went wrong while loading this business profile.'}
+            message={
+              error ||
+              'Something went wrong while loading this business profile.'
+            }
             onRetry={loadBusinessProfile}
           />
         )}

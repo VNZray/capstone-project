@@ -25,6 +25,7 @@ import type { Notification } from "./NotificationPopup";
 //   "/business/owner-profile": "Owner Profile",
 // };
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
+import { Link } from "@mui/joy";
 interface MainHeaderProps {
   onMenuClick?: () => void;
 }
@@ -92,17 +93,13 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
   ];
 
   const navigateToBusiness = () => {
-    const staffRoles = [
-      "Manager",
-      "Room Manager",
-      "Receptionist",
-      "Sales Associate",
-    ];
     const userRole = user?.role_name || "";
+    const isStaff = userRole === "Staff";
 
     if (userRole === "Business Owner") {
       navigate("/business");
-    } else if (staffRoles.includes(userRole)) {
+    } else if (isStaff) {
+      // Staff goes to dashboard
       navigate("/business/dashboard");
     } else {
       navigate("/business");
@@ -147,14 +144,7 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
             <Menu size={22} />
           </IconButton>
         </Box>
-        <IconButton
-          onClick={() => navigate(-1)}
-          variant="plain"
-          colorScheme="gray"
-          aria-label="Go Back"
-        >
-          <ArrowLeft size={22} />
-        </IconButton>
+
         {/* <Typography.Header>{title}</Typography.Header> */}
       </Container>
 
@@ -208,18 +198,26 @@ export default function MainHeader({ onMenuClick }: MainHeaderProps) {
               {user?.first_name} {user?.last_name}
             </Typography.Label>
             <Typography.Body size="xs" sx={{ opacity: 0.7 }}>
-              {user?.email}
+              {user?.role_name}
             </Typography.Body>
           </Container>
-          <img
-            src={user?.user_profile || placeholderImage}
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              objectFit: "cover",
-            }}
-          />
+          <IconButton
+            colorScheme="primary"
+            sx={{ padding: 0, margin: 0, borderRadius: "50%" }}
+            size="lg"
+            variant="soft"
+            onClick={() => navigate("user/profile")}
+          >
+            <img
+              src={user?.user_profile || placeholderImage}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+          </IconButton>
         </Box>
 
         {/* Switch Profile - Full button on medium+ screens - Only for Business Owner */}

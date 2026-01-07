@@ -1,196 +1,120 @@
 /**
  * Order Service
- * Handles order creation, retrieval, and cancellation
+ * Consolidated service for order creation, retrieval, and cancellation
+ * Uses apiClient for automatic JWT token handling and refresh
  * Integrates with PayMongo for online payments
  */
 
-import axios from 'axios';
-import api from './api';
-import { ensureValidToken } from './AuthService';
-
-export interface OrderItem {
-  product_id: string;
-  quantity: number;
-  special_requests?: string;
-}
-
-export interface CreateOrderRequest {
-  business_id: string;
-  user_id: string;
-  items: OrderItem[];
-  discount_id?: string | null;
-  pickup_datetime: string; // ISO 8601 format
-  special_instructions?: string;
-  payment_method: 'cash_on_pickup' | 'paymongo';
-  payment_method_type?: 'gcash' | 'card' | 'paymaya' | 'grab_pay';
-}
-
-export interface PaymentAttachment {
-  payment_id?: string;
-  provider_reference?: string;
-  checkout_url?: string;
-  payment_intent_id?: string;
-  payment_method_type?: string;
-  error?: boolean;
-  message?: string;
-}
-
-export interface OrderCreationResponse {
-  order_id: string;
-  order_number: string;
-  arrival_code: string;
-  status: string;
-  payment_status: string;
-  total_amount: number;
-  payment?: PaymentAttachment;
-}
-
-export interface Order {
-  id: string;
-  order_number: string;
-  business_id: string;
-  user_id: string;
-  status: string;
-  payment_status: string;
-  payment_method: string;
-  payment_method_type?: string;
-  subtotal: number;
-  discount_amount: number;
-  tax_amount: number;
-  total_amount: number;
-  pickup_datetime: string;
-  special_instructions?: string;
-  arrival_code: string;
-  created_at: string;
-  updated_at: string;
-  items?: OrderItemDetail[];
-}
-
-export interface OrderItemDetail {
-  id: string;
-  order_id: string;
-  product_id: string;
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-  special_requests?: string;
-}
+import apiClient from '@/services/apiClient';
+import type { 
+  Order, 
+  CreateOrderPayload, 
+  CreateOrderResponse 
+} from '@/types/Order';
 
 /**
- * Create a new order
- * @param orderData - Order creation payload
+ * Create a new order (Tourist only)
+ * POST /api/orders
+ * @param payload - Order creation payload
  * @returns Order response with order details and checkout URL (if PayMongo)
  */
-export async function createOrder(orderData: CreateOrderRequest): Promise<OrderCreationResponse> {
+export async function createOrder(
+  payload: CreateOrderPayload
+): Promise<CreateOrderResponse> {
   try {
-    // Ensure token is valid and refresh if needed
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-    
-    const response = await axios.post<OrderCreationResponse>(
-      `${api}/orders`,
-      orderData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const { data } = await apiClient.post<CreateOrderResponse>(
+      `/orders`, 
+      payload
     );
-
-    return response.data;
-  } catch (error: any) {
-    console.error('[OrderService] Create order failed:', error.response?.data || error.message);
+    return data;
+  } catch (error) {
+    console.error('[OrderService] createOrder error:', error);
     throw error;
   }
 }
 
 /**
- * Get order by ID
+ * Get single order by ID
+ * GET /api/orders/:id
+ * Accessible by owner (tourist or business) and admin
  * @param orderId - Order UUID
- * @returns Order details with items
+ * @returns Order details with items (normalized)
  */
 export async function getOrderById(orderId: string): Promise<Order> {
   try {
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-
-    const response = await axios.get<Order>(
-      `${api}/orders/${orderId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    const { data } = await apiClient.get<Order>(
+      `/orders/${orderId}`
     );
-
-    return response.data;
-  } catch (error: any) {
-    console.error('[OrderService] Get order failed:', error.response?.data || error.message);
+    
+    // Normalize the order data to ensure consistent format
+    return {
+      ...data,
+      status: (data.status || 'PENDING').toUpperCase() as Order['status'],
+      payment_status: (data.payment_status || 'PENDING').toUpperCase() as Order['payment_status'],
+      payment_method: (data.payment_method || 'cash_on_pickup').toLowerCase() as Order['payment_method'],
+      order_number: data.order_number || 'N/A',
+      items: data.items || [],
+      total_amount: typeof data.total_amount === 'number' ? data.total_amount : parseFloat(String(data.total_amount)) || 0,
+      subtotal: typeof data.subtotal === 'number' ? data.subtotal : parseFloat(String(data.subtotal)) || 0,
+      discount_amount: typeof data.discount_amount === 'number' ? data.discount_amount : parseFloat(String(data.discount_amount)) || 0,
+      tax_amount: typeof data.tax_amount === 'number' ? data.tax_amount : parseFloat(String(data.tax_amount)) || 0,
+    };
+  } catch (error) {
+    console.error('[OrderService] getOrderById error:', error);
     throw error;
   }
 }/**
- * Get all orders for the current user
+ * Get orders for a specific user (Tourist)
+ * GET /api/orders/user/:userId
  * @param userId - User UUID
- * @returns Array of user's orders
+ * @returns Array of user's orders (normalized)
  */
 export async function getUserOrders(userId: string): Promise<Order[]> {
   try {
-    const token = await ensureValidToken();
+    const { data } = await apiClient.get<Order[]>(
+      `/orders/user/${userId}`
+    );
     
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
+    // Ensure data is an array and normalize any missing fields
+    if (!Array.isArray(data)) {
+      console.warn('[OrderService] getUserOrders returned non-array:', data);
+      return [];
     }
     
-    const response = await axios.get<Order[]>(
-      `${api}/orders/user/${userId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error: any) {
-    console.error('[OrderService] Get user orders failed:', error.response?.data || error.message);
+    // Normalize each order to ensure required fields exist
+    return data.map(order => ({
+      ...order,
+      status: order.status || 'PENDING',
+      payment_status: order.payment_status || 'PENDING',
+      payment_method: order.payment_method || 'cash_on_pickup',
+      order_number: order.order_number || 'N/A',
+      items: order.items || [],
+      total_amount: typeof order.total_amount === 'number' ? order.total_amount : parseFloat(String(order.total_amount)) || 0,
+      subtotal: typeof order.subtotal === 'number' ? order.subtotal : parseFloat(String(order.subtotal)) || 0,
+      discount_amount: typeof order.discount_amount === 'number' ? order.discount_amount : parseFloat(String(order.discount_amount)) || 0,
+      tax_amount: typeof order.tax_amount === 'number' ? order.tax_amount : parseFloat(String(order.tax_amount)) || 0,
+    }));
+  } catch (error) {
+    console.error('[OrderService] getUserOrders error:', error);
     throw error;
   }
 }
 
 /**
- * Cancel an order (within grace period or with business permission)
+ * Cancel an order (Tourist within grace period & PENDING)
+ * POST /api/orders/:id/cancel
  * @param orderId - Order UUID
- * @returns Success response
+ * @param reason - Optional cancellation reason
  */
-export async function cancelOrder(orderId: string): Promise<{ success: boolean; message: string }> {
+export async function cancelOrder(orderId: string, reason?: string): Promise<void> {
   try {
-    const token = await ensureValidToken();
-    
-    if (!token) {
-      throw new Error('Authentication required. Please log in again.');
-    }
-    
-    const response = await axios.post<{ success: boolean; message: string }>(
-      `${api}/orders/${orderId}/cancel`,
-      {},
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    return response.data;
-  } catch (error: any) {
-    console.error('[OrderService] Cancel order failed:', error.response?.data || error.message);
+    // Always send a body object to ensure proper Content-Type: application/json
+    // This prevents issues where req.body is undefined on the backend
+    await apiClient.post(`/orders/${orderId}/cancel`, {
+      cancellation_reason: reason || 'User cancelled order',
+    });
+  } catch (error) {
+    console.error('[OrderService] cancelOrder error:', error);
     throw error;
   }
 }

@@ -19,6 +19,7 @@ import {
   Megaphone,
   Tag,
   CreditCard,
+  Users,
 } from "lucide-react";
 
 // Compact icon size
@@ -29,6 +30,7 @@ import { useBusiness } from "../../context/BusinessContext";
 import { useAuth } from "@/src/context/AuthContext";
 import useRBAC from "@/src/hooks/useRBAC";
 import { FaUserFriends } from "react-icons/fa";
+import * as P from "@/src/constants/permissions";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -95,35 +97,34 @@ export default function Sidebar({
             icon={<LayoutDashboard size={ICON_SIZE} />}
             onClick={onClose}
           />
-          {businessDetails?.business_type_id === 1 ? (
+
+          {businessDetails?.hasBooking ? (
             <>
-              {(hasRole("Business Owner", "Manager") ||
-                canAny(
-                  "view_transactions",
-                  "manage_transactions",
-                  "view_bookings",
-                  "manage_bookings"
-                )) && (
-                <NavItem
-                  to={`${route}/transactions`}
-                  label="Transactions"
-                  icon={<Receipt size={ICON_SIZE} />}
-                  onClick={onClose}
-                />
-              )}
               {(hasRole("Business Owner", "Manager", "Receptionist") ||
-                canAny("view_bookings", "manage_bookings")) && (
-                <NavItem
-                  to={`${route}/bookings`}
-                  label="Bookings"
-                  icon={<CalendarCheck size={ICON_SIZE} />}
-                  onClick={onClose}
-                />
-              )}
+                canAny(P.VIEW_TRANSACTIONS, P.VIEW_PAYMENTS)) &&
+                !hasRole("Room Manager") && (
+                  <NavItem
+                    to={`${route}/transactions`}
+                    label="Transactions"
+                    icon={<Receipt size={ICON_SIZE} />}
+                    onClick={onClose}
+                  />
+                )}
+              {(hasRole("Business Owner", "Manager", "Receptionist") ||
+                canAny(P.VIEW_BOOKINGS, P.MANAGE_BOOKINGS)) &&
+                !hasRole("Room Manager") && (
+                  <NavItem
+                    to={`${route}/bookings`}
+                    label="Bookings"
+                    icon={<CalendarCheck size={ICON_SIZE} />}
+                    onClick={onClose}
+                  />
+                )}
             </>
           ) : null}
+
           {(hasRole("Business Owner", "Manager") ||
-            canAny("view_business_profile", "edit_business_profile")) && (
+            canAny(P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE)) && (
             <NavItem
               to={`${route}/business-profile`}
               label="Business Profile"
@@ -133,8 +134,8 @@ export default function Sidebar({
           )}
 
           {(hasRole("Business Owner", "Manager", "Sales Associate") ||
-            canAny("view_promotions", "manage_promotions")) &&
-            (businessDetails?.business_type_id === 2 ? (
+            canAny(P.VIEW_PROMOTIONS, P.MANAGE_PROMOTIONS)) &&
+            (businessDetails?.hasBooking === false ? (
               <NavItem
                 to={`${route}/promotion`}
                 label="Manage Promotions"
@@ -150,11 +151,12 @@ export default function Sidebar({
               />
             ))}
 
-          {businessDetails?.business_type_id === 1 &&
-            (hasRole(
+          {businessDetails?.hasBooking &&
+            hasRole(
               "Business Owner",
               "Manager",
               "Room Manager",
+              "Receptionist"
             ) && (
               <NavItem
                 to={`${route}/rooms`}
@@ -162,9 +164,9 @@ export default function Sidebar({
                 icon={<BedDouble size={ICON_SIZE} />}
                 onClick={onClose}
               />
-            ))}
+            )}
 
-          {businessDetails?.business_type_id === 1 &&
+          {businessDetails?.hasBooking === true &&
             hasRole("Business Owner") && (
               <NavItem
                 to={`${route}/subscription`}
@@ -174,18 +176,17 @@ export default function Sidebar({
               />
             )}
 
-          {businessDetails?.business_type_id === 2 &&
-            hasRole("Business Owner") && (
-              <NavItem
-                to={`${route}/subscription`}
-                label="Subscription"
-                icon={<CreditCard size={ICON_SIZE} />}
-                onClick={onClose}
-              />
-            )}
+          {hasRole("Business Owner") && (
+            <NavItem
+              to={`${route}/subscription`}
+              label="Subscription"
+              icon={<CreditCard size={ICON_SIZE} />}
+              onClick={onClose}
+            />
+          )}
 
           {/* Store section (Shop only) */}
-          {businessDetails?.business_type_id !== 1 &&
+          {businessDetails?.hasBooking === false &&
             hasRole("Business Owner", "Manager", "Sales Associate") && (
               <div className="sidebar-section">
                 <button
@@ -256,7 +257,7 @@ export default function Sidebar({
               </div>
             )}
           {(hasRole("Business Owner", "Manager") ||
-            canAny("view_reviews", "respond_reviews")) && (
+            canAny(P.VIEW_REVIEWS, P.MANAGE_REVIEWS)) && (
             <NavItem
               to={`${route}/reviews`}
               label="Reviews & Ratings"
@@ -264,22 +265,24 @@ export default function Sidebar({
               onClick={onClose}
             />
           )}
-          {(hasRole("Business Owner") && (
+          {(hasRole("Business Owner") ||
+            canAny(P.VIEW_STAFF, P.ADD_STAFF)) && (
             <NavItem
               to={`${route}/manage-staff`}
               label="Manage Staff"
               icon={<FaUserFriends />}
               onClick={onClose}
             />
-          ))}
-          {(hasRole("Business Owner") && (
+          )}
+          {(hasRole("Business Owner") ||
+            canAny(P.MANAGE_BUSINESS_SETTINGS)) && (
             <NavItem
               to={`${route}/settings`}
               label="Settings"
               icon={<Settings size={18} />}
               onClick={onClose}
             />
-          ))}
+          )}
         </div>
 
         <div

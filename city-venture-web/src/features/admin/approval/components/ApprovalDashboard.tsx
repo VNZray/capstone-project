@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { apiService } from "@/src/utils/api";
-import ApprovalTable from "./ApprovalTable";
+import apiClient from "@/src/services/apiClient";
+// Replaced table with unified compact cards view (still can reintroduce table if needed)
+import UnifiedApprovalCard from "./UnifiedApprovalCard";
 import OverviewCard from "./OverviewCard";
 import ViewModal from "./ViewModal";
 import NavCard from "./NavCard";
@@ -12,16 +14,24 @@ import {
   Input,
   Stack,
   Typography,
+  Table,
+  Button as JoyButton,
+  Select,
 } from "@mui/joy";
+import Option from "@mui/joy/Option";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
 import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
 import EventRoundedIcon from "@mui/icons-material/EventRounded";
 import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
-import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
+import TableRowsRoundedIcon from "@mui/icons-material/TableRowsRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 
-import type { EntityType } from "@/src/types/approval";
+import type { EntityType, UnifiedApprovalItem } from "@/src/types/approval";
+import {
+  initializeEmailJS,
+  sendAccountCredentials,
+} from "@/src/services/email/EmailService";
 
 interface PendingItem {
   id: string;
@@ -74,6 +84,7 @@ const makeMock = (prefix: string) => [
 const ApprovalDashboard: React.FC = () => {
   const [pendingSpots, setPendingSpots] = useState<PendingItem[]>([]);
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
+  const [pendingBusinesses, setPendingBusinesses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [selectedItem, setSelectedItem] = useState<Record<
@@ -82,14 +93,25 @@ const ApprovalDashboard: React.FC = () => {
   > | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  // Filters to be wired in a later step
+  type DisplayMode = "cards" | "table";
+  const [display, setDisplay] = useState<DisplayMode>("cards");
+  const [statusTab, setStatusTab] = useState<"all" | "new" | "edit">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  // Initialize EmailJS on component mount
+  useEffect(() => {
+    initializeEmailJS();
+  }, []);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const [spotsData, editsData] = await Promise.all([
+        const [spotsData, editsData, bizData] = await Promise.all([
           apiService.getPendingItems("tourist_spots"),
           apiService.getPendingEditsByEntity("tourist_spots"),
+          apiService.getPendingItems("businesses"),
         ]);
 
         const spots = (spotsData as unknown[] | null) || [];
@@ -134,6 +156,7 @@ const ApprovalDashboard: React.FC = () => {
           if (s && s.id)
             spotById.set(String(s.id), s as Record<string, unknown>);
 
+        setPendingBusinesses((bizData as any[]) || []);
         const enriched: PendingEdit[] = transformedEditsBase.map((edRec) => {
           const ed = edRec as Record<string, unknown>;
           const tourist_spot_id = ed["tourist_spot_id"] ?? ed["spot_id"];
@@ -211,9 +234,10 @@ const ApprovalDashboard: React.FC = () => {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [spotsData, editsData] = await Promise.all([
+      const [spotsData, editsData, bizData] = await Promise.all([
         apiService.getPendingItems("tourist_spots"),
         apiService.getPendingEditsByEntity("tourist_spots"),
+        apiService.getPendingItems("businesses"),
       ]);
       const spotsArr = (spotsData as unknown[] | null) || [];
       setPendingSpots(
@@ -243,6 +267,7 @@ const ApprovalDashboard: React.FC = () => {
           } as PendingEdit;
         })
       );
+      setPendingBusinesses(((bizData as any[]) || []).map((b) => ({ ...b })));
     } catch (err) {
       console.error(err);
     } finally {
@@ -259,19 +284,85 @@ const ApprovalDashboard: React.FC = () => {
     try {
       const items = [...pendingSpots, ...pendingEdits];
       const item = items.find((i) => String(i.id) === String(id));
-      if (!item) return;
 
-      const entity =
-        ((item as Record<string, unknown>).entityType as
-          | EntityType
-          | undefined) || "tourist_spots";
-      if (item.action_type === "new") {
-        if (action === "approve") await apiService.approveNewEntity(entity, id);
-        else await apiService.rejectNewEntity(entity, id, reason ?? "");
+      if (item) {
+        const entity =
+          ((item as Record<string, unknown>).entityType as
+            | EntityType
+            | undefined) || "tourist_spots";
+        if (item.action_type === "new") {
+          if (action === "approve")
+            await apiService.approveNewEntity(entity, id);
+          else await apiService.rejectNewEntity(entity, id, reason ?? "");
+        } else {
+          if (action === "approve")
+            await apiService.approveEditEntity(entity, id);
+          else await apiService.rejectEditEntity(entity, id, reason ?? "");
+        }
       } else {
-        if (action === "approve")
-          await apiService.approveEditEntity(entity, id);
-        else await apiService.rejectEditEntity(entity, id, reason ?? "");
+        const biz = pendingBusinesses.find((b) => String(b.id) === String(id));
+        if (!biz) return;
+
+        if (action === "approve") {
+          // Approve the business first
+          await apiService.approveNewEntity("businesses", id);
+
+          // Try to send email notification to owner with credentials
+          try {
+            // Fetch business details to get owner information
+            const businessResponse = await apiClient.get(`/business/${id}`);
+            const business = businessResponse.data?.data;
+
+            if (business && business.owner_id) {
+              // Fetch owner details
+              const ownerResponse = await apiClient.get(
+                `/owner/${business.owner_id}`
+              );
+              const owner = ownerResponse.data?.data;
+
+              if (owner && owner.user_id) {
+                // Fetch user details (contains email)
+                const userResponse = await apiClient.get(
+                  `/user/${owner.user_id}`
+                );
+                const user = userResponse.data?.data;
+
+                if (user && user.email) {
+                  const ownerName =
+                    `${owner.first_name || ""} ${
+                      owner.last_name || ""
+                    }`.trim() || "Business Owner";
+                  const defaultPassword = "owner123"; // Default password - should match what was set during registration
+
+                  // Send credentials email
+                  const emailSent = await sendAccountCredentials(
+                    user.email,
+                    ownerName,
+                    user.email,
+                    defaultPassword
+                  );
+
+                  if (emailSent) {
+                    console.log(
+                      "✅ Credentials email sent successfully to:",
+                      user.email
+                    );
+                  } else {
+                    console.warn(
+                      "⚠️ Failed to send credentials email, but business was approved"
+                    );
+                  }
+                }
+              }
+            }
+          } catch (emailError) {
+            // Don't fail the approval if email fails
+            console.error("❌ Error sending credentials email:", emailError);
+            console.log("Business was approved but email notification failed");
+          }
+        } else {
+          await apiService.rejectNewEntity("businesses", id, reason ?? "");
+        }
       }
 
       window.alert(
@@ -297,40 +388,12 @@ const ApprovalDashboard: React.FC = () => {
   const closeModal = () => setSelectedItem(null);
 
   const mockEvents = makeMock("Event");
-  const mockBusinesses = makeMock("Business");
-  const mockAccommodations = makeMock("Accommodation");
+  // Accommodations removed from approval scope per latest requirements
 
   const allPendingItems = [...pendingSpots, ...pendingEdits];
   const allItems: PendingItem[] = allPendingItems as PendingItem[];
 
-  const filteredItems = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return allItems;
-    return allItems.filter((i) =>
-      String(i.name ?? "")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [allItems, query]);
-
-  if (loading)
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 280,
-        }}
-      >
-        <Stack spacing={1} alignItems="center">
-          <div className="loading-spinner" />
-          <Typography level="body-md" sx={{ color: "text.tertiary" }}>
-            Loading approval data...
-          </Typography>
-        </Stack>
-      </Box>
-    );
+  // Note: per-tab filtering is applied within each section below
 
   return (
     <Box>
@@ -346,58 +409,69 @@ const ApprovalDashboard: React.FC = () => {
             Review and manage submissions from the public and partners.
           </Typography>
         </Box>
-        <IconButton
-          size="sm"
-          variant="soft"
-          color="neutral"
-          onClick={refresh}
-          aria-label="Refresh"
-        >
-          <RefreshRoundedIcon />
-        </IconButton>
+        <Stack direction="row" spacing={1} alignItems="center">
+          <IconButton
+            size="sm"
+            variant={display === "cards" ? "solid" : "soft"}
+            color={display === "cards" ? "primary" : "neutral"}
+            onClick={() => setDisplay("cards")}
+            aria-label="Cards view"
+          >
+            <DashboardRoundedIcon />
+          </IconButton>
+          <IconButton
+            size="sm"
+            variant={display === "table" ? "solid" : "soft"}
+            color={display === "table" ? "primary" : "neutral"}
+            onClick={() => setDisplay("table")}
+            aria-label="Table view"
+          >
+            <TableRowsRoundedIcon />
+          </IconButton>
+          <IconButton
+            size="sm"
+            variant="soft"
+            color="neutral"
+            onClick={refresh}
+            aria-label="Refresh"
+          >
+            <RefreshRoundedIcon />
+          </IconButton>
+        </Stack>
       </Stack>
 
       {/* Navigation Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        {(
-          [
-            {
-              key: "overview",
-              label: "Overview",
-              count: allItems.length,
-              icon: <DashboardRoundedIcon />,
-              tab: "overview" as TabType,
-            },
-            {
-              key: "tourist_spots",
-              label: "Tourist Spots",
-              count: allItems.length,
-              icon: <PlaceRoundedIcon />,
-              tab: "tourist_spots" as TabType,
-            },
-            {
-              key: "events",
-              label: "Events",
-              count: mockEvents.length,
-              icon: <EventRoundedIcon />,
-              tab: "events" as TabType,
-            },
-            {
-              key: "businesses",
-              label: "Businesses",
-              count: mockBusinesses.length,
-              icon: <BusinessRoundedIcon />,
-              tab: "businesses" as TabType,
-            },
-            {
-              key: "accommodations",
-              label: "Accommodations",
-              count: mockAccommodations.length,
-              icon: <HotelRoundedIcon />,
-              tab: "accommodations" as TabType,
-            },
-          ] as const
-        ).map((n) => (
+        {[
+          {
+            key: "overview",
+            label: "Overview",
+            count: allItems.length,
+            icon: <DashboardRoundedIcon />,
+            tab: "overview" as TabType,
+          },
+          {
+            key: "tourist_spots",
+            label: "Tourist Spots",
+            count: allItems.length,
+            icon: <PlaceRoundedIcon />,
+            tab: "tourist_spots" as TabType,
+          },
+          {
+            key: "events",
+            label: "Events",
+            count: mockEvents.length,
+            icon: <EventRoundedIcon />,
+            tab: "events" as TabType,
+          },
+          {
+            key: "businesses",
+            label: "Businesses",
+            count: pendingBusinesses.length,
+            icon: <BusinessRoundedIcon />,
+            tab: "businesses" as TabType,
+          },
+        ].map((n) => (
           <Grid key={n.key} xs={12} sm={6} md={2.4}>
             <NavCard
               label={n.label}
@@ -436,17 +510,9 @@ const ApprovalDashboard: React.FC = () => {
           <Grid xs={12} md={6} lg={3}>
             <OverviewCard
               title="Businesses"
-              count={mockBusinesses.length}
+              count={pendingBusinesses.length}
               icon="🏢"
-              items={mockBusinesses}
-            />
-          </Grid>
-          <Grid xs={12} md={6} lg={3}>
-            <OverviewCard
-              title="Accommodations"
-              count={mockAccommodations.length}
-              icon="🛏️"
-              items={mockAccommodations}
+              items={pendingBusinesses}
             />
           </Grid>
         </Grid>
@@ -461,59 +527,399 @@ const ApprovalDashboard: React.FC = () => {
             justifyContent="space-between"
             sx={{ mb: 3 }}
           >
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              startDecorator={<SearchRoundedIcon />}
-              placeholder="Search tourist spots"
-            />
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1}
+              sx={{ flex: 1 }}
+            >
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                startDecorator={<SearchRoundedIcon />}
+                placeholder="Search tourist spots"
+                sx={{ minWidth: 240 }}
+              />
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <JoyButton
+                  size="sm"
+                  variant={statusTab === "all" ? "solid" : "soft"}
+                  onClick={() => setStatusTab("all")}
+                >
+                  All
+                </JoyButton>
+                <JoyButton
+                  size="sm"
+                  variant={statusTab === "new" ? "solid" : "soft"}
+                  onClick={() => setStatusTab("new")}
+                >
+                  New
+                </JoyButton>
+                <JoyButton
+                  size="sm"
+                  variant={statusTab === "edit" ? "solid" : "soft"}
+                  onClick={() => setStatusTab("edit")}
+                >
+                  Edit
+                </JoyButton>
+              </Stack>
+              <Select
+                size="sm"
+                placeholder="Category"
+                value={categoryFilter}
+                onChange={(_, v) => setCategoryFilter(String(v ?? "all"))}
+                sx={{ minWidth: 160 }}
+              >
+                <Option value="all">All Categories</Option>
+                {Array.from(
+                  new Set(
+                    (pendingSpots as any[]).flatMap((s) =>
+                      (s.categories || []).map((c: any) => c.category)
+                    )
+                  )
+                )
+                  .filter(Boolean)
+                  .map((c: string) => (
+                    <Option key={c} value={c}>
+                      {c}
+                    </Option>
+                  ))}
+              </Select>
+            </Stack>
           </Stack>
-          <ApprovalTable
-            items={filteredItems.map((i) => ({
-              ...i,
-              entityType: "tourist_spots",
-            }))}
-            contentType="tourist spots"
-            onView={handleView}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            processingId={processingId}
-          />
+          {(() => {
+            const byQuery = (arr: any[]) => {
+              const q = query.trim().toLowerCase();
+              if (!q) return arr;
+              return arr.filter((i) =>
+                String(i.name ?? "")
+                  .toLowerCase()
+                  .includes(q)
+              );
+            };
+            const applyCategory = (arr: any[]) => {
+              if (categoryFilter === "all") return arr;
+              return arr.filter(
+                (i: any) =>
+                  Array.isArray(i.categories) &&
+                  i.categories.some((c: any) => c.category === categoryFilter)
+              );
+            };
+            const newItems = applyCategory(byQuery(pendingSpots));
+            const edits = byQuery(pendingEdits);
+            let list: any[];
+            if (statusTab === "new") list = newItems;
+            else if (statusTab === "edit") list = edits;
+            else list = [...newItems, ...edits];
+
+            if (display === "cards") {
+              return (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(240px, 1fr))",
+                    gap: "12px",
+                    padding: "8px",
+                  }}
+                >
+                  {list.map((item: any) => {
+                    const actionType =
+                      item.action_type ??
+                      (pendingEdits.includes(item) ? "edit" : "new");
+                    const unified: UnifiedApprovalItem = {
+                      id: item.id,
+                      entityType: "tourist_spots",
+                      actionType: actionType as any,
+                      name: item.name,
+                      typeLabel: "tourist spot",
+                      categoryLabel: item.categories?.[0]?.category || "—",
+                      submittedDate: item.submitted_at || item.created_at || "",
+                      image: item.primary_image || null,
+                      raw: item,
+                    };
+                    return (
+                      <UnifiedApprovalCard
+                        key={`ts-${item.id}`}
+                        item={unified}
+                        onView={(u) => handleView(u.raw)}
+                        onApprove={(u) => handleApprove(String(u.id))}
+                        onReject={(u) => handleReject(String(u.id))}
+                      />
+                    );
+                  })}
+                  {!loading && list.length === 0 && (
+                    <div
+                      style={{
+                        gridColumn: "1 / -1",
+                        textAlign: "center",
+                        opacity: 0.7,
+                      }}
+                    >
+                      No pending tourist spots
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            // table view
+            return (
+              <Table
+                size="sm"
+                stripe="odd"
+                hoverRow
+                variant="outlined"
+                sx={{
+                  "--TableCell-paddingX": "8px",
+                  "--TableCell-paddingY": "8px",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th style={{ width: "40%" }}>Name</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Submitted</th>
+                    <th>Kind</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((item: any) => (
+                    <tr key={`ts-row-${item.id}`}>
+                      <th scope="row">{item.name}</th>
+                      <td>tourist spot</td>
+                      <td>{item.categories?.[0]?.category || "—"}</td>
+                      <td>
+                        {(item.submitted_at || item.created_at || "") &&
+                          new Date(
+                            item.submitted_at || item.created_at
+                          ).toLocaleDateString()}
+                      </td>
+                      <td>
+                        {item.action_type ??
+                          (pendingEdits.includes(item) ? "edit" : "new")}
+                      </td>
+                      <td>
+                        <Stack direction="row" spacing={0.5}>
+                          <JoyButton
+                            size="sm"
+                            variant="soft"
+                            onClick={() => handleView(item)}
+                          >
+                            View
+                          </JoyButton>
+                          <JoyButton
+                            size="sm"
+                            variant="outlined"
+                            color="success"
+                            onClick={() => handleApprove(String(item.id))}
+                          >
+                            Approve
+                          </JoyButton>
+                          <JoyButton
+                            size="sm"
+                            variant="outlined"
+                            color="danger"
+                            onClick={() => handleReject(String(item.id))}
+                          >
+                            Reject
+                          </JoyButton>
+                        </Stack>
+                      </td>
+                    </tr>
+                  ))}
+                  {!loading && list.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        style={{ textAlign: "center", opacity: 0.7 }}
+                      >
+                        No pending tourist spots
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            );
+          })()}
         </>
       )}
 
       {activeTab === "events" && (
-        <ApprovalTable
-          items={mockEvents}
-          contentType="events"
-          onView={handleView}
-          onApprove={() => alert("Events approval not yet implemented")}
-          onReject={() => alert("Events rejection not yet implemented")}
-          processingId={processingId}
-        />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+            gap: "12px",
+            padding: "8px",
+          }}
+        >
+          {mockEvents.map((ev) => {
+            const unified: UnifiedApprovalItem = {
+              id: ev.id,
+              entityType: "events",
+              actionType: "new",
+              name: ev.name,
+              typeLabel: "event",
+              categoryLabel: "—",
+              submittedDate: ev.submitted_at || "",
+              image: null,
+              raw: ev as any,
+            };
+            return (
+              <UnifiedApprovalCard
+                key={`event-${ev.id}`}
+                item={unified}
+                onView={(u) => handleView(u.raw)}
+                onApprove={() => window.alert("Event approval not implemented")}
+                onReject={() => window.alert("Event rejection not implemented")}
+              />
+            );
+          })}
+          {mockEvents.length === 0 && (
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                textAlign: "center",
+                opacity: 0.7,
+              }}
+            >
+              No events
+            </div>
+          )}
+        </div>
       )}
 
-      {activeTab === "businesses" && (
-        <ApprovalTable
-          items={mockBusinesses}
-          contentType="businesses"
-          onView={handleView}
-          onApprove={() => alert("Businesses approval not yet implemented")}
-          onReject={() => alert("Businesses rejection not yet implemented")}
-          processingId={processingId}
-        />
-      )}
-
-      {activeTab === "accommodations" && (
-        <ApprovalTable
-          items={mockAccommodations}
-          contentType="accommodations"
-          onView={handleView}
-          onApprove={() => alert("Accommodations approval not yet implemented")}
-          onReject={() => alert("Accommodations rejection not yet implemented")}
-          processingId={processingId}
-        />
-      )}
+      {activeTab === "businesses" &&
+        (display === "cards" ? (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              gap: "12px",
+              padding: "8px",
+            }}
+          >
+            {pendingBusinesses
+              .filter(
+                (b: any) =>
+                  !query ||
+                  String(b.business_name || b.name || "")
+                    .toLowerCase()
+                    .includes(query.trim().toLowerCase())
+              )
+              .map((biz: any) => {
+                const unified: UnifiedApprovalItem = {
+                  id: biz.id,
+                  entityType: "businesses",
+                  actionType: "new",
+                  name: biz.business_name || biz.name,
+                  typeLabel: biz.business_type_name || "business",
+                  categoryLabel: biz.business_category_name || "—",
+                  submittedDate: biz.created_at || "",
+                  image: biz.business_image || null,
+                  raw: biz as any,
+                };
+                return (
+                  <UnifiedApprovalCard
+                    key={`biz-${biz.id}`}
+                    item={unified}
+                    onView={(u) => handleView(u.raw)}
+                    onApprove={(u) => handleApprove(String(u.id))}
+                    onReject={(u) => handleReject(String(u.id))}
+                  />
+                );
+              })}
+            {pendingBusinesses.length === 0 && (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  textAlign: "center",
+                  opacity: 0.7,
+                }}
+              >
+                No pending businesses
+              </div>
+            )}
+          </div>
+        ) : (
+          <Table
+            size="sm"
+            stripe="odd"
+            hoverRow
+            variant="outlined"
+            sx={{
+              "--TableCell-paddingX": "8px",
+              "--TableCell-paddingY": "8px",
+            }}
+          >
+            <thead>
+              <tr>
+                <th style={{ width: "40%" }}>Name</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Submitted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pendingBusinesses
+                .filter(
+                  (b: any) =>
+                    !query ||
+                    String(b.business_name || b.name || "")
+                      .toLowerCase()
+                      .includes(query.trim().toLowerCase())
+                )
+                .map((biz: any) => (
+                  <tr key={`biz-row-${biz.id}`}>
+                    <th scope="row">{biz.business_name || biz.name}</th>
+                    <td>{biz.business_type_name || "business"}</td>
+                    <td>{biz.business_category_name || "—"}</td>
+                    <td>
+                      {biz.created_at
+                        ? new Date(biz.created_at).toLocaleDateString()
+                        : ""}
+                    </td>
+                    <td>
+                      <Stack direction="row" spacing={0.5}>
+                        <JoyButton
+                          size="sm"
+                          variant="soft"
+                          onClick={() => handleView(biz)}
+                        >
+                          View
+                        </JoyButton>
+                        <JoyButton
+                          size="sm"
+                          variant="outlined"
+                          color="success"
+                          onClick={() => handleApprove(String(biz.id))}
+                        >
+                          Approve
+                        </JoyButton>
+                        <JoyButton
+                          size="sm"
+                          variant="outlined"
+                          color="danger"
+                          onClick={() => handleReject(String(biz.id))}
+                        >
+                          Reject
+                        </JoyButton>
+                      </Stack>
+                    </td>
+                  </tr>
+                ))}
+              {pendingBusinesses.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: "center", opacity: 0.7 }}>
+                    No pending businesses
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
+        ))}
 
       <ViewModal
         isOpen={!!selectedItem}

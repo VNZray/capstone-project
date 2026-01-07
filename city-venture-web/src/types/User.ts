@@ -31,7 +31,7 @@ export type UserDetails = {
   role_name?: string;
   description?: string;
   email: string;
-  password: string | "";
+  // SECURITY: password removed - never store plaintext passwords in client state
   phone_number?: string | "";
   gender?: string | "";
   birthdate?: string | "";
@@ -54,6 +54,9 @@ export type UserDetails = {
   // RBAC: permissions from backend
   permissions?: string[];
   business_id?: string;
+  // Staff onboarding flags
+  must_change_password?: boolean;
+  profile_completed?: boolean;
 };
 
 export type TokenPayload = {

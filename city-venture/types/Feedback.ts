@@ -14,7 +14,7 @@ export type ReviewAndRating = {
 
 export type ReviewAndRatings = ReviewAndRating[];
 
-export type ReviewType = 'accommodation' | 'restaurant' | 'tourist_spot' | 'shop' | 'service';
+export type ReviewType = 'accommodation' | 'restaurant' | 'tourist_spot' | 'shop' | 'service' | 'room';
 
 export type ReviewPhoto = {
   id: string;
@@ -77,6 +77,13 @@ export type CreateReplyPayload = {
 
 export type UpdateReplyPayload = {
   message: string;
+};
+
+// Extended review type with entity details (from GetReviewsByTouristId)
+export type ReviewWithEntityDetails = ReviewAndRating & {
+  entity_name?: string | null;
+  business_id?: string | null;
+  accommodation_name?: string | null;
 };
 
 // Legacy alias for backward compatibility

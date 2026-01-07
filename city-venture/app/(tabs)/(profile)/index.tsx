@@ -1,229 +1,281 @@
 import Button from '@/components/Button';
-import StatCard from '@/components/StatCard';
 import { ThemedText } from '@/components/themed-text';
-import { colors } from '@/constants/color';
+import { colors, Colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FontAwesome5 } from '@expo/vector-icons';
+import LoginPromptModal from '@/components/LoginPromptModal';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
+import { Routes } from '@/routes/mainRoutes';
+import MenuItem from '@/components/ui/MenuItem';
+import SectionHeader from '@/components/ui/SectionHeader';
 
 const Profile = () => {
-  const { user, logout } = useAuth();
-  const scheme = useColorScheme();
-  const mode: 'light' | 'dark' = scheme === 'dark' ? 'dark' : 'light';
-  const bg = scheme === 'dark' ? '#0F1222' : '#F5F7FB';
-  const card = scheme === 'dark' ? '#161A2E' : '#FFFFFF';
-  const textMuted = scheme === 'dark' ? '#A9B2D0' : '#6A768E';
+  const { user, logout, isAuthenticated } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { push, replace, isNavigating } = usePreventDoubleNavigation();
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  // Colors (Light Mode Only)
+  const bg = Colors.light.background;
+  const card = Colors.light.surface;
+  const textPrimary = Colors.light.text;
+  const textSecondary = Colors.light.textSecondary;
+  const border = Colors.light.border;
 
   const fullName = `${user?.first_name ?? 'Traveler'} ${
     user?.last_name ?? ''
   }`.trim();
+
   const handle = useMemo(
     () => (user?.email ? user.email.split('@')[0] : 'wanderer'),
     [user?.email]
   );
 
-  if (!user) {
-    // Lightweight unauthenticated fallback to avoid white screen
+  // Guest mode: Show login prompt
+  if (!isAuthenticated) {
     return (
-      <View style={[styles.screen, { alignItems: 'center', justifyContent: 'center' }]}> 
-        <ThemedText type="sub-title-medium" weight="bold">You're not signed in</ThemedText>
-        <ThemedText type="label-medium" style={{ color: '#6A768E', marginTop: 6 }}>Please sign in to view your profile.</ThemedText>
-        <View style={{ marginTop: 14, width: '60%' }}>
-          <Button label="Go to Home" variant="solid" color="primary" size="large" fullWidth radius={14} onPress={() => router.replace('/(tabs)/(home)')} />
+      <View
+        style={[
+          styles.screen,
+          {
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: bg,
+            paddingHorizontal: 32,
+          },
+        ]}
+      >
+        <ThemedText
+          type="title-large"
+          weight="bold"
+          style={{ marginBottom: 12 }}
+        >
+          Your Profile Awaits
+        </ThemedText>
+        <ThemedText
+          type="body-medium"
+          style={{
+            color: textSecondary,
+            marginBottom: 32,
+            textAlign: 'center',
+            lineHeight: 22,
+          }}
+        >
+          Sign in to access your bookings, orders, and personalized travel
+          experience.
+        </ThemedText>
+        <View style={{ width: '100%', maxWidth: 300 }}>
+          <Button
+            label="Log In"
+            variant="solid"
+            color="primary"
+            size="large"
+            radius={12}
+            onPress={() => setShowLoginPrompt(true)}
+          />
         </View>
+
+        <LoginPromptModal
+          visible={showLoginPrompt}
+          onClose={() => setShowLoginPrompt(false)}
+          actionName="access your profile"
+          title="Login to View Profile"
+          message="Sign in to manage your bookings, orders, and account settings."
+        />
       </View>
     );
   }
 
-  const onEdit = () => router.push('/(tabs)/(profile)/(edit)');
-  const onSettings = () => router.push('/(tabs)/(profile)/(settings)');
-  const onBookings = () => router.push('/(tabs)/(profile)/(bookings)');
-  const onReports = () => router.push('/(tabs)/(profile)/(reports)');
+  const onAccount = () => push(Routes.profile.account);
+  const onSettings = () => push(Routes.profile.settings);
+  const onBookings = () => push(Routes.profile.bookings.index);
+  const onReports = () => push(Routes.profile.reports.index);
+  const onReviews = () => push(Routes.profile.reviews);
+  const onSecurity = () => push(Routes.profile.security);
+  const onRateApp = () => push(Routes.profile.rateApp);
 
-  const activities = [
-    {
-      id: '1',
-      title: 'Naga City Tour',
-      subtitle: 'Saved • 2d ago',
-      image: require('@/assets/images/partial-react-logo.png'),
-    },
-    {
-      id: '2',
-      title: 'Uma Hotel Residences',
-      subtitle: 'Booked • last week',
-      image: require('@/assets/images/android-icon-foreground.png'),
-    },
-    {
-      id: '3',
-      title: 'Plaza Quince Martires',
-      subtitle: 'Reviewed • 3w ago',
-      image: require('@/assets/images/react-logo.png'),
-    },
-  ];
+  const onNotifications = () => push(Routes.profile.notifications);
+  const onTransactions = () => push(Routes.profile.transactions);
+
+  const onTerms = () => push(Routes.profile.terms);
+  const onPrivacy = () => push(Routes.profile.privacy);
 
   return (
-    <View style={[styles.screen, { backgroundColor: bg }]}>
+    <View style={[styles.screen, { backgroundColor: Colors.light.primary }]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 80 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header Banner */}
-        <View style={styles.bannerWrap}>
+        {/* Header Section with Gradient */}
+        <View
+          style={[
+            styles.headerContainer,
+            { backgroundColor: Colors.light.primary },
+          ]}
+        >
           <LinearGradient
-            colors={[
-              scheme === 'dark' ? '#0D1B3D' : '#9BC9FF',
-              scheme === 'dark' ? '#1A2F5E' : '#EAF4FF',
-            ]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.banner}
+            colors={[Colors.light.primary, '#142860']}
+            style={[styles.headerGradient]}
           >
-            {/* Decorative icons */}
-            <FontAwesome5
-              name="plane-departure"
-              size={18}
-              color="rgba(255,255,255,0.7)"
-              style={{ position: 'absolute', top: 16, left: 16 }}
-            />
-            <FontAwesome5
-              name="water"
-              size={16}
-              color="rgba(255,255,255,0.6)"
-              style={{ position: 'absolute', bottom: 16, right: 24 }}
-            />
+            <View style={styles.profileInfo}>
+              <View style={styles.avatarContainer}>
+                <Image
+                  source={
+                    user?.user_profile
+                      ? { uri: user.user_profile }
+                      : require('@/assets/images/react-logo.png')
+                  }
+                  style={styles.avatar}
+                  resizeMode="cover"
+                />
+                <Pressable style={styles.editBadge} onPress={onAccount}>
+                  <FontAwesome5 name="camera" size={10} color="#fff" />
+                </Pressable>
+              </View>
 
-            {/* Edit button */}
-            <Pressable
-              onPress={onEdit}
-              style={styles.editBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Edit profile"
-            >
-              <FontAwesome5 name="pen" size={14} color="#0A1B47" />
-            </Pressable>
-          </LinearGradient>
-
-          {/* Avatar */}
-          <View style={styles.avatarRingOuter}>
-            <View style={[styles.avatarRingInner, { backgroundColor: card }]}>
-              <Image
-                source={user.user_profile ? { uri: user.user_profile } : require('@/assets/images/react-logo.png')}
-                style={styles.avatar}
-                resizeMode="cover"
-              />
-              <View style={styles.cameraBadge}>
-                <FontAwesome5 name="camera" size={12} color="#fff" />
+              <View style={{ gap: 4, alignItems: 'center' }}>
+                <ThemedText
+                  type="title-medium"
+                  weight="bold"
+                  style={{ fontSize: 24, color: 'white' }}
+                >
+                  {fullName}
+                </ThemedText>
+                <ThemedText
+                  type="body-small"
+                  style={{ color: 'rgba(255,255,255,0.8)' }}
+                >
+                  @{handle}
+                </ThemedText>
               </View>
             </View>
+          </LinearGradient>
+        </View>
+
+        {/* Menu Sections */}
+        <View style={styles.menuContainer}>
+          <SectionHeader title="My Account" />
+          <View style={[styles.menuGroup, { backgroundColor: card }]}>
+            <MenuItem
+              icon="receipt-outline"
+              iconColor="#F59E0B"
+              iconBg="#FFFBEB"
+              label="My Orders"
+              onPress={() => push(Routes.profile.orders.index)}
+              border={border}
+            />
+            <MenuItem
+              icon="calendar-outline"
+              iconColor="#3B82F6"
+              iconBg="#EBF8FF"
+              label="My Bookings"
+              onPress={onBookings}
+              border={border}
+            />
+
+            <MenuItem
+              icon="notifications-outline"
+              iconColor="#8B5CF6"
+              iconBg="#F3E8FF"
+              label="Notification Settings"
+              onPress={onNotifications}
+              border={border}
+            />
+
+            <MenuItem
+              icon="notifications-outline"
+              iconColor={Colors.light.warning}
+              iconBg="#FEF3C7"
+              label="Transaction History"
+              onPress={onTransactions}
+              border={border}
+            />
+
+            <MenuItem
+              icon="chatbubble-ellipses-outline"
+              iconColor="#EC4899"
+              iconBg="#FCE7F3"
+              label="My Reviews"
+              onPress={onReviews}
+              border={border}
+            />
+
+            <MenuItem
+              icon="person-outline"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              label="Personnal Information"
+              onPress={onAccount}
+              last
+            />
+            <MenuItem
+              icon="shield-outline"
+              iconColor="#10B981"
+              iconBg="#ECFDF5"
+              label="Account Security"
+              onPress={onSecurity}
+              last
+            />
           </View>
-        </View>
 
-        {/* Identity */}
-        <View style={{ alignItems: 'center', marginTop: 44 }}>
-          <ThemedText type="title-medium" weight="bold" align="center">
-            {fullName}
-          </ThemedText>
-          <ThemedText
-            type="body-small"
-            align="center"
-            style={{ color: textMuted }}
-          >
-            @{handle} • Traveler | Explorer | Foodie
-          </ThemedText>
-        </View>
-
-        {/* Stats */}
-        <View style={styles.sectionPad}>
-          <View style={styles.statsRow}>
-            <StatCard
-              icon="suitcase-rolling"
-              label="Trips"
-              value={12}
-              card={card}
-              scheme={mode}
+          <SectionHeader title="Support & Other" />
+          <View style={[styles.menuGroup, { backgroundColor: card }]}>
+            <MenuItem
+              icon="star-outline"
+              iconColor="#F59E0B"
+              iconBg="#FFFBEB"
+              label="Rate The App"
+              onPress={onRateApp}
+              border={border}
             />
-            <StatCard
-              icon="heart"
-              label="Favorites"
-              value={8}
-              card={card}
-              scheme={mode}
-            />
-            <StatCard
-              icon="star"
-              label="Reviews"
-              value={15}
-              card={card}
-              scheme={mode}
+            <MenuItem
+              icon="flag-outline"
+              iconColor="#EF4444"
+              iconBg="#FEF2F2"
+              label="Report a Problem"
+              onPress={onReports}
+              last
             />
           </View>
-        </View>
 
-        {/* Personal Info */}
-        <Section title="Personal Info" cardBg={card}>
-          <InfoRow icon="envelope" label="Email" value={user.email ?? '—'} />
-          <InfoRow icon="phone" label="Phone" value={user.phone_number ?? '—'} />
-          <InfoRow icon="flag" label="Nationality" value={user.nationality ?? '—'} />
-          <InfoRow icon="user" label="Age / Gender" value={`${user.age ?? '—'} / ${user.gender ?? '—'}`} last />
-        </Section>
-
-        {/* Activity */}
-        <Section
-          title="Recent Activity"
-          cardBg={card}
-          onActionPress={onBookings}
-          actionLabel="See all"
-        >
-          {activities.map((a, i) => (
-            <ActivityItem
-              key={a.id}
-              image={a.image}
-              title={a.title}
-              subtitle={a.subtitle}
-              last={i === activities.length - 1}
+          <SectionHeader title="Legal" />
+          <View style={[styles.menuGroup, { backgroundColor: card }]}>
+            <MenuItem
+              icon="document-text-outline"
+              iconColor="#6366F1"
+              iconBg="#EEF2FF"
+              label="Terms and Conditions"
+              onPress={onTerms}
+              border={border}
             />
-          ))}
-        </Section>
+            <MenuItem
+              icon="shield-checkmark-outline"
+              iconColor="#14B8A6"
+              iconBg="#F0FDFA"
+              label="Privacy Policy"
+              onPress={onPrivacy}
+              last
+            />
+          </View>
 
-        {/* Footer Actions */}
-        <View style={[styles.sectionPad, { gap: 12 }]}>
-          <Button
-            label="Settings"
-            variant="soft"
-            color="info"
-            size="medium"
-            fullWidth
-            radius={14}
-            startIcon="cog"
-            onPress={onSettings}
-          />
-          <Button
-            label="Reports"
-            variant="soft"
-            color="info"
-            size="large"
-            fullWidth
-            radius={14}
-            startIcon="flag"
-            onPress={onReports}
-          />
-          <Button
-            label="Log Out"
-            variant="solid"
-            color="error"
-            size="medium"
-            fullWidth
-            radius={14}
-            startIcon="sign-out-alt"
-            onPress={async () => {
-              logout();
-              router.replace('/');
-            }}
-          />
+          <View style={{ marginTop: 32, marginBottom: 40 }}>
+            <Button
+              label="Log Out"
+              onPress={async () => {
+                logout();
+                replace(Routes.root);
+              }}
+              variant="outlined"
+              color="error"
+              size="large"
+              fullWidth
+              radius={16}
+            />
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -232,196 +284,100 @@ const Profile = () => {
 
 export default Profile;
 
-type InfoRowProps = { icon: any; label: string; value: string; last?: boolean };
-const InfoRow = ({ icon, label, value, last }: InfoRowProps) => (
-  <View style={[styles.infoRow, !last && styles.infoDivider]}>
-    <View style={styles.infoIconWrap}>
-      <FontAwesome5 name={icon} size={14} color={colors.primary} />
-    </View>
-    <ThemedText type="body-small" weight="semi-bold" style={{ width: 110 }}>
-      {label}
-    </ThemedText>
-    <ThemedText type="body-small" style={{ color: '#6A768E', flex: 1 }}>
-      {value}
-    </ThemedText>
-  </View>
-);
-
-type ActivityItemProps = {
-  image: any;
-  title: string;
-  subtitle: string;
-  last?: boolean;
-};
-const ActivityItem = ({ image, title, subtitle, last }: ActivityItemProps) => (
-  <View style={[styles.activityItem, !last && styles.infoDivider]}>
-    <Image source={image} style={styles.activityThumb} />
-    <View style={{ flex: 1, marginLeft: 12 }}>
-      <ThemedText type="body-medium" weight="semi-bold">
-        {title}
-      </ThemedText>
-      <ThemedText type="label-small" style={{ color: '#6A768E' }}>
-        {subtitle}
-      </ThemedText>
-    </View>
-    <FontAwesome5 name="chevron-right" size={12} color="#9AA4B2" />
-  </View>
-);
-
-type SectionProps = {
-  title: string;
-  children: React.ReactNode;
-  cardBg: string;
-  onActionPress?: () => void;
-  actionLabel?: string;
-};
-const Section = ({
-  title,
-  children,
-  cardBg,
-  onActionPress,
-  actionLabel,
-}: SectionProps) => (
-  <View style={styles.sectionPad}>
-    <View style={styles.sectionHeader}>
-      <ThemedText type="sub-title-small" weight="bold">
-        {title}
-      </ThemedText>
-      {onActionPress ? (
-        <Pressable onPress={onActionPress}>
-          <ThemedText type="link-small">{actionLabel ?? 'More'}</ThemedText>
-        </Pressable>
-      ) : null}
-    </View>
-    <View style={[styles.card, { backgroundColor: cardBg }, shadow(1)]}>
-      {children}
-    </View>
-  </View>
-);
-
-// ---------- Styles ----------
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  bannerWrap: { position: 'relative' },
-  banner: { height: 200 },
-  editBtn: {
-    position: 'absolute',
-    right: 16,
-    top: 50,
-    backgroundColor: '#fff',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerContainer: {
+    overflow: 'hidden',
   },
-  avatarRingOuter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: -44,
-    alignItems: 'center',
+  headerGradient: {
+    paddingHorizontal: 24,
+    paddingBottom: 20,
   },
-  avatarRingInner: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
-    padding: 4,
-    borderWidth: 3,
-    borderColor: '#FFFFFFAA',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatar: { width: 100, height: 100, borderRadius: 50 },
-  cameraBadge: {
-    position: 'absolute',
-    right: 4,
-    bottom: 4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionPad: { paddingHorizontal: 20, marginTop: 18 },
-  statsRow: { flexDirection: 'row', gap: 12 },
-  statCard: {
-    flex: 1,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 6,
+  headerTop: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  statIcon: {
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  profileInfo: {
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 20,
+  },
+  avatarContainer: {
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: colors.primary,
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
   },
-  sectionHeader: {
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
   },
-  card: { borderRadius: 16, padding: 12 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  infoDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E6EF',
+  statDivider: {
+    width: 1,
+    height: 24,
   },
-  infoIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+  menuContainer: {
+    paddingHorizontal: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
+    paddingTop: 32,
+    backgroundColor: Colors.light.background,
+  },
+  menuGroup: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  chevronContainer: {
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF4FF',
-    marginRight: 10,
   },
-  activityItem: {
+  themeOption: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-  },
-  activityThumb: {
-    width: 54,
-    height: 54,
-    borderRadius: 12,
-    backgroundColor: '#EAEFF7',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 16,
   },
 });
-
-// Soft shadow helper
-function shadow(level: 1 | 2 | 3) {
-  switch (level) {
-    case 1:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.08,
-        shadowRadius: 2,
-        shadowOffset: { width: 0, height: 1 },
-        elevation: 1,
-      } as const;
-    case 2:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.12,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 2 },
-        elevation: 2,
-      } as const;
-    default:
-      return {
-        shadowColor: '#1e1e1e',
-        shadowOpacity: 0.16,
-        shadowRadius: 4,
-        shadowOffset: { width: 0, height: 3 },
-        elevation: 3,
-      } as const;
-  }
-}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Container from "@/src/components/Container";
 import Typography from "@/src/components/Typography";
@@ -6,6 +6,7 @@ import Button from "@/src/components/Button";
 import { FaMobileAlt, FaCheckCircle } from "react-icons/fa";
 import { AspectRatio, Grid } from "@mui/joy";
 import dashboard_preview from "@/src/assets/images/dashboard_preview.png";
+import Section from "@/src/components/ui/Section";
 
 interface FeaturesSectionProps {
   mobilePreview?: string;
@@ -17,6 +18,10 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   dashboardPreview,
 }) => {
   const navigate = useNavigate();
+  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
+  const [hoveredSection, setHoveredSection] = useState<
+    "tourist" | "business" | null
+  >(null);
 
   const touristFeatures = [
     "Interactive Map",
@@ -31,31 +36,66 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
   ];
 
   return (
-    <section id="why-choose-us" style={{ padding: "16px" }}>
+    <Section
+      padding="80px 0"
+      height="auto"
+      id="why-choose-us"
+      style={{ position: "relative", overflow: "hidden" }}
+    >
       <Container
         align="center"
         padding="0"
         gap="80px"
-        style={{ margin: "0 0 60px 0" }}
+        style={{ position: "relative", zIndex: 1 }}
       >
         <Grid xs={12} sm={11} md={11} lg={9} container spacing={4}>
           <Grid xs={12} sm={12} md={12} lg={6}>
             {/* Mobile app showcase */}
             <Container
-              elevation={2}
+              elevation={hoveredSection === "tourist" ? 3 : 2}
               padding="0"
               gap="0"
               radius="18px"
-              style={{ overflow: "hidden" }}
+              onMouseEnterProp={() => setHoveredSection("tourist")}
+              onMouseLeaveProp={() => setHoveredSection(null)}
+              style={{
+                overflow: "hidden",
+                transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                transform:
+                  hoveredSection === "tourist"
+                    ? "translateY(-8px) scale(1.02)"
+                    : "translateY(0) scale(1)",
+                borderColor:
+                  hoveredSection === "tourist" ? "#28C76F" : "transparent",
+                borderWidth: 2,
+                borderStyle: "solid",
+              }}
             >
               <Container
                 padding="14px"
                 direction="row"
                 align="center"
                 gap="8px"
-                style={{ borderBottom: "1px solid #F0F3F8" }}
+                style={{
+                  borderBottom: "1px solid #F0F3F8",
+                  background:
+                    hoveredSection === "tourist"
+                      ? "linear-gradient(135deg, rgba(40, 199, 111, 0.05), rgba(255, 145, 77, 0.05))"
+                      : "transparent",
+                  transition: "background 0.3s ease",
+                }}
               >
-                <FaMobileAlt />
+                <div
+                  style={{
+                    transition: "transform 0.3s ease",
+                    transform:
+                      hoveredSection === "tourist"
+                        ? "rotate(5deg) scale(1.1)"
+                        : "rotate(0) scale(1)",
+                  }}
+                >
+                  <FaMobileAlt />
+                </div>
                 <Typography.Label size="sm">
                   Mobile App Preview
                 </Typography.Label>
@@ -66,6 +106,11 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                     mobilePreview ||
                     "https://cdn.dribbble.com/userupload/44244484/file/08ed1664e91d12793bdc96d92ed8bca5.png?resize=400x0"
                   }
+                  style={{
+                    transition: "transform 0.4s ease",
+                    transform:
+                      hoveredSection === "tourist" ? "scale(1.05)" : "scale(1)",
+                  }}
                 />
               </AspectRatio>
             </Container>
@@ -74,12 +119,14 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
           <Grid xs={12} sm={12} md={12} lg={6}>
             {/* Tourist features content */}
             <Container padding="0" gap="16px">
-              <Typography.Label
-                size="xs"
-                sx={{ color: "#FF914D", letterSpacing: 1 }}
-              >
-                FOR TOURISTS
-              </Typography.Label>
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <Typography.Label
+                  size="xs"
+                  sx={{ color: "#FF914D", letterSpacing: 1 }}
+                >
+                  FOR TOURISTS
+                </Typography.Label>
+              </div>
               <Typography.Header size="md">
                 Discover Naga with our mobile app
               </Typography.Header>
@@ -99,13 +146,37 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                 {touristFeatures.map((feature, i) => (
                   <li
                     key={i}
-                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                    onMouseEnter={() => setHoveredFeature(i)}
+                    onMouseLeave={() => setHoveredFeature(null)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "12px",
+                      borderRadius: "12px",
+                      background:
+                        hoveredFeature === i
+                          ? "linear-gradient(135deg, rgba(40, 199, 111, 0.08), rgba(255, 145, 77, 0.08))"
+                          : "transparent",
+                      transform:
+                        hoveredFeature === i
+                          ? "translateX(8px)"
+                          : "translateX(0)",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      cursor: "pointer",
+                    }}
                   >
                     <span
                       style={{
                         color: "#28C76F",
                         display: "grid",
                         placeItems: "center",
+                        transform:
+                          hoveredFeature === i
+                            ? "scale(1.2) rotate(360deg)"
+                            : "scale(1) rotate(0)",
+                        transition:
+                          "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
                       }}
                     >
                       <FaCheckCircle />
@@ -146,22 +217,24 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
 
         <Grid xs={12} sm={11} md={11} lg={9} container spacing={4}>
           <Grid xs={12} sm={12} md={12} lg={6}>
-            {/* Tourist features content */}
+            {/* Business features content */}
             <Container padding="0" gap="16px">
-              <Typography.Label
-                size="xs"
-                sx={{
-                  letterSpacing: 1,
-                  background:
-                    "linear-gradient(90deg, #FF6B6B 0%, #FF914D 45%, #28C76F 100%)",
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                  fontWeight: 700,
-                }}
-              >
-                FOR BUSINESS OWNERS
-              </Typography.Label>
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <Typography.Label
+                  size="xs"
+                  sx={{
+                    letterSpacing: 1,
+                    background:
+                      "linear-gradient(90deg, #FF6B6B 0%, #FF914D 45%, #28C76F 100%)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                    color: "transparent",
+                    fontWeight: 700,
+                  }}
+                >
+                  FOR BUSINESS OWNERS
+                </Typography.Label>
+              </div>
               <Typography.Header size="md">
                 Benefits of registering your business
               </Typography.Header>
@@ -181,13 +254,37 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
                 {businessFeatures.map((feature, i) => (
                   <li
                     key={i}
-                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                    onMouseEnter={() => setHoveredFeature(i + 10)}
+                    onMouseLeave={() => setHoveredFeature(null)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "12px",
+                      borderRadius: "12px",
+                      background:
+                        hoveredFeature === i + 10
+                          ? "linear-gradient(135deg, rgba(255, 107, 107, 0.08), rgba(255, 145, 77, 0.08))"
+                          : "transparent",
+                      transform:
+                        hoveredFeature === i + 10
+                          ? "translateX(8px)"
+                          : "translateX(0)",
+                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                      cursor: "pointer",
+                    }}
                   >
                     <span
                       style={{
                         color: "#28C76F",
                         display: "grid",
                         placeItems: "center",
+                        transform:
+                          hoveredFeature === i + 10
+                            ? "scale(1.2) rotate(360deg)"
+                            : "scale(1) rotate(0)",
+                        transition:
+                          "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
                       }}
                     >
                       <FaCheckCircle />
@@ -232,26 +329,55 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({
           <Grid xs={12} sm={12} md={12} lg={6}>
             {/* Dashboard preview */}
             <Container
-              elevation={2}
+              elevation={hoveredSection === "business" ? 3 : 2}
               padding="0"
               radius="16px"
               gap="0"
-              style={{ overflow: "hidden" }}
+              onMouseEnterProp={() => setHoveredSection("business")}
+              onMouseLeaveProp={() => setHoveredSection(null)}
+              style={{
+                overflow: "hidden",
+                transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                transform:
+                  hoveredSection === "business"
+                    ? "translateY(-8px) scale(1.02)"
+                    : "translateY(0) scale(1)",
+                borderColor:
+                  hoveredSection === "business" ? "#FF6B6B" : "transparent",
+                borderWidth: 2,
+                borderStyle: "solid",
+              }}
             >
               <Container
                 padding="14px"
-                style={{ borderBottom: "1px solid #F0F3F8" }}
+                style={{
+                  borderBottom: "1px solid #F0F3F8",
+                  background:
+                    hoveredSection === "business"
+                      ? "linear-gradient(135deg, rgba(255, 107, 107, 0.05), rgba(255, 145, 77, 0.05))"
+                      : "transparent",
+                  transition: "background 0.3s ease",
+                }}
               >
                 <Typography.Label size="sm">Dashboard Preview</Typography.Label>
               </Container>
               <AspectRatio ratio={"16/9"}>
-                <img src={dashboardPreview || dashboard_preview} />
+                <img
+                  src={dashboardPreview || dashboard_preview}
+                  style={{
+                    transition: "transform 0.4s ease",
+                    transform:
+                      hoveredSection === "business"
+                        ? "scale(1.05)"
+                        : "scale(1)",
+                  }}
+                />
               </AspectRatio>
             </Container>
           </Grid>
         </Grid>
       </Container>
-    </section>
+    </Section>
   );
 };
 

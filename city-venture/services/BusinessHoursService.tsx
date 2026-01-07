@@ -1,15 +1,14 @@
-import axios from 'axios';
-import api from '@/services/api';
-import type { BusinessHours, BusinessSchedule } from '@/types/Business';
+import apiClient from '../services/apiClient';
+import type { BusinessHours, BusinessSchedule } from '../types/Business';
 
 // Fetch all business hours
 export const fetchAllBusinessHours = async (): Promise<BusinessSchedule> => {
   try {
-    const { data } = await axios.get<BusinessHours[]>(`${api}/business-hours`);
+    const { data } = await apiClient.get<BusinessHours[]>(`/business-hours`);
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch (error: any) {
     // If 404 (no hours found), return empty array instead of throwing
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
+    if (error.response?.status === 404) {
       return [];
     }
     // Re-throw other errors

@@ -73,7 +73,7 @@ const getSizeConfig = (size: CardSize, variant: CardVariant) => {
       default: {
         imageHeight: "200px",
         titleSize: "sm" as const,
-        subtitleSize: "sm" as const,
+        subtitleSize: "xs" as const,
         padding: "16px",
         gap: "12px",
         buttonSize: "md" as const,
@@ -81,7 +81,7 @@ const getSizeConfig = (size: CardSize, variant: CardVariant) => {
       md: {
         imageHeight: "240px",
         titleSize: "normal" as const,
-        subtitleSize: "sm" as const,
+        subtitleSize: "xs" as const,
         padding: "18px",
         gap: "14px",
         buttonSize: "md" as const,
@@ -89,7 +89,7 @@ const getSizeConfig = (size: CardSize, variant: CardVariant) => {
       lg: {
         imageHeight: "280px",
         titleSize: "md" as const,
-        subtitleSize: "normal" as const,
+        subtitleSize: "xs" as const,
         padding: "20px",
         gap: "16px",
         buttonSize: "lg" as const,
@@ -115,7 +115,7 @@ const getSizeConfig = (size: CardSize, variant: CardVariant) => {
       default: {
         imageWidth: "120px",
         titleSize: "sm" as const,
-        subtitleSize: "sm" as const,
+        subtitleSize: "xs" as const,
         padding: "16px",
         gap: "16px",
         buttonSize: "md" as const,
@@ -131,7 +131,7 @@ const getSizeConfig = (size: CardSize, variant: CardVariant) => {
       lg: {
         imageWidth: "180px",
         titleSize: "md" as const,
-        subtitleSize: "normal" as const,
+        subtitleSize: "xs" as const,
         padding: "20px",
         gap: "20px",
         buttonSize: "lg" as const,

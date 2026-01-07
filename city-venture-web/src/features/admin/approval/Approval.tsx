@@ -1,23 +1,23 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiService } from "@/src/utils/api";
-import ApprovalTable from "./components/ApprovalTable";
-import OverviewCard from "./components/OverviewCard";
 import ViewModal from "./components/ViewModal";
-import NavCard from "./components/NavCard";
-import { Divider, Grid, IconButton, CircularProgress } from "@mui/joy";
-import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
-import PlaceRoundedIcon from "@mui/icons-material/PlaceRounded";
-import EventRoundedIcon from "@mui/icons-material/EventRounded";
-import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
-import HotelRoundedIcon from "@mui/icons-material/HotelRounded";
-import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
-
+import StatCard from "./components/StatCard";
+import SubmissionCard from "./components/SubmissionCard";
+import { Box, Grid, Chip, Input, CircularProgress } from "@mui/joy";
+import SearchIcon from "@mui/icons-material/Search";
+import DescriptionIcon from "@mui/icons-material/Description";
+import PlaceIcon from "@mui/icons-material/Place";
+import EventIcon from "@mui/icons-material/Event";
+import BusinessIcon from "@mui/icons-material/Business";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import type { EntityType } from "@/src/types/approval";
-import Container from "@/src/components/Container";
-import PageContainer from "@/src/components/PageContainer";
 import Typography from "@/src/components/Typography";
-import SearchBar from "@/src/components/SearchBar";
+import Button from "@/src/components/Button";
 import { colors } from "@/src/utils/Colors";
+import placeholderImage from "@/src/assets/images/placeholder-image.png";
+import { useNavigate } from "react-router-dom";
 
 interface PendingItem {
   id: string;
@@ -70,6 +70,7 @@ const makeMock = (prefix: string) => [
 const ApprovalDashboard: React.FC = () => {
   const [pendingSpots, setPendingSpots] = useState<PendingItem[]>([]);
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
+  const [pendingBusinesses, setPendingBusinesses] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [selectedItem, setSelectedItem] = useState<Record<
@@ -78,18 +79,76 @@ const ApprovalDashboard: React.FC = () => {
   > | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  type DisplayMode = "cards" | "table";
+  const [display, setDisplay] = useState<DisplayMode>("cards");
+  const [touristStatus, setTouristStatus] = useState<"all" | "new" | "edit">(
+    "all"
+  );
+  const [touristCategory, setTouristCategory] = useState<string>("all");
+  const [businessCategory, setBusinessCategory] = useState<string>("all");
+
+  // Load persisted UI state
+  useEffect(() => {
+    try {
+      const savedDisplay = localStorage.getItem("approval.display");
+      const savedTab = localStorage.getItem("approval.activeTab");
+      const savedTStatus = localStorage.getItem("approval.touristStatus");
+      const savedTCategory = localStorage.getItem("approval.touristCategory");
+      const savedBCategory = localStorage.getItem("approval.businessCategory");
+      if (savedDisplay === "cards" || savedDisplay === "table")
+        setDisplay(savedDisplay);
+      if (savedTab) setActiveTab(savedTab as TabType);
+      if (
+        savedTStatus === "all" ||
+        savedTStatus === "new" ||
+        savedTStatus === "edit"
+      )
+        setTouristStatus(savedTStatus);
+      if (savedTCategory) setTouristCategory(savedTCategory);
+      if (savedBCategory) setBusinessCategory(savedBCategory);
+    } catch {}
+  }, []);
+
+  // Persist relevant state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.display", display);
+    } catch {}
+  }, [display]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.activeTab", activeTab);
+    } catch {}
+  }, [activeTab]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.touristStatus", touristStatus);
+    } catch {}
+  }, [touristStatus]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.touristCategory", touristCategory);
+    } catch {}
+  }, [touristCategory]);
+  useEffect(() => {
+    try {
+      localStorage.setItem("approval.businessCategory", businessCategory);
+    } catch {}
+  }, [businessCategory]);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const [spotsData, editsData] = await Promise.all([
+        const [spotsData, editsData, businessesData] = await Promise.all([
           apiService.getPendingItems("tourist_spots"),
           apiService.getPendingEditsByEntity("tourist_spots"),
+          apiService.getPendingItems("businesses"),
         ]);
 
         const spots = (spotsData as unknown[] | null) || [];
         const edits = (editsData as unknown[] | null) || [];
+        const businesses = (businessesData as unknown[] | null) || [];
 
         const transformedSpots: PendingItem[] = spots.map((s) => {
           const rec = (s as Record<string, unknown>) || {};
@@ -196,6 +255,21 @@ const ApprovalDashboard: React.FC = () => {
         });
 
         setPendingEdits(enriched);
+
+        // Businesses mapping
+        const transformedBusinesses: PendingItem[] = businesses.map((b) => {
+          const rec = (b as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["business_name"] ?? rec["name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            created_at: (rec["created_at"] as string) ?? null,
+            action_type: "new",
+            entityType: "businesses",
+          } as PendingItem;
+        });
+        setPendingBusinesses(transformedBusinesses);
       } catch (err) {
         console.error("Error loading approval data:", err);
       } finally {
@@ -207,9 +281,10 @@ const ApprovalDashboard: React.FC = () => {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [spotsData, editsData] = await Promise.all([
+      const [spotsData, editsData, businessesData] = await Promise.all([
         apiService.getPendingItems("tourist_spots"),
         apiService.getPendingEditsByEntity("tourist_spots"),
+        apiService.getPendingItems("businesses"),
       ]);
       const spotsArr = (spotsData as unknown[] | null) || [];
       setPendingSpots(
@@ -239,6 +314,22 @@ const ApprovalDashboard: React.FC = () => {
           } as PendingEdit;
         })
       );
+
+      const businessesArr = (businessesData as unknown[] | null) || [];
+      setPendingBusinesses(
+        businessesArr.map((b) => {
+          const rec = (b as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["business_name"] ?? rec["name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            created_at: (rec["created_at"] as string) ?? null,
+            action_type: "new",
+            entityType: "businesses",
+          } as PendingItem;
+        })
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -253,7 +344,7 @@ const ApprovalDashboard: React.FC = () => {
   ) => {
     setProcessingId(id);
     try {
-      const items = [...pendingSpots, ...pendingEdits];
+      const items = [...pendingSpots, ...pendingEdits, ...pendingBusinesses];
       const item = items.find((i) => String(i.id) === String(id));
       if (!item) return;
 
@@ -293,229 +384,572 @@ const ApprovalDashboard: React.FC = () => {
   const closeModal = () => setSelectedItem(null);
 
   const mockEvents = makeMock("Event");
-  const mockBusinesses = makeMock("Business");
-  const mockAccommodations = makeMock("Accommodation");
 
-  const allPendingItems = [...pendingSpots, ...pendingEdits];
+  const allPendingItems = [
+    ...pendingSpots,
+    ...pendingEdits,
+    ...pendingBusinesses,
+  ];
   const allItems: PendingItem[] = allPendingItems as PendingItem[];
 
-  const filteredItems = useMemo(() => {
+  const filteredTouristSpots = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return allItems;
-    return allItems.filter((i) =>
-      String(i.name ?? "")
-        .toLowerCase()
-        .includes(q)
+    let base = pendingSpots.filter(
+      (i) =>
+        !q ||
+        String(i.name ?? "")
+          .toLowerCase()
+          .includes(q)
     );
-  }, [allItems, query]);
+    if (touristCategory !== "all") {
+      base = base.filter(
+        (i: any) =>
+          Array.isArray(i.categories) &&
+          i.categories.some((c: any) => c.category === touristCategory)
+      );
+    }
+    if (touristStatus === "new") return base;
+    if (touristStatus === "edit") {
+      // only edits that pass search and category (category currently only on new items; keep edits when status=edit regardless of category filter)
+      return [];
+    }
+    return base;
+  }, [pendingSpots, query, touristCategory, touristStatus]);
+
+  const filteredTouristEdits = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return pendingEdits.filter(
+      (e) =>
+        !q ||
+        String(e.name ?? "")
+          .toLowerCase()
+          .includes(q)
+    );
+  }, [pendingEdits, query]);
+
+  const filteredBusinesses = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let base = pendingBusinesses.filter(
+      (b) =>
+        !q ||
+        String(b.name ?? "")
+          .toLowerCase()
+          .includes(q)
+    );
+    if (businessCategory !== "all")
+      base = base.filter(
+        (b: any) => (b.business_category_name || "—") === businessCategory
+      );
+    return base;
+  }, [pendingBusinesses, query, businessCategory]);
+
+  // Helper to extract a display image for tourist spots (new or edits)
+  const getTouristSpotImage = (item: any): string | null => {
+    if (!item || typeof item !== "object") return null;
+    // Direct properties
+    const directPrimary = item.primary_image || item.image_url;
+    // Images array on pending item
+    const imagesArr = Array.isArray(item.images) ? item.images : [];
+    const primaryFromArray = imagesArr.find(
+      (i: any) => i && (i.is_primary || i.isPrimary)
+    );
+    const firstImage = imagesArr[0];
+    // If this is an edit, inspect existingSpot container
+    const existing = item.existingSpot || item.original || null;
+    const existingImages =
+      existing && Array.isArray(existing.images) ? existing.images : [];
+    const existingPrimary = existingImages.find(
+      (i: any) => i && (i.is_primary || i.isPrimary)
+    );
+    const existingFirst = existingImages[0];
+    const existingPrimaryImageField = existing
+      ? existing.primary_image || existing.image_url
+      : null;
+    return (
+      directPrimary ||
+      (primaryFromArray &&
+        (primaryFromArray.file_url || primaryFromArray.url)) ||
+      (firstImage && (firstImage.file_url || firstImage.url)) ||
+      existingPrimaryImageField ||
+      (existingPrimary && (existingPrimary.file_url || existingPrimary.url)) ||
+      (existingFirst && (existingFirst.file_url || existingFirst.url)) ||
+      null ||
+      null
+    );
+  };
+
+  const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState<"all" | EntityType>("all");
 
   if (loading)
     return (
-      <PageContainer padding={20}>
-        <Container
-          align="center"
-          justify="center"
-          padding="4rem"
-          style={{ minHeight: "60vh" }}
-        >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+        }}
+      >
+        <Box sx={{ textAlign: "center" }}>
           <CircularProgress size="lg" />
           <Typography.Body size="sm" sx={{ marginTop: "1rem" }}>
             Loading approval data...
           </Typography.Body>
-        </Container>
-      </PageContainer>
+        </Box>
+      </Box>
     );
 
   return (
-    <PageContainer padding={20} style={{ height: "100vh" }}>
+    <Box
+      sx={{
+        padding: "clamp(1rem, 3vw, 2rem)",
+        margin: "0 auto",
+        backgroundColor: colors.background,
+      }}
+    >
       {/* Header Section */}
-      <Container
-        direction="row"
-        justify="space-between"
-        align="center"
-        padding="0"
-        gap="1rem"
-        style={{ marginBottom: "2rem" }}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          justifyContent: "space-between",
+          alignItems: { xs: "flex-start", sm: "center" },
+          gap: 2,
+          marginBottom: "clamp(1.5rem, 4vw, 2.5rem)",
+        }}
       >
-        <Container padding="0" gap="0.5rem">
-          <Typography.Header size="lg" color="primary">
-            Content Approvals
-          </Typography.Header>
-          <Typography.Body size="sm" color="default">
-            Review and manage submissions from the public and partners
-          </Typography.Body>
-        </Container>
-        <IconButton
-          size="sm"
-          variant="soft"
-          color="neutral"
-          onClick={refresh}
-          aria-label="Refresh"
-          sx={{
-            "&:hover": {
-              backgroundColor: colors.primary + "20",
-            },
-          }}
-        >
-          <RefreshRoundedIcon />
-        </IconButton>
-      </Container>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Box>
+            <Typography.Header size="md" weight="bold">
+              Content Approvals
+            </Typography.Header>
+            <Typography.Body size="xs" sx={{ opacity: 0.7, marginTop: "4px" }}>
+              Review and manage submissions from the public and partners
+            </Typography.Body>
+          </Box>
+        </Box>
+      </Box>
 
-      {/* Navigation Cards */}
-      <Grid container spacing={2}>
-        {(
-          [
-            {
-              key: "overview",
-              label: "Overview",
-              count: allItems.length,
-              icon: <DashboardRoundedIcon />,
-              tab: "overview" as TabType,
-            },
-            {
-              key: "tourist_spots",
-              label: "Tourist Spots",
-              count: allItems.length,
-              icon: <PlaceRoundedIcon />,
-              tab: "tourist_spots" as TabType,
-            },
-            {
-              key: "events",
-              label: "Events",
-              count: mockEvents.length,
-              icon: <EventRoundedIcon />,
-              tab: "events" as TabType,
-            },
-            {
-              key: "businesses",
-              label: "Businesses",
-              count: mockBusinesses.length,
-              icon: <BusinessRoundedIcon />,
-              tab: "businesses" as TabType,
-            },
-            {
-              key: "accommodations",
-              label: "Accommodations",
-              count: mockAccommodations.length,
-              icon: <HotelRoundedIcon />,
-              tab: "accommodations" as TabType,
-            },
-          ] as const
-        ).map((n) => (
-          <Grid key={n.key} xs={12} sm={6} md={6} lg={6} xl={2.4}>
-            <NavCard
-              label={n.label}
-              count={n.count}
-              icon={n.icon}
-              active={activeTab === n.tab}
-              onClick={() => setActiveTab(n.tab)}
-            />
-          </Grid>
-        ))}
+      {/* Stats Overview Cards */}
+      <Grid
+        container
+        spacing={{ xs: 1.5, sm: 2 }}
+        sx={{ marginBottom: "clamp(1.5rem, 4vw, 2.5rem)" }}
+      >
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<DescriptionIcon sx={{ color: colors.primary }} />}
+            title="Pending Reviews"
+            count={allItems.length}
+            badge="+3 this week"
+            iconBgColor={colors.primary + "20"}
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<PlaceIcon sx={{ color: colors.success }} />}
+            title="Tourist Spots"
+            count={pendingSpots.length + pendingEdits.length}
+            iconBgColor={colors.success + "20"}
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<EventIcon sx={{ color: colors.warning }} />}
+            title="Events"
+            count={mockEvents.length}
+            iconBgColor={colors.warning + "20"}
+          />
+        </Grid>
+        <Grid xs={12} sm={6} md={3}>
+          <StatCard
+            icon={<BusinessIcon sx={{ color: colors.info }} />}
+            title="Businesses"
+            count={pendingBusinesses.length}
+            iconBgColor={colors.info + "20"}
+          />
+        </Grid>
       </Grid>
 
-      <Divider />
+      {/* Search and Filter Section */}
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          gap: 2,
+          marginBottom: "clamp(1.5rem, 4vw, 2rem)",
+          alignItems: { xs: "stretch", sm: "center" },
+          justifyContent: "space-between",
+        }}
+      >
+        {/* Search Bar */}
+        <Input
+          placeholder="Search submissions..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          startDecorator={<SearchIcon />}
+          size="lg"
+          sx={{
+            flex: 1,
+            maxWidth: { xs: "100%", sm: "500px" },
+            fontSize: "clamp(0.875rem, 2vw, 1rem)",
+            "--Input-focusedThickness": "2px",
+          }}
+        />
 
-      {/* Content Sections */}
-      {activeTab === "overview" && (
-        <Grid container spacing={2}>
-          <Grid xs={12} md={6} lg={3}>
-            <OverviewCard
-              title="Tourist Spots"
-              count={allItems.length}
-              icon="📍"
-              items={allItems}
-              onApprove={handleApprove}
-              onView={handleView}
-            />
-          </Grid>
-          <Grid xs={12} md={6} lg={3}>
-            <OverviewCard
-              title="Events"
-              count={mockEvents.length}
-              icon="📅"
-              items={mockEvents}
-            />
-          </Grid>
-          <Grid xs={12} md={6} lg={3}>
-            <OverviewCard
-              title="Businesses"
-              count={mockBusinesses.length}
-              icon="🏢"
-              items={mockBusinesses}
-            />
-          </Grid>
-          <Grid xs={12} md={6} lg={3}>
-            <OverviewCard
-              title="Accommodations"
-              count={mockAccommodations.length}
-              icon="🛏️"
-              items={mockAccommodations}
-            />
-          </Grid>
-        </Grid>
-      )}
-
-      {activeTab === "tourist_spots" && (
-        <>
-          <Container
-            padding="0"
-            style={{ marginBottom: "1.5rem", maxWidth: "500px" }}
+        {/* Filter Tabs */}
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+          }}
+        >
+          <Chip
+            variant={currentView === "all" ? "solid" : "soft"}
+            color={currentView === "all" ? "primary" : "neutral"}
+            onClick={() => setCurrentView("all")}
+            sx={{
+              cursor: "pointer",
+              fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+              padding: "0.5rem 1rem",
+              "&:hover": {
+                backgroundColor:
+                  currentView === "all" ? undefined : colors.primary + "10",
+              },
+            }}
           >
-            <SearchBar
-              value={query}
-              onChangeText={setQuery}
-              onSearch={() => {}}
-              placeholder="Search tourist spots..."
-            />
-          </Container>
-          <ApprovalTable
-            items={filteredItems.map((i) => ({
-              ...i,
-              entityType: "tourist_spots",
-            }))}
-            contentType="tourist spots"
-            onView={handleView}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            processingId={processingId}
-          />
-        </>
-      )}
+            All
+          </Chip>
+          <Chip
+            variant={currentView === "tourist_spots" ? "solid" : "soft"}
+            color={currentView === "tourist_spots" ? "primary" : "neutral"}
+            onClick={() => setCurrentView("tourist_spots")}
+            sx={{
+              cursor: "pointer",
+              fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+              padding: "0.5rem 1rem",
+              "&:hover": {
+                backgroundColor:
+                  currentView === "tourist_spots"
+                    ? undefined
+                    : colors.primary + "10",
+              },
+            }}
+          >
+            Tourist Spots
+          </Chip>
+          <Chip
+            variant={currentView === "events" ? "solid" : "soft"}
+            color={currentView === "events" ? "primary" : "neutral"}
+            onClick={() => setCurrentView("events")}
+            sx={{
+              cursor: "pointer",
+              fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+              padding: "0.5rem 1rem",
+              "&:hover": {
+                backgroundColor:
+                  currentView === "events" ? undefined : colors.primary + "10",
+              },
+            }}
+          >
+            Events
+          </Chip>
+          <Chip
+            variant={currentView === "businesses" ? "solid" : "soft"}
+            color={currentView === "businesses" ? "primary" : "neutral"}
+            onClick={() => setCurrentView("businesses")}
+            sx={{
+              cursor: "pointer",
+              fontSize: "clamp(0.75rem, 2vw, 0.875rem)",
+              padding: "0.5rem 1rem",
+              "&:hover": {
+                backgroundColor:
+                  currentView === "businesses"
+                    ? undefined
+                    : colors.primary + "10",
+              },
+            }}
+          >
+            Businesses
+          </Chip>
+        </Box>
+      </Box>
 
-      {activeTab === "events" && (
-        <ApprovalTable
-          items={mockEvents}
-          contentType="events"
-          onView={handleView}
-          onApprove={() => alert("Events approval not yet implemented")}
-          onReject={() => alert("Events rejection not yet implemented")}
-          processingId={processingId}
-        />
-      )}
+      {/* Submissions List */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {currentView === "all" && (
+          <>
+            {/* Tourist Spots */}
+            {[...filteredTouristSpots, ...filteredTouristEdits].map((item) => {
+              const img = getTouristSpotImage(item) || placeholderImage;
+              const categoryLabel =
+                (item as any).categories?.[0]?.category || "—";
+              return (
+                <SubmissionCard
+                  key={`spot-${item.id}`}
+                  image={img}
+                  typeBadge="Tourist Spot"
+                  typeBadgeColor="success"
+                  categoryBadge={
+                    categoryLabel !== "—" ? categoryLabel : undefined
+                  }
+                  title={item.name}
+                  description={item.description || "No description available"}
+                  submitterName={(item as any).submitted_by || "Admin"}
+                  submittedDate={
+                    (item as any).submitted_at || (item as any).created_at
+                      ? new Date(
+                          (item as any).submitted_at || (item as any).created_at
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : undefined
+                  }
+                  location={
+                    [
+                      (item as any).municipality_name,
+                      (item as any).province_name,
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || undefined
+                  }
+                  actionType={item.action_type}
+                  onView={() => handleView(item as any)}
+                  onApprove={() => handleApprove(String(item.id))}
+                  onReject={() => handleReject(String(item.id))}
+                />
+              );
+            })}
 
-      {activeTab === "businesses" && (
-        <ApprovalTable
-          items={mockBusinesses}
-          contentType="businesses"
-          onView={handleView}
-          onApprove={() => alert("Businesses approval not yet implemented")}
-          onReject={() => alert("Businesses rejection not yet implemented")}
-          processingId={processingId}
-        />
-      )}
+            {/* Events */}
+            {mockEvents.map((event) => (
+              <SubmissionCard
+                key={`event-${event.id}`}
+                image={placeholderImage}
+                typeBadge="Event"
+                typeBadgeColor="warning"
+                categoryBadge="Food & Culture"
+                title={event.name}
+                description="Annual food festival showcasing local cuisine and culinary traditions"
+                submitterName="Maria Santos"
+                submittedDate="Dec 5, 2025"
+                location="Plaza Rizal, Naga City"
+                actionType={event.action_type}
+                onView={() => handleView(event as any)}
+                onApprove={() => alert("Events approval not yet implemented")}
+                onReject={() => alert("Events rejection not yet implemented")}
+              />
+            ))}
 
-      {activeTab === "accommodations" && (
-        <ApprovalTable
-          items={mockAccommodations}
-          contentType="accommodations"
-          onView={handleView}
-          onApprove={() => alert("Accommodations approval not yet implemented")}
-          onReject={() => alert("Accommodations rejection not yet implemented")}
-          processingId={processingId}
-        />
-      )}
+            {/* Businesses */}
+            {filteredBusinesses.map((biz) => {
+              const img = (biz as any).business_image || placeholderImage;
+              const categoryLabel = (biz as any).business_category_name;
+              return (
+                <SubmissionCard
+                  key={`biz-${biz.id}`}
+                  image={img}
+                  typeBadge="Business"
+                  typeBadgeColor="primary"
+                  categoryBadge={categoryLabel || undefined}
+                  title={biz.name}
+                  description={biz.description || "No description available"}
+                  submitterName={(biz as any).owner_name || "Business Owner"}
+                  submittedDate={
+                    biz.created_at
+                      ? new Date(biz.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : undefined
+                  }
+                  location={
+                    [(biz as any).municipality_name, (biz as any).province_name]
+                      .filter(Boolean)
+                      .join(", ") || undefined
+                  }
+                  actionType={biz.action_type}
+                  onView={() => handleView(biz as any)}
+                  onApprove={() => handleApprove(String(biz.id))}
+                  onReject={() => handleReject(String(biz.id))}
+                />
+              );
+            })}
 
+            {/* Empty State */}
+            {filteredTouristSpots.length === 0 &&
+              filteredTouristEdits.length === 0 &&
+              mockEvents.length === 0 &&
+              filteredBusinesses.length === 0 && (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    padding: "4rem 2rem",
+                    opacity: 0.6,
+                  }}
+                >
+                  <Typography.Body size="sm">
+                    No pending submissions found
+                  </Typography.Body>
+                </Box>
+              )}
+          </>
+        )}
+
+        {currentView === "tourist_spots" && (
+          <>
+            {[...filteredTouristSpots, ...filteredTouristEdits].map((item) => {
+              const img = getTouristSpotImage(item) || placeholderImage;
+              const categoryLabel =
+                (item as any).categories?.[0]?.category || "—";
+              return (
+                <SubmissionCard
+                  key={`spot-${item.id}`}
+                  image={img}
+                  typeBadge="Tourist Spot"
+                  typeBadgeColor="success"
+                  categoryBadge={
+                    categoryLabel !== "—" ? categoryLabel : undefined
+                  }
+                  title={item.name}
+                  description={item.description || "No description available"}
+                  submitterName={(item as any).submitted_by || "Admin"}
+                  submittedDate={
+                    (item as any).submitted_at || (item as any).created_at
+                      ? new Date(
+                          (item as any).submitted_at || (item as any).created_at
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : undefined
+                  }
+                  location={
+                    [
+                      (item as any).municipality_name,
+                      (item as any).province_name,
+                    ]
+                      .filter(Boolean)
+                      .join(", ") || undefined
+                  }
+                  actionType={item.action_type}
+                  onView={() => handleView(item as any)}
+                  onApprove={() => handleApprove(String(item.id))}
+                  onReject={() => handleReject(String(item.id))}
+                />
+              );
+            })}
+            {filteredTouristSpots.length === 0 &&
+              filteredTouristEdits.length === 0 && (
+                <Box
+                  sx={{
+                    textAlign: "center",
+                    padding: "4rem 2rem",
+                    opacity: 0.6,
+                  }}
+                >
+                  <Typography.Body size="sm">
+                    No pending tourist spots
+                  </Typography.Body>
+                </Box>
+              )}
+          </>
+        )}
+
+        {currentView === "events" && (
+          <>
+            {mockEvents.map((event) => (
+              <SubmissionCard
+                key={`event-${event.id}`}
+                image={placeholderImage}
+                typeBadge="Event"
+                typeBadgeColor="warning"
+                categoryBadge="Food & Culture"
+                title={event.name}
+                description="Annual food festival showcasing local cuisine and culinary traditions"
+                submitterName="Maria Santos"
+                submittedDate="Dec 5, 2025"
+                location="Plaza Rizal, Naga City"
+                actionType={event.action_type}
+                onView={() => handleView(event as any)}
+                onApprove={() => alert("Events approval not yet implemented")}
+                onReject={() => alert("Events rejection not yet implemented")}
+              />
+            ))}
+            {mockEvents.length === 0 && (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  padding: "4rem 2rem",
+                  opacity: 0.6,
+                }}
+              >
+                <Typography.Body size="sm">No pending events</Typography.Body>
+              </Box>
+            )}
+          </>
+        )}
+
+        {currentView === "businesses" && (
+          <>
+            {filteredBusinesses.map((biz) => {
+              const img = (biz as any).business_image || placeholderImage;
+              const categoryLabel = (biz as any).business_category_name;
+              return (
+                <SubmissionCard
+                  key={`biz-${biz.id}`}
+                  image={img}
+                  typeBadge="Business"
+                  typeBadgeColor="primary"
+                  categoryBadge={categoryLabel || undefined}
+                  title={biz.name}
+                  description={biz.description || "No description available"}
+                  submitterName={(biz as any).owner_name || "Business Owner"}
+                  submittedDate={
+                    biz.created_at
+                      ? new Date(biz.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })
+                      : undefined
+                  }
+                  location={
+                    [(biz as any).municipality_name, (biz as any).province_name]
+                      .filter(Boolean)
+                      .join(", ") || undefined
+                  }
+                  actionType={biz.action_type}
+                  onView={() => handleView(biz as any)}
+                  onApprove={() => handleApprove(String(biz.id))}
+                  onReject={() => handleReject(String(biz.id))}
+                />
+              );
+            })}
+            {filteredBusinesses.length === 0 && (
+              <Box
+                sx={{
+                  textAlign: "center",
+                  padding: "4rem 2rem",
+                  opacity: 0.6,
+                }}
+              >
+                <Typography.Body size="sm">
+                  No pending businesses
+                </Typography.Body>
+              </Box>
+            )}
+          </>
+        )}
+      </Box>
+
+      {/* View Modal */}
       <ViewModal
         isOpen={!!selectedItem}
         onClose={closeModal}
@@ -524,7 +958,7 @@ const ApprovalDashboard: React.FC = () => {
         onReject={handleReject}
         processingId={processingId}
       />
-    </PageContainer>
+    </Box>
   );
 };
 

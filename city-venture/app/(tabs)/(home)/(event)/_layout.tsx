@@ -1,12 +1,27 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import { Stack } from 'expo-router';
 
-const EventLayout = () => {
+export default function EventLayout() {
   return (
-    <View>
-      <Text>EventLayout</Text>
-    </View>
-  )
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        animation: 'slide_from_right',
+      }}
+    >
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Events',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="[id]"
+        options={{
+          title: 'Event Details',
+          headerShown: true,
+        }}
+      />
+    </Stack>
+  );
 }
-
-export default EventLayout

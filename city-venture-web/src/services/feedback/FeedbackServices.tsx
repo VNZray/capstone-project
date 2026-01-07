@@ -1,5 +1,4 @@
-import axios from 'axios';
-import api from '@/src/services/api';
+import apiClient from '../apiClient';
 import type {
   ReviewAndRating,
   ReviewAndRatings,
@@ -82,12 +81,12 @@ function normalizeList<T>(raw: any): T[] {
 // ===== Reviews =====
 
 export async function getAllReviews(): Promise<ReviewAndRatings> {
-  const { data } = await axios.get(`${api}/reviews`);
+  const { data } = await apiClient.get(`/reviews`);
   return normalizeList<ReviewAndRating>(data);
 }
 
 export async function getReviewById(id: string): Promise<ReviewAndRating> {
-  const { data } = await axios.get(`${api}/reviews/${id}`);
+  const { data } = await apiClient.get(`/reviews/${id}`);
   return unwrap<ReviewAndRating>(data);
 }
 
@@ -95,20 +94,20 @@ export async function getReviewsByTypeAndEntityId(
   review_type: ReviewType,
   review_type_id: string
 ): Promise<ReviewAndRatings> {
-  const { data } = await axios.get(
-    `${api}/reviews/type/${(review_type)}/${review_type_id}`
+  const { data } = await apiClient.get(
+    `/reviews/type/${(review_type)}/${review_type_id}`
   );
   return normalizeList<ReviewAndRating>(data);
 }
 
-export async function getBusinessReviews(
-  businessId: string,
-  business_type: string
+export async function getEnrichedReviews(
+  entityId: string,
+  entityType: string
 ): Promise<ReviewWithAuthor[]> {
-  // Fetch base reviews for this business/type
+  // Fetch base reviews for this entity/type
   const rawReviews = await getReviewsByTypeAndEntityId(
-    business_type as ReviewType,
-    businessId
+    entityType as ReviewType,
+    entityId
   );
 
   if (!rawReviews || rawReviews.length === 0) return [];
@@ -130,7 +129,7 @@ export async function getBusinessReviews(
   await Promise.all(
     touristIds.map(async (tid) => {
       try {
-        const { data } = await axios.get(`${api}/tourist/${tid}`);
+        const { data } = await apiClient.get(`/tourist/${tid}`);
         touristMap.set(tid, unwrap<Tourist>(data));
       } catch {
         touristMap.set(tid, null);
@@ -151,7 +150,7 @@ export async function getBusinessReviews(
     await Promise.all(
       userIds.map(async (uid) => {
         try {
-          const { data } = await axios.get(`${api}/users/${uid}`);
+          const { data } = await apiClient.get(`/users/${uid}`);
           userMap.set(uid, unwrap<User>(data));
         } catch {
           userMap.set(uid, null);
@@ -203,8 +202,15 @@ export async function getBusinessReviews(
   return enriched;
 }
 
+export async function getBusinessReviews(
+  businessId: string,
+  business_type: string
+): Promise<ReviewWithAuthor[]> {
+  return getEnrichedReviews(businessId, business_type);
+}
+
 export async function createReview(payload: CreateReviewPayload): Promise<ReviewAndRating> {
-  const { data } = await axios.post(`${api}/reviews`, payload);
+  const { data } = await apiClient.post(`/reviews`, payload);
   return unwrap<ReviewAndRating>(data);
 }
 
@@ -212,62 +218,62 @@ export async function updateReview(
   id: string,
   payload: UpdateReviewPayload
 ): Promise<ReviewAndRating> {
-  const { data } = await axios.patch(`${api}/reviews/${id}`, payload);
+  const { data } = await apiClient.patch(`/reviews/${id}`, payload);
   return unwrap<ReviewAndRating>(data);
 }
 
 export async function deleteReview(id: string): Promise<{ message: string }> {
-  const { data } = await axios.delete(`${api}/reviews/${id}`);
+  const { data } = await apiClient.delete(`/reviews/${id}`);
   return data;
 }
 
 // ===== Replies =====
 
 export async function getAllReplies(): Promise<Replies> {
-  const { data } = await axios.get(`${api}/replies`);
+  const { data } = await apiClient.get(`/replies`);
   return normalizeList<Reply>(data);
 }
 
 export async function getReplyById(id: string): Promise<Reply> {
-  const { data } = await axios.get(`${api}/replies/${id}`);
+  const { data } = await apiClient.get(`/replies/${id}`);
   return unwrap<Reply>(data);
 }
 
 export async function getRepliesByReviewId(reviewId: string): Promise<Replies> {
-  const { data } = await axios.get(`${api}/replies/review/${reviewId}`);
+  const { data } = await apiClient.get(`/replies/review/${reviewId}`);
   return normalizeList<Reply>(data);
 }
 
 export async function createReply(payload: CreateReplyPayload): Promise<Reply> {
-  const { data } = await axios.post(`${api}/replies`, payload);
+  const { data } = await apiClient.post(`/replies`, payload);
   return unwrap<Reply>(data);
 }
 
 export async function updateReply(id: string, payload: UpdateReplyPayload): Promise<Reply> {
-  const { data } = await axios.patch(`${api}/replies/${id}`, payload);
+  const { data } = await apiClient.patch(`/replies/${id}`, payload);
   return unwrap<Reply>(data);
 }
 
 export async function deleteReply(id: string): Promise<{ message: string }> {
-  const { data } = await axios.delete(`${api}/replies/${id}`);
+  const { data } = await apiClient.delete(`/replies/${id}`);
   return data;
 }
 
 // ===== Review Photos =====
 
 export async function getReviewPhotos(reviewId: string): Promise<ReviewPhotos> {
-  const { data } = await axios.get(`${api}/review-photos/reviews/${reviewId}/photos`);
+  const { data } = await apiClient.get(`/review-photos/reviews/${reviewId}/photos`);
   return normalizeList<ReviewPhoto>(data);
 }
 
 export async function addReviewPhotos(reviewId: string, photos: string[]): Promise<ReviewPhotos> {
-  const { data } = await axios.post(`${api}/review-photos/reviews/${reviewId}/photos`, { photos });
+  const { data } = await apiClient.post(`/review-photos/reviews/${reviewId}/photos`, { photos });
   // Endpoint returns { message, data }
   return unwrap<ReviewPhotos>(data);
 }
 
 export async function deleteReviewPhoto(photoId: string): Promise<{ message: string }> {
-  const { data } = await axios.delete(`${api}/review-photos/reviews/photos/${photoId}`);
+  const { data } = await apiClient.delete(`/review-photos/reviews/photos/${photoId}`);
   return data;
 }
 
@@ -277,6 +283,7 @@ export default {
   getReviewById,
   getReviewsByTypeAndEntityId,
   getBusinessReviews,
+  getEnrichedReviews,
   createReview,
   updateReview,
   deleteReview,
