@@ -62,31 +62,6 @@ const BusinessHeroSection: React.FC = () => {
             align="center"
             style={{ textAlign: "center", maxWidth: 800, margin: "0 auto" }}
           >
-            {/* Badge */}
-            <Box
-              sx={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "10px 20px",
-                background: colors.primary,
-                borderRadius: 100,
-                marginBottom: 4,
-              }}
-            >
-              <Typography.Body
-                size="sm"
-                sx={{
-                  color: "#fff",
-                  fontWeight: 600,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  fontSize: "0.75rem",
-                }}
-              >
-                The Future of Business Management
-              </Typography.Body>
-            </Box>
-
             {/* Main Headline */}
             <Typography.Title
               size="lg"
@@ -97,6 +72,7 @@ const BusinessHeroSection: React.FC = () => {
                 color: colors.primary,
                 fontSize: { xs: "2.5rem", sm: "3rem", md: "3.75rem", lg: "4.25rem" },
                 letterSpacing: "-0.02em",
+                textAlign: "center",
               }}
             >
               Elevate Your Business
@@ -124,6 +100,7 @@ const BusinessHeroSection: React.FC = () => {
                 maxWidth: 620,
                 marginBottom: 5,
                 lineHeight: 1.7,
+                textAlign: "center",
               }}
             >
               Join the premier platform connecting visionary business owners with

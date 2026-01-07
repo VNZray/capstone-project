@@ -52,7 +52,7 @@ export default function BusinessLandingPage() {
   return (
     <PageContainer gap={0} padding={0} id="top">
       {/* Navbar */}
-      <Navbar solid />
+      <Navbar seamless />
 
       {/* Hero Section */}
       <BusinessHeroSection />

@@ -21,12 +21,15 @@ interface NavbarProps {
   aboutId?: string;
   /** Whether the navbar should have a solid background */
   solid?: boolean;
+  /** Whether the navbar should blend seamlessly with the page background */
+  seamless?: boolean;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
   servicesId = "features",
   aboutId = "about",
   solid = false,
+  seamless = false,
 }) => {
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
@@ -80,13 +83,16 @@ const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const navStyle = { "--nav-bg": solid ? "1" : String(bgOpacity) } as React.CSSProperties & {
+  const navStyle = { 
+    "--nav-bg": seamless ? "0" : solid ? "1" : String(bgOpacity),
+    "--nav-seamless": seamless ? "1" : "0",
+  } as React.CSSProperties & {
     [key: string]: string;
   };
 
   return (
     <nav
-      className={`navbar navbar-dark ${scrolled || solid ? "scrolled" : ""}`}
+      className={`navbar navbar-dark ${scrolled ? "scrolled" : ""} ${seamless ? "seamless" : ""}`}
       style={navStyle}
     >
       <div className="nav-inner">
