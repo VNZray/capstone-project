@@ -454,10 +454,9 @@ const Bookings = () => {
         >
           <Typography.Header>Manage Reservation</Typography.Header>
           <Button
-            variant="filled"
             colorScheme="primary"
             size="md"
-            leftIcon={<UserPlus size={18} />}
+            endDecorator={<UserPlus size={18} />}
             onClick={() => setWalkInModalOpen(true)}
           >
             Walk-In Booking
