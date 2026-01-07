@@ -131,33 +131,37 @@ const Navbar: React.FC<NavbarProps> = ({
           </a>
           <a
             className="nav-link"
-            href={`#${aboutId}`}
+            href="/about"
             onClick={(e) => {
               e.preventDefault();
-              scrollTo(aboutId);
+              navigate("/about");
             }}
           >
             About
           </a>
-          <a
-            className="nav-link"
-            href="#features"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollTo(servicesId);
-            }}
-          >
-            Services
-          </a>
-          <a
-            className="nav-link"
-            href="#features"
-            onClick={(e) => {
-              navigate("/test");
-            }}
-          >
-            Components
-          </a>
+          {!touristMode && (
+            <>
+              <a
+                className="nav-link"
+                href="#features"
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollTo(servicesId);
+                }}
+              >
+                FAQ
+              </a>
+              <a
+                className="nav-link"
+                href="#features"
+                onClick={(e) => {
+                  navigate("/test");
+                }}
+              >
+                Components
+              </a>
+            </>
+          )}
           <a
             className="nav-link"
             href="/for-business"
@@ -400,31 +404,33 @@ const Navbar: React.FC<NavbarProps> = ({
                 padding: "12px 8px",
                 borderBottom: `1px solid rgba(13,27,42,0.1)`,
               }}
-              href={`#${aboutId}`}
+              href="/about"
               onClick={(e) => {
                 e.preventDefault();
-                scrollTo(aboutId);
+                navigate("/about");
               }}
             >
               About
             </a>
-            <a
-              className="nav-link"
-              style={{
-                color: colors.primary,
-                fontSize: "16px",
-                fontWeight: 600,
-                padding: "12px 8px",
-                borderBottom: `1px solid rgba(13,27,42,0.1)`,
-              }}
-              href={`#${servicesId}`}
-              onClick={(e) => {
-                e.preventDefault();
-                scrollTo(servicesId);
-              }}
-            >
-              Services
-            </a>
+            {!touristMode && (
+              <a
+                className="nav-link"
+                style={{
+                  color: colors.primary,
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  padding: "12px 8px",
+                  borderBottom: `1px solid rgba(13,27,42,0.1)`,
+                }}
+                href={`#${servicesId}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollTo(servicesId);
+                }}
+              >
+                FAQ
+              </a>
+            )}
             <a
               className="nav-link"
               style={{

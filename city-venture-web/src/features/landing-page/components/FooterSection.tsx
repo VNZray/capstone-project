@@ -44,7 +44,7 @@ const FooterSection: React.FC<FooterSectionProps> = () => {
     {
       title: "Company",
       links: [
-        { label: "About City Venture", href: "#about" },
+        { label: "About City Venture", href: "/about" },
         { label: "How It Works", href: "#how-it-works" },
         { label: "Blog/News", href: "#" },
         { label: "Careers", href: "#" },
