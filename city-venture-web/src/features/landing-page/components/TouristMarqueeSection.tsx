@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 interface MarqueeItemProps {
   children: React.ReactNode;
@@ -7,6 +7,12 @@ interface MarqueeItemProps {
 }
 
 const MarqueeItem: React.FC<MarqueeItemProps> = ({ children, speed = 20 }) => {
+  const shouldReduceMotion = useReducedMotion();
+
+  // For reduced motion: still animate but much slower, or use CSS animation
+  // which some screen readers handle better
+  const animationSpeed = shouldReduceMotion ? speed * 3 : speed;
+
   return (
     <div
       style={{
@@ -21,7 +27,12 @@ const MarqueeItem: React.FC<MarqueeItemProps> = ({ children, speed = 20 }) => {
       <motion.div
         initial={{ x: 0 }}
         animate={{ x: "-50%" }}
-        transition={{ duration: speed, repeat: Infinity, ease: "linear" }}
+        transition={{ 
+          duration: animationSpeed, 
+          repeat: Infinity, 
+          ease: "linear",
+          repeatType: "loop",
+        }}
         style={{
           display: "flex",
           gap: "32px",
@@ -29,6 +40,7 @@ const MarqueeItem: React.FC<MarqueeItemProps> = ({ children, speed = 20 }) => {
           fontWeight: 700,
           textTransform: "uppercase",
           letterSpacing: "0.05em",
+          willChange: "transform",
         }}
       >
         {children}
@@ -43,6 +55,7 @@ const MarqueeItem: React.FC<MarqueeItemProps> = ({ children, speed = 20 }) => {
 /**
  * Tourist Marquee Section
  * An animated scrolling marquee showcasing Naga City highlights
+ * with smooth, performance-optimized animation
  */
 export const TouristMarqueeSection: React.FC = () => {
   const marqueeItems = (

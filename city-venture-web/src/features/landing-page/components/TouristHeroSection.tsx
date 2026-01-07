@@ -1,22 +1,42 @@
 import React, { useRef } from "react";
-import { motion, useScroll, useTransform } from "motion/react";
-import { ArrowDown } from "lucide-react";
+import { motion, useScroll, useTransform, useReducedMotion } from "motion/react";
+import { ArrowDown, ChevronDown } from "lucide-react";
+import {
+  heroTitleVariants,
+  heroSubtitleVariants,
+  heroDescriptionVariants,
+  heroCtaVariants,
+  heroBackgroundInitial,
+  heroBackgroundAnimate,
+  scrollIndicatorAnimation,
+  scrollIndicatorTransition,
+  EASE,
+} from "../utils/animationVariants";
 
 /**
  * Tourist Hero Section
  * A stunning, immersive hero section for the tourist landing page
  * featuring parallax scrolling effects and elegant typography.
+ * 
+ * Performance optimizations:
+ * - Uses GPU-accelerated properties (transform, opacity)
+ * - Respects user's reduced motion preferences
+ * - Parallax disabled on low-powered devices
  */
 export const TouristHeroSection: React.FC = () => {
   const ref = useRef<HTMLElement>(null);
+  const shouldReduceMotion = useReducedMotion();
+  
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
   });
 
-  const yText = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  const yBg = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
+  // Parallax transforms - disabled if user prefers reduced motion
+  const yText = useTransform(scrollYProgress, [0, 1], shouldReduceMotion ? ["0%", "0%"] : ["0%", "50%"]);
+  const yBg = useTransform(scrollYProgress, [0, 1], shouldReduceMotion ? ["0%", "0%"] : ["0%", "25%"]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], shouldReduceMotion ? [1, 1] : [1, 1.1]);
 
   const handleScrollToContent = () => {
     window.scrollTo({
@@ -43,10 +63,14 @@ export const TouristHeroSection: React.FC = () => {
       <motion.div
         style={{
           y: yBg,
+          scale,
           position: "absolute",
           inset: 0,
           zIndex: 0,
+          willChange: "transform",
         }}
+        initial={shouldReduceMotion ? false : heroBackgroundInitial}
+        animate={heroBackgroundAnimate}
       >
         <div
           style={{
@@ -95,9 +119,9 @@ export const TouristHeroSection: React.FC = () => {
           {/* Super Large Typography with Glow Effect */}
           <div style={{ position: "relative", marginBottom: "8px" }}>
             <motion.h1
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+              variants={heroTitleVariants}
+              initial="hidden"
+              animate="visible"
               style={{
                 fontSize: "12vw",
                 lineHeight: 0.85,
@@ -108,6 +132,7 @@ export const TouristHeroSection: React.FC = () => {
                 backgroundClip: "text",
                 letterSpacing: "-0.05em",
                 margin: 0,
+                willChange: "transform, opacity",
               }}
             >
               NAGA
@@ -115,8 +140,8 @@ export const TouristHeroSection: React.FC = () => {
             {/* Gold Shadow Effect */}
             <motion.h1
               initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              animate={{ y: 0, opacity: 0.5 }}
+              transition={{ duration: 1, delay: 0.1, ease: EASE.gentle }}
               style={{
                 fontSize: "12vw",
                 lineHeight: 0.85,
@@ -126,7 +151,6 @@ export const TouristHeroSection: React.FC = () => {
                 position: "absolute",
                 top: "4px",
                 left: "4px",
-                opacity: 0.5,
                 filter: "blur(4px)",
                 margin: 0,
               }}
@@ -138,9 +162,9 @@ export const TouristHeroSection: React.FC = () => {
 
           {/* Tagline */}
           <motion.h2
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+            variants={heroSubtitleVariants}
+            initial="hidden"
+            animate="visible"
             style={{
               fontSize: "clamp(1.5rem, 5vw, 3.5rem)",
               fontWeight: 300,
@@ -165,9 +189,9 @@ export const TouristHeroSection: React.FC = () => {
 
           {/* Description */}
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6, duration: 1 }}
+            variants={heroDescriptionVariants}
+            initial="hidden"
+            animate="visible"
             style={{
               maxWidth: "28rem",
               color: "rgba(255,255,255,0.8)",
@@ -187,9 +211,15 @@ export const TouristHeroSection: React.FC = () => {
 
           {/* CTA Button */}
           <motion.button
+            variants={heroCtaVariants}
+            initial="hidden"
+            animate="visible"
             onClick={handleScrollToContent}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ 
+              scale: 1.05,
+              boxShadow: "0 20px 40px rgba(197, 160, 89, 0.3)",
+            }}
+            whileTap={{ scale: 0.97 }}
             style={{
               position: "relative",
               padding: "16px 32px",
@@ -208,6 +238,50 @@ export const TouristHeroSection: React.FC = () => {
           >
             Start Exploration <ArrowDown size={20} />
           </motion.button>
+
+          {/* Scroll Indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2, duration: 0.6 }}
+            style={{
+              position: "absolute",
+              bottom: "-120px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <motion.span
+              style={{
+                fontSize: "0.75rem",
+                color: "rgba(255,255,255,0.6)",
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+              }}
+            >
+              Scroll to explore
+            </motion.span>
+            <motion.div
+              animate={scrollIndicatorAnimation}
+              transition={scrollIndicatorTransition}
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                border: "1px solid rgba(255,255,255,0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "rgba(255,255,255,0.6)",
+              }}
+            >
+              <ChevronDown size={16} />
+            </motion.div>
+          </motion.div>
         </motion.div>
       </div>
 

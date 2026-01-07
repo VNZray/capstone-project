@@ -1,5 +1,5 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   Download,
   QrCode,
@@ -10,6 +10,15 @@ import {
 import Button from "@/src/components/Button";
 import type { LucideIcon } from "lucide-react";
 import sampleMobileImage from "@/src/assets/images/sample-mobile.png";
+import {
+  phoneVariants,
+  phoneFloatAnimation,
+  floatingCardVariants,
+  downloadButtonVariants,
+  sectionHeaderVariants,
+  viewportSettings,
+  EASE,
+} from "../utils/animationVariants";
 
 interface FloatingCardProps {
   icon: LucideIcon;
@@ -27,110 +36,154 @@ const FloatingCard: React.FC<FloatingCardProps> = ({
   text,
   className = "",
   delay = 0,
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20, scale: 0.8 }}
-    whileInView={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ delay, duration: 0.6, type: "spring" }}
-    style={{
-      position: "absolute",
-      backgroundColor: "rgba(255, 255, 255, 0.9)",
-      backdropFilter: "blur(24px)",
-      border: "1px solid rgba(255, 255, 255, 0.5)",
-      padding: "16px",
-      borderRadius: "16px",
-      display: "flex",
-      alignItems: "center",
-      gap: "12px",
-      boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
-      zIndex: 20,
-    }}
-    className={className}
-  >
-    <div
+}) => {
+  const shouldReduceMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      custom={delay}
+      variants={floatingCardVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+      whileHover={shouldReduceMotion ? undefined : { 
+        scale: 1.05,
+        y: -5,
+      }}
+      transition={{ duration: 0.2 }}
       style={{
-        width: "40px",
-        height: "40px",
-        borderRadius: "50%",
-        backgroundColor: "#0A1B47",
+        position: "absolute",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        backdropFilter: "blur(24px)",
+        border: "1px solid rgba(255, 255, 255, 0.5)",
+        padding: "16px",
+        borderRadius: "16px",
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
-        color: "#C5A059",
+        gap: "12px",
+        boxShadow: "0 8px 30px rgba(0, 0, 0, 0.12)",
+        zIndex: 20,
+        willChange: "transform, opacity",
       }}
+      className={className}
     >
-      <Icon size={18} />
-    </div>
-    <span
-      style={{
-        color: "#0A1B47",
-        fontWeight: 700,
-        fontSize: "14px",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {text}
-    </span>
-  </motion.div>
-);
+      <motion.div
+        whileHover={{ rotate: 10 }}
+        style={{
+          width: "40px",
+          height: "40px",
+          borderRadius: "50%",
+          backgroundColor: "#0A1B47",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#C5A059",
+        }}
+      >
+        <Icon size={18} />
+      </motion.div>
+      <span
+        style={{
+          color: "#0A1B47",
+          fontWeight: 700,
+          fontSize: "14px",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {text}
+      </span>
+    </motion.div>
+  );
+};
 
 /**
  * PhoneMockup Component
  * Displays a phone mockup with the sample mobile app screenshot
+ * with floating animation
  */
-const PhoneMockup: React.FC = () => (
-  <motion.div
-    initial={{ y: 50, opacity: 0 }}
-    whileInView={{ y: 0, opacity: 1 }}
-    transition={{ duration: 1, type: "spring" }}
-    whileHover={{ scale: 1.02 }}
-    style={{
-      position: "relative",
-      zIndex: 10,
-      width: "320px",
-      height: "650px",
-      backgroundColor: "#0A1B47",
-      borderRadius: "48px",
-      border: "12px solid #1a2b5e",
-      boxShadow: "0 50px 100px -20px rgba(10, 27, 71, 0.35)",
-      overflow: "hidden",
-    }}
-  >
-    {/* Phone notch/dynamic island */}
-    <div
-      style={{
-        position: "absolute",
-        top: "12px",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "120px",
-        height: "32px",
-        backgroundColor: "#000",
-        borderRadius: "20px",
-        zIndex: 50,
-      }}
-    />
+const PhoneMockup: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
 
-    {/* App Screenshot */}
-    <img
-      src={sampleMobileImage}
-      alt="City Venture Mobile App"
+  return (
+    <motion.div
+      variants={phoneVariants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-100px" }}
+      animate={shouldReduceMotion ? undefined : phoneFloatAnimation}
+      whileHover={{ scale: 1.02, rotateY: 5 }}
+      transition={{ duration: 0.3 }}
       style={{
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
-        objectPosition: "top",
+        position: "relative",
+        zIndex: 10,
+        width: "320px",
+        height: "650px",
+        backgroundColor: "#0A1B47",
+        borderRadius: "48px",
+        border: "12px solid #1a2b5e",
+        boxShadow: "0 50px 100px -20px rgba(10, 27, 71, 0.35)",
+        overflow: "hidden",
+        willChange: "transform",
+        transformStyle: "preserve-3d",
       }}
-    />
-  </motion.div>
-);
+    >
+      {/* Phone notch/dynamic island */}
+      <div
+        style={{
+          position: "absolute",
+          top: "12px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "120px",
+          height: "32px",
+          backgroundColor: "#000",
+          borderRadius: "20px",
+          zIndex: 50,
+        }}
+      />
+
+      {/* App Screenshot with subtle zoom on view */}
+      <motion.img
+        src={sampleMobileImage}
+        alt="City Venture Mobile App"
+        initial={{ scale: 1.1 }}
+        whileInView={{ scale: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.2, ease: EASE.smooth }}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: "top",
+        }}
+      />
+
+      {/* Shine effect overlay */}
+      <motion.div
+        initial={{ x: "-100%", opacity: 0 }}
+        whileInView={{ x: "200%", opacity: 0.3 }}
+        viewport={{ once: true }}
+        transition={{ duration: 1.5, delay: 0.5, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)",
+          transform: "skewX(-20deg)",
+          pointerEvents: "none",
+        }}
+      />
+    </motion.div>
+  );
+};
 
 /**
  * TouristAppDownloadSection
  * A light-themed section promoting the mobile app download
- * with a phone mockup and floating notification cards
+ * with a phone mockup, floating notification cards, and engaging animations
  */
 const TouristAppDownloadSection: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <section
       id="app-download"
@@ -150,8 +203,17 @@ const TouristAppDownloadSection: React.FC = () => {
           pointerEvents: "none",
         }}
       >
-        {/* Soft Golden Glow center */}
-        <div
+        {/* Soft Golden Glow center - animated pulse */}
+        <motion.div
+          animate={shouldReduceMotion ? undefined : {
+            scale: [1, 1.1, 1],
+            opacity: [0.2, 0.3, 0.2],
+          }}
+          transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
           style={{
             position: "absolute",
             top: "50%",
@@ -165,7 +227,7 @@ const TouristAppDownloadSection: React.FC = () => {
           }}
         />
 
-        {/* Decorative circles */}
+        {/* Decorative circles - continuous rotation */}
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
@@ -228,8 +290,12 @@ const TouristAppDownloadSection: React.FC = () => {
           zIndex: 10,
         }}
       >
-        {/* Header Content */}
-        <div
+        {/* Header Content with staggered animations */}
+        <motion.div
+          variants={sectionHeaderVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportSettings}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -241,7 +307,8 @@ const TouristAppDownloadSection: React.FC = () => {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: EASE.smooth }}
             style={{ position: "relative" }}
           >
             <h2
@@ -261,7 +328,11 @@ const TouristAppDownloadSection: React.FC = () => {
             >
               EXPLORE
             </h2>
-            <h2
+            <motion.h2
+              initial={{ y: 30, opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: 0.2, ease: EASE.smooth }}
               style={{
                 fontSize: "clamp(40px, 5vw, 72px)",
                 fontWeight: 900,
@@ -272,10 +343,14 @@ const TouristAppDownloadSection: React.FC = () => {
               }}
             >
               Naga in your <span style={{ color: "#C5A059" }}>Pocket</span>
-            </h2>
+            </motion.h2>
           </motion.div>
 
-          <p
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
             style={{
               fontSize: "20px",
               color: "#6B7280",
@@ -287,9 +362,13 @@ const TouristAppDownloadSection: React.FC = () => {
             Your digital concierge for events, dining, and adventure.
             <br />
             Real-time updates, offline maps, and exclusive deals.
-          </p>
+          </motion.p>
 
-          <div
+          {/* Download buttons with staggered animation */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
             style={{
               display: "flex",
               flexDirection: "row",
@@ -298,68 +377,85 @@ const TouristAppDownloadSection: React.FC = () => {
               justifyContent: "center",
             }}
           >
-            <Button
-              sx={{
-                height: "64px",
-                padding: "0 32px",
-                backgroundColor: "#0A1B47",
-                color: "white",
-                fontWeight: 700,
-                borderRadius: "9999px",
-                fontSize: "18px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-                transition: "transform 0.2s ease",
-                boxShadow: "0 20px 25px -5px rgba(10, 27, 71, 0.2)",
-                "&:hover": {
-                  backgroundColor: "#1a2b5e",
-                  transform: "translateY(-4px)",
-                },
+            <motion.div
+              custom={0}
+              variants={downloadButtonVariants}
+              whileHover={{ 
+                y: -4,
+                boxShadow: "0 25px 30px -5px rgba(10, 27, 71, 0.25)",
               }}
+              whileTap={{ scale: 0.98 }}
             >
-              <div
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  padding: "6px",
-                  borderRadius: "50%",
+              <Button
+                sx={{
+                  height: "64px",
+                  padding: "0 32px",
+                  backgroundColor: "#0A1B47",
+                  color: "white",
+                  fontWeight: 700,
+                  borderRadius: "9999px",
+                  fontSize: "18px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  gap: "12px",
+                  boxShadow: "0 20px 25px -5px rgba(10, 27, 71, 0.2)",
+                  "&:hover": {
+                    backgroundColor: "#1a2b5e",
+                  },
                 }}
               >
-                <Download size={20} />
-              </div>
-              Download App
-            </Button>
-            <Button
-              variant="outlined"
-              sx={{
-                height: "64px",
-                padding: "0 32px",
-                borderColor: "rgba(10, 27, 71, 0.2)",
-                color: "#0A1B47",
-                fontWeight: 700,
-                borderRadius: "9999px",
-                fontSize: "18px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-                transition: "transform 0.2s ease",
-                backgroundColor: "white",
-                boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-                "&:hover": {
-                  backgroundColor: "rgba(10, 27, 71, 0.05)",
-                  transform: "translateY(-4px)",
-                },
+                <div
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                    padding: "6px",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Download size={20} />
+                </div>
+                Download App
+              </Button>
+            </motion.div>
+            
+            <motion.div
+              custom={1}
+              variants={downloadButtonVariants}
+              whileHover={{ 
+                y: -4,
+                boxShadow: "0 15px 20px -3px rgba(0,0,0,0.1)",
               }}
+              whileTap={{ scale: 0.98 }}
             >
-              <QrCode size={20} /> Scan Code
-            </Button>
-          </div>
-        </div>
+              <Button
+                variant="outlined"
+                sx={{
+                  height: "64px",
+                  padding: "0 32px",
+                  borderColor: "rgba(10, 27, 71, 0.2)",
+                  color: "#0A1B47",
+                  fontWeight: 700,
+                  borderRadius: "9999px",
+                  fontSize: "18px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "12px",
+                  backgroundColor: "white",
+                  boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
+                  "&:hover": {
+                    backgroundColor: "rgba(10, 27, 71, 0.05)",
+                  },
+                }}
+              >
+                <QrCode size={20} /> Scan Code
+              </Button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
 
         {/* Central Floating Device */}
         <div
@@ -398,11 +494,12 @@ const TouristAppDownloadSection: React.FC = () => {
             delay={0.6}
           />
 
-          {/* Depth Background Phone */}
+          {/* Depth Background Phone with parallax effect */}
           <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 0.1 }}
-            transition={{ delay: 0.5, duration: 1 }}
+            initial={{ opacity: 0, x: -60, rotate: -8 }}
+            whileInView={{ opacity: 0.12, x: -48, rotate: -6 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.5, duration: 1, ease: EASE.smooth }}
             style={{
               position: "absolute",
               zIndex: 0,
@@ -410,7 +507,7 @@ const TouristAppDownloadSection: React.FC = () => {
               height: "640px",
               backgroundColor: "#0A1B47",
               borderRadius: "48px",
-              transform: "rotate(-6deg) translateX(-48px) translateY(16px)",
+              transform: "translateY(16px)",
             }}
           />
         </div>

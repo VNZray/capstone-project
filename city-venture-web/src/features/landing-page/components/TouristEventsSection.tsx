@@ -1,7 +1,17 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { MapPin, Ticket } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { MapPin, Ticket, ArrowRight } from "lucide-react";
 import Button from "@/src/components/Button";
+import {
+  eventsContainerVariants,
+  eventRowVariants,
+  dateBadgeVariants,
+  sectionHeaderVariants,
+  viewportSettings,
+  EASE,
+  arrowBounceAnimation,
+  arrowBounceTransition,
+} from "../utils/animationVariants";
 
 interface EventDate {
   month: string;
@@ -25,21 +35,23 @@ const EventRow: React.FC<EventRowProps> = ({
   category,
   image,
   setHoveredEvent,
-  index,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.1 }}
+      variants={eventRowVariants}
       onMouseEnter={() => {
         setHoveredEvent(image);
         setIsHovered(true);
       }}
       onMouseLeave={() => setIsHovered(false)}
+      whileHover={shouldReduceMotion ? undefined : { 
+        x: 8,
+        backgroundColor: "rgba(255,255,255,0.05)",
+      }}
+      transition={{ duration: 0.25, ease: EASE.snappy }}
       style={{
         position: "relative",
         display: "flex",
@@ -47,9 +59,8 @@ const EventRow: React.FC<EventRowProps> = ({
         justifyContent: "space-between",
         padding: "40px 32px",
         borderBottom: "1px solid rgba(75, 85, 99, 0.5)",
-        backgroundColor: isHovered ? "rgba(255,255,255,0.05)" : "transparent",
-        transition: "background-color 0.2s",
         cursor: "pointer",
+        willChange: "transform, background-color",
       }}
     >
       <div
@@ -72,18 +83,24 @@ const EventRow: React.FC<EventRowProps> = ({
             minWidth: "300px",
           }}
         >
-          {/* Date */}
-          <div
+          {/* Date Badge with spring animation */}
+          <motion.div
+            variants={dateBadgeVariants}
+            whileHover={{ scale: 1.1, rotate: 3 }}
+            transition={{ type: "spring", stiffness: 300, damping: 15 }}
             style={{
               textAlign: "center",
               width: "64px",
               flexShrink: 0,
             }}
           >
-            <span
+            <motion.span
+              animate={{ 
+                color: isHovered ? "#FFD700" : "#C5A059",
+              }}
+              transition={{ duration: 0.2 }}
               style={{
                 display: "block",
-                color: "#C5A059",
                 fontWeight: 700,
                 fontSize: "0.875rem",
                 letterSpacing: "0.15em",
@@ -91,8 +108,12 @@ const EventRow: React.FC<EventRowProps> = ({
               }}
             >
               {date.month}
-            </span>
-            <span
+            </motion.span>
+            <motion.span
+              animate={{ 
+                scale: isHovered ? 1.1 : 1,
+              }}
+              transition={{ duration: 0.2 }}
               style={{
                 display: "block",
                 fontSize: "1.875rem",
@@ -101,23 +122,29 @@ const EventRow: React.FC<EventRowProps> = ({
               }}
             >
               {date.day}
-            </span>
-          </div>
+            </motion.span>
+          </motion.div>
 
           {/* Title & Location */}
           <div>
-            <h3
+            <motion.h3
+              animate={{ 
+                color: isHovered ? "#C5A059" : "white",
+              }}
+              transition={{ duration: 0.2 }}
               style={{
                 fontSize: "clamp(1.5rem, 3vw, 1.875rem)",
                 fontWeight: 700,
-                color: isHovered ? "#C5A059" : "white",
-                transition: "color 0.2s",
                 margin: 0,
               }}
             >
               {title}
-            </h3>
-            <div
+            </motion.h3>
+            <motion.div
+              animate={{ 
+                x: isHovered ? 4 : 0,
+              }}
+              transition={{ duration: 0.2 }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -128,7 +155,7 @@ const EventRow: React.FC<EventRowProps> = ({
               }}
             >
               <MapPin size={14} /> {location}
-            </div>
+            </motion.div>
           </div>
         </div>
 
@@ -140,38 +167,46 @@ const EventRow: React.FC<EventRowProps> = ({
             gap: "24px",
           }}
         >
-          <span
+          <motion.span
+            animate={{
+              borderColor: isHovered ? "#C5A059" : "rgba(75,85,99,0.6)",
+              color: isHovered ? "#C5A059" : "#d1d5db",
+            }}
+            transition={{ duration: 0.2 }}
             style={{
               padding: "4px 16px",
               borderRadius: "9999px",
-              border: `1px solid ${isHovered ? "#C5A059" : "rgba(75,85,99,0.6)"}`,
-              color: isHovered ? "#C5A059" : "#d1d5db",
+              border: "1px solid",
               fontSize: "0.75rem",
               fontWeight: 700,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              transition: "all 0.2s",
             }}
           >
             {category}
-          </span>
-          <div
+          </motion.span>
+          <motion.div
+            animate={{
+              borderColor: isHovered ? "#C5A059" : "rgba(75,85,99,0.6)",
+              backgroundColor: isHovered ? "#C5A059" : "transparent",
+              color: isHovered ? "#0A1B47" : "#9ca3af",
+              rotate: isHovered ? 45 : 0,
+            }}
+            transition={{ duration: 0.3, ease: EASE.snappy }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
             style={{
               width: "48px",
               height: "48px",
               borderRadius: "9999px",
-              border: `1px solid ${isHovered ? "#C5A059" : "rgba(75,85,99,0.6)"}`,
+              border: "1px solid",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: isHovered ? "#0A1B47" : "#9ca3af",
-              backgroundColor: isHovered ? "#C5A059" : "transparent",
-              transform: isHovered ? "rotate(45deg)" : "rotate(0deg)",
-              transition: "all 0.3s",
             }}
           >
             <Ticket size={20} />
-          </div>
+          </motion.div>
         </div>
       </div>
     </motion.div>
@@ -181,6 +216,7 @@ const EventRow: React.FC<EventRowProps> = ({
 /**
  * Tourist Events Section
  * A dynamic events listing with hover-reveal background images
+ * and engaging staggered animations
  */
 export const TouristEventsSection: React.FC = () => {
   const [hoveredImage, setHoveredImage] = useState(
@@ -232,18 +268,19 @@ export const TouristEventsSection: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      {/* Dynamic Background Image */}
+      {/* Dynamic Background Image with smooth crossfade */}
       <AnimatePresence mode="popLayout">
         <motion.div
           key={hoveredImage}
           initial={{ opacity: 0, scale: 1.1 }}
           animate={{ opacity: 0.09, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.7, ease: EASE.smooth }}
           style={{
             position: "absolute",
             inset: 0,
             zIndex: 0,
+            willChange: "opacity, transform",
           }}
         >
           <img
@@ -275,8 +312,12 @@ export const TouristEventsSection: React.FC = () => {
           zIndex: 10,
         }}
       >
-        {/* Header */}
-        <div
+        {/* Header with entrance animations */}
+        <motion.div
+          variants={sectionHeaderVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportSettings}
           style={{
             display: "flex",
             flexWrap: "wrap",
@@ -290,6 +331,8 @@ export const TouristEventsSection: React.FC = () => {
             <motion.p
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, ease: EASE.smooth }}
               style={{
                 color: "#C5A059",
                 fontWeight: 700,
@@ -302,8 +345,10 @@ export const TouristEventsSection: React.FC = () => {
               Mark Your Calendar
             </motion.p>
             <motion.h2
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: 0.1, ease: EASE.smooth }}
               style={{
                 fontSize: "clamp(2.5rem, 7vw, 4.5rem)",
                 fontWeight: 900,
@@ -327,32 +372,50 @@ export const TouristEventsSection: React.FC = () => {
           </div>
 
           <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
             style={{ display: "none" }}
             className="events-calendar-btn"
           >
-            <Button
-              variant="outlined"
-              sx={{
-                borderColor: "rgba(255,255,255,0.2)",
-                color: "white",
-                borderRadius: "9999px",
-                padding: "16px 32px",
-                fontWeight: 700,
-                "&:hover": {
-                  backgroundColor: "white",
-                  color: "#0A1B47",
-                },
-              }}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
             >
-              View Full Calendar
-            </Button>
+              <Button
+                variant="outlined"
+                sx={{
+                  borderColor: "rgba(255,255,255,0.2)",
+                  color: "white",
+                  borderRadius: "9999px",
+                  padding: "16px 32px",
+                  fontWeight: 700,
+                  "&:hover": {
+                    backgroundColor: "white",
+                    color: "#0A1B47",
+                  },
+                }}
+              >
+                View Full Calendar
+                <motion.span 
+                  animate={arrowBounceAnimation}
+                  transition={arrowBounceTransition}
+                  style={{ marginLeft: "8px", display: "inline-flex" }}
+                >
+                  <ArrowRight size={16} />
+                </motion.span>
+              </Button>
+            </motion.div>
           </motion.div>
-        </div>
+        </motion.div>
 
-        {/* Events List */}
-        <div
+        {/* Events List with staggered animations */}
+        <motion.div
+          variants={eventsContainerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportSettings}
           style={{
             borderTop: "1px solid rgba(75, 85, 99, 0.5)",
           }}
@@ -365,29 +428,40 @@ export const TouristEventsSection: React.FC = () => {
               setHoveredEvent={setHoveredImage}
             />
           ))}
-        </div>
+        </motion.div>
 
-        {/* Mobile Button */}
-        <div style={{ marginTop: "48px", textAlign: "center" }}>
-          <Button
-            variant="outlined"
-            sx={{
-              borderColor: "rgba(255,255,255,0.2)",
-              color: "white",
-              borderRadius: "9999px",
-              padding: "16px 32px",
-              fontWeight: 700,
-              width: "100%",
-              maxWidth: "400px",
-              "&:hover": {
-                backgroundColor: "white",
-                color: "#0A1B47",
-              },
-            }}
+        {/* Mobile Button with animation */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.5 }}
+          style={{ marginTop: "48px", textAlign: "center" }}
+        >
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            View Full Calendar
-          </Button>
-        </div>
+            <Button
+              variant="outlined"
+              sx={{
+                borderColor: "rgba(255,255,255,0.2)",
+                color: "white",
+                borderRadius: "9999px",
+                padding: "16px 32px",
+                fontWeight: 700,
+                width: "100%",
+                maxWidth: "400px",
+                "&:hover": {
+                  backgroundColor: "white",
+                  color: "#0A1B47",
+                },
+              }}
+            >
+              View Full Calendar
+            </Button>
+          </motion.div>
+        </motion.div>
       </div>
 
       {/* Show desktop button */}

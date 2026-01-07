@@ -1,6 +1,13 @@
 import React, { useState } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { ArrowRight, ChevronRight } from "lucide-react";
+import {
+  gastronomyContainerVariants,
+  gastronomyCardVariants,
+  sectionHeaderVariants,
+  viewportSettings,
+  EASE,
+} from "../utils/animationVariants";
 
 interface DishCardProps {
   id: number;
@@ -10,6 +17,7 @@ interface DishCardProps {
   desc: string;
   active: boolean;
   onClick: () => void;
+  index: number;
 }
 
 const DishCard: React.FC<DishCardProps> = ({
@@ -19,43 +27,64 @@ const DishCard: React.FC<DishCardProps> = ({
   desc,
   active,
   onClick,
+  index,
 }) => {
+  const shouldReduceMotion = useReducedMotion();
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
     <motion.div
       layout
+      custom={index}
+      variants={gastronomyCardVariants}
       onClick={onClick}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      animate={{ 
+        flex: active ? 3 : isHovered && !active ? 1.3 : 1,
+      }}
+      transition={{
+        flex: { duration: 0.5, ease: EASE.snappy },
+        layout: { duration: 0.5, ease: EASE.snappy },
+      }}
       style={{
         position: "relative",
         height: "500px",
         borderRadius: "2rem",
         overflow: "hidden",
         cursor: "pointer",
-        transition: "flex 0.5s cubic-bezier(0.32, 0.72, 0, 1)",
-        flex: active ? 3 : 1,
+        willChange: "flex, transform",
       }}
-      whileHover={!active ? { flex: 1.5 } : undefined}
+      whileHover={!active && !shouldReduceMotion ? { scale: 1.02 } : undefined}
     >
-      {/* Background */}
-      <img
+      {/* Background with smooth scale */}
+      <motion.img
         src={image}
         alt={title}
+        animate={{ 
+          scale: active || isHovered ? 1.05 : 1,
+        }}
+        transition={{ duration: 0.6, ease: EASE.smooth }}
         style={{
           position: "absolute",
           inset: 0,
           width: "100%",
           height: "100%",
           objectFit: "cover",
+          willChange: "transform",
         }}
       />
 
-      {/* Dark Overlay */}
-      <div
+      {/* Dark Overlay - animated opacity */}
+      <motion.div
+        animate={{ 
+          opacity: active ? 0.25 : 0.55,
+        }}
+        transition={{ duration: 0.4 }}
         style={{
           position: "absolute",
           inset: 0,
           backgroundColor: "#0A1B47",
-          opacity: active ? 0.3 : 0.6,
-          transition: "opacity 0.5s",
         }}
       />
 
@@ -72,128 +101,156 @@ const DishCard: React.FC<DishCardProps> = ({
         }}
       >
         {/* Vertical Text for Inactive State */}
-        {!active && (
-          <div
-            style={{
-              position: "absolute",
-              top: "48px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              height: "100%",
-            }}
-          >
-            <p
+        <AnimatePresence mode="wait">
+          {!active && (
+            <motion.div
+              key="vertical-text"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               style={{
-                color: "rgba(255,255,255,0.6)",
-                fontWeight: 700,
-                letterSpacing: "0.3em",
-                textTransform: "uppercase",
-                whiteSpace: "nowrap",
-                transform: "rotate(180deg)",
-                writingMode: "vertical-rl",
-                fontSize: "0.875rem",
+                position: "absolute",
+                top: "48px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                height: "100%",
               }}
             >
-              {category}
-            </p>
-          </div>
-        )}
-
-        <motion.div layout="position" style={{ position: "relative" }}>
-          {active && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              style={{ marginBottom: "16px" }}
-            >
-              <div
+              <p
                 style={{
-                  display: "inline-block",
-                  padding: "4px 12px",
-                  backgroundColor: "#C5A059",
-                  color: "#0A1B47",
-                  fontSize: "0.75rem",
+                  color: "rgba(255,255,255,0.6)",
                   fontWeight: 700,
+                  letterSpacing: "0.3em",
                   textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  borderRadius: "9999px",
-                  marginBottom: "8px",
+                  whiteSpace: "nowrap",
+                  transform: "rotate(180deg)",
+                  writingMode: "vertical-rl",
+                  fontSize: "0.875rem",
                 }}
               >
                 {category}
-              </div>
+              </p>
             </motion.div>
           )}
+        </AnimatePresence>
 
+        <motion.div layout="position" style={{ position: "relative" }}>
+          {/* Category Badge - animated entrance */}
+          <AnimatePresence>
+            {active && (
+              <motion.div
+                key="category-badge"
+                initial={{ opacity: 0, y: 15, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                transition={{ duration: 0.3, ease: EASE.smooth }}
+                style={{ marginBottom: "16px" }}
+              >
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "auto" }}
+                  transition={{ duration: 0.4, delay: 0.1 }}
+                  style={{
+                    display: "inline-block",
+                    padding: "4px 12px",
+                    backgroundColor: "#C5A059",
+                    color: "#0A1B47",
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    borderRadius: "9999px",
+                    marginBottom: "8px",
+                    overflow: "hidden",
+                  }}
+                >
+                  {category}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Title - animated size change */}
           <motion.h3
             layout="position"
+            animate={{
+              fontSize: active ? "clamp(2.5rem, 6vw, 4.5rem)" : "1.5rem",
+              opacity: active ? 1 : 0.85,
+            }}
+            transition={{ duration: 0.4, ease: EASE.snappy }}
             style={{
               fontWeight: 900,
               color: "white",
               lineHeight: 1,
               textTransform: "uppercase",
               marginBottom: "8px",
-              fontSize: active ? "clamp(2.5rem, 6vw, 4.5rem)" : "1.5rem",
-              opacity: active ? 1 : 0.8,
             }}
           >
             {title}
           </motion.h3>
 
-          {active && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              style={{
-                color: "rgba(255,255,255,0.9)",
-                fontSize: "clamp(1rem, 2vw, 1.25rem)",
-                fontFamily: "Georgia, serif",
-                fontStyle: "italic",
-                maxWidth: "28rem",
-                lineHeight: 1.6,
-              }}
-            >
-              "{desc}"
-            </motion.p>
-          )}
+          {/* Description - animated reveal */}
+          <AnimatePresence>
+            {active && (
+              <motion.p
+                key="description"
+                initial={{ opacity: 0, height: 0, y: 10 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: 10 }}
+                transition={{ duration: 0.35, ease: EASE.smooth }}
+                style={{
+                  color: "rgba(255,255,255,0.9)",
+                  fontSize: "clamp(1rem, 2vw, 1.25rem)",
+                  fontFamily: "Georgia, serif",
+                  fontStyle: "italic",
+                  maxWidth: "28rem",
+                  lineHeight: 1.6,
+                  overflow: "hidden",
+                }}
+              >
+                "{desc}"
+              </motion.p>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Action Button for Active State */}
-        {active && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            style={{ marginTop: "32px" }}
-          >
-            <div
-              style={{
-                width: "48px",
-                height: "48px",
-                borderRadius: "9999px",
-                border: "1px solid rgba(255,255,255,0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = "white";
-                e.currentTarget.style.color = "#0A1B47";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = "transparent";
-                e.currentTarget.style.color = "white";
-              }}
+        <AnimatePresence>
+          {active && (
+            <motion.div
+              key="action-button"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.3, delay: 0.15 }}
+              style={{ marginTop: "32px" }}
             >
-              <ArrowRight size={20} />
-            </div>
-          </motion.div>
-        )}
+              <motion.div
+                whileHover={{ 
+                  backgroundColor: "white",
+                  color: "#0A1B47",
+                  scale: 1.1,
+                }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "9999px",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                <ArrowRight size={20} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
@@ -202,6 +259,7 @@ const DishCard: React.FC<DishCardProps> = ({
 /**
  * Tourist Gastronomy Section
  * An interactive expanding cards layout showcasing Bicolano cuisine
+ * with smooth fluid animations and intuitive interactions
  */
 export const TouristGastronomySection: React.FC = () => {
   const [activeId, setActiveId] = useState(1);
@@ -257,8 +315,12 @@ export const TouristGastronomySection: React.FC = () => {
           margin: "0 auto",
         }}
       >
-        {/* Header */}
-        <div
+        {/* Header with entrance animation */}
+        <motion.div
+          variants={sectionHeaderVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportSettings}
           style={{
             display: "flex",
             flexWrap: "wrap",
@@ -269,7 +331,11 @@ export const TouristGastronomySection: React.FC = () => {
           }}
         >
           <div style={{ maxWidth: "42rem" }}>
-            <span
+            <motion.span
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
               style={{
                 color: "#C5A059",
                 fontWeight: 700,
@@ -281,7 +347,7 @@ export const TouristGastronomySection: React.FC = () => {
               }}
             >
               Gastronomy
-            </span>
+            </motion.span>
             <h2
               style={{
                 fontSize: "clamp(2.5rem, 6vw, 3.75rem)",
@@ -298,8 +364,21 @@ export const TouristGastronomySection: React.FC = () => {
             </h2>
           </div>
 
-          <div style={{ paddingBottom: "8px" }}>
-            <p
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3 }}
+            style={{ paddingBottom: "8px" }}
+          >
+            <motion.p
+              animate={{ x: [0, 5, 0] }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity, 
+                repeatDelay: 2,
+                ease: "easeInOut" 
+              }}
               style={{
                 color: "#9ca3af",
                 fontSize: "0.875rem",
@@ -313,27 +392,32 @@ export const TouristGastronomySection: React.FC = () => {
               }}
             >
               Click to Explore <ChevronRight size={16} />
-            </p>
-          </div>
-        </div>
+            </motion.p>
+          </motion.div>
+        </motion.div>
 
-        {/* Expanding Cards Layout */}
-        <div
+        {/* Expanding Cards Layout with staggered entrance */}
+        <motion.div
+          variants={gastronomyContainerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportSettings}
           style={{
             display: "flex",
             gap: "16px",
             height: "500px",
           }}
         >
-          {dishes.map((dish) => (
+          {dishes.map((dish, index) => (
             <DishCard
               key={dish.id}
               {...dish}
+              index={index}
               active={activeId === dish.id}
               onClick={() => setActiveId(dish.id)}
             />
           ))}
-        </div>
+        </motion.div>
 
         {/* Mobile Stack Fallback */}
         <style>{`

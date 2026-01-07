@@ -1,12 +1,19 @@
-import React from "react";
-import { motion } from "motion/react";
+import React, { useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
+import {
+  bentoContainerVariants,
+  bentoItemVariants,
+  sectionHeaderVariants,
+  viewportSettings,
+  EASE,
+} from "../utils/animationVariants";
 
 interface BentoCardProps {
   title: string;
   subtitle: string;
   image: string;
-  delay?: number;
+  index?: number;
   style?: React.CSSProperties;
 }
 
@@ -14,60 +21,67 @@ const BentoCard: React.FC<BentoCardProps> = ({
   title,
   subtitle,
   image,
-  delay = 0,
   style,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay, duration: 0.5 }}
+      variants={bentoItemVariants}
+      whileHover={shouldReduceMotion ? undefined : { 
+        y: -8, 
+        scale: 1.02,
+        transition: { duration: 0.3, ease: EASE.snappy }
+      }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
       style={{
         position: "relative",
         overflow: "hidden",
         borderRadius: "2rem",
         backgroundColor: "#f3f4f6",
         cursor: "pointer",
+        willChange: "transform",
         ...style,
       }}
     >
       {/* Background Image with Zoom Effect */}
-      <div
+      <motion.div
         style={{
           position: "absolute",
           inset: 0,
           zIndex: 0,
         }}
       >
-        <img
+        <motion.img
           src={image}
           alt={title}
+          animate={shouldReduceMotion ? undefined : { 
+            scale: isHovered ? 1.08 : 1 
+          }}
+          transition={{ duration: 0.6, ease: EASE.smooth }}
           style={{
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            transition: "transform 0.7s ease-out",
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.transform = "scale(1.05)";
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.transform = "scale(1)";
+            willChange: "transform",
           }}
         />
-        {/* Gradient Overlay */}
-        <div
+        {/* Gradient Overlay - enhanced on hover */}
+        <motion.div
+          animate={{ 
+            opacity: isHovered ? 0.75 : 0.5 
+          }}
+          transition={{ duration: 0.3 }}
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to top, rgba(10,27,71,0.8), transparent, transparent)",
-            opacity: 0.6,
-            transition: "opacity 0.3s",
+              "linear-gradient(to top, rgba(10,27,71,0.9), rgba(10,27,71,0.3), transparent)",
           }}
         />
-      </div>
+      </motion.div>
 
       {/* Content */}
       <div
@@ -82,19 +96,25 @@ const BentoCard: React.FC<BentoCardProps> = ({
           alignItems: "flex-start",
         }}
       >
-        <div>
-          <p
+        <motion.div
+          animate={{ y: isHovered ? -4 : 0 }}
+          transition={{ duration: 0.3, ease: EASE.snappy }}
+        >
+          <motion.p
+            animate={{ 
+              color: isHovered ? "#FFD700" : "#C5A059",
+              letterSpacing: isHovered ? "0.2em" : "0.15em",
+            }}
+            transition={{ duration: 0.3 }}
             style={{
-              color: "#C5A059",
               fontWeight: 700,
               fontSize: "0.75rem",
-              letterSpacing: "0.15em",
               textTransform: "uppercase",
               marginBottom: "8px",
             }}
           >
             {subtitle}
-          </p>
+          </motion.p>
           <h3
             style={{
               fontSize: "clamp(1.25rem, 3vw, 1.875rem)",
@@ -106,7 +126,32 @@ const BentoCard: React.FC<BentoCardProps> = ({
           >
             {title}
           </h3>
-        </div>
+        </motion.div>
+
+        {/* Explore indicator - appears on hover */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ 
+            opacity: isHovered ? 1 : 0,
+            y: isHovered ? 0 : 10,
+          }}
+          transition={{ duration: 0.25 }}
+          style={{
+            position: "absolute",
+            top: "24px",
+            right: "24px",
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            backgroundColor: "#C5A059",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#0A1B47",
+          }}
+        >
+          <ArrowUpRight size={18} />
+        </motion.div>
       </div>
     </motion.div>
   );
@@ -115,6 +160,7 @@ const BentoCard: React.FC<BentoCardProps> = ({
 /**
  * Tourist Curated Experiences Section
  * A bento grid layout showcasing various experiences in Naga City
+ * with staggered reveal animations and smooth hover interactions
  */
 export const TouristExperiencesSection: React.FC = () => {
   const experiences = [
@@ -158,8 +204,12 @@ export const TouristExperiencesSection: React.FC = () => {
           margin: "0 auto",
         }}
       >
-        {/* Header */}
-        <div
+        {/* Header with entrance animation */}
+        <motion.div
+          variants={sectionHeaderVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportSettings}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -202,8 +252,10 @@ export const TouristExperiencesSection: React.FC = () => {
               </p>
             </div>
 
-            <a
+            <motion.a
               href="#"
+              whileHover={{ x: 4 }}
+              transition={{ duration: 0.2 }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -213,24 +265,19 @@ export const TouristExperiencesSection: React.FC = () => {
                 textDecoration: "none",
                 borderBottom: "1px solid rgba(10,27,71,0.2)",
                 paddingBottom: "4px",
-                transition: "color 0.2s, border-color 0.2s",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.color = "#C5A059";
-                e.currentTarget.style.borderColor = "#C5A059";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.color = "#0A1B47";
-                e.currentTarget.style.borderColor = "rgba(10,27,71,0.2)";
               }}
             >
               View Full Itinerary <ArrowUpRight size={20} />
-            </a>
+            </motion.a>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Bento Grid */}
-        <div
+        {/* Bento Grid with staggered animation */}
+        <motion.div
+          variants={bentoContainerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={viewportSettings}
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
@@ -244,6 +291,7 @@ export const TouristExperiencesSection: React.FC = () => {
             title={experiences[0].title}
             subtitle={experiences[0].subtitle}
             image={experiences[0].image}
+            index={0}
             style={{
               gridColumn: "1 / 2",
               gridRow: "1 / 3",
@@ -255,7 +303,7 @@ export const TouristExperiencesSection: React.FC = () => {
             title={experiences[1].title}
             subtitle={experiences[1].subtitle}
             image={experiences[1].image}
-            delay={0.1}
+            index={1}
             style={{
               gridColumn: "2 / 4",
               gridRow: "1 / 2",
@@ -267,7 +315,7 @@ export const TouristExperiencesSection: React.FC = () => {
             title={experiences[2].title}
             subtitle={experiences[2].subtitle}
             image={experiences[2].image}
-            delay={0.2}
+            index={2}
             style={{
               gridColumn: "2 / 3",
               gridRow: "2 / 3",
@@ -279,13 +327,13 @@ export const TouristExperiencesSection: React.FC = () => {
             title={experiences[3].title}
             subtitle={experiences[3].subtitle}
             image={experiences[3].image}
-            delay={0.3}
+            index={3}
             style={{
               gridColumn: "3 / 4",
               gridRow: "2 / 3",
             }}
           />
-        </div>
+        </motion.div>
 
         {/* Mobile Grid Fallback */}
         <style>{`

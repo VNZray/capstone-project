@@ -1,11 +1,19 @@
 import React from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  introVariants,
+  viewportSettings,
+  EASE,
+} from "../utils/animationVariants";
 
 /**
  * Tourist Intro/Manifesto Section
  * A welcoming section that sets the tone for exploring Naga City
+ * with elegant staggered text animations
  */
 export const TouristIntroSection: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <section
       style={{
@@ -13,18 +21,20 @@ export const TouristIntroSection: React.FC = () => {
         backgroundColor: "#F5F5F7",
       }}
     >
-      <div
+      <motion.div
+        variants={introVariants.container}
+        initial="hidden"
+        whileInView="visible"
+        viewport={viewportSettings}
         style={{
           maxWidth: "56rem",
           margin: "0 auto",
           textAlign: "center",
         }}
       >
-        {/* Welcome Tag */}
+        {/* Welcome Tag with fade-in */}
         <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
+          variants={introVariants.welcome}
           style={{
             color: "#C5A059",
             fontFamily: "Georgia, serif",
@@ -36,12 +46,9 @@ export const TouristIntroSection: React.FC = () => {
           Welcome to Maogma
         </motion.p>
 
-        {/* Main Headline */}
+        {/* Main Headline with staggered word reveal */}
         <motion.h3
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.2 }}
+          variants={introVariants.headline}
           style={{
             fontSize: "clamp(2rem, 5vw, 3.75rem)",
             fontWeight: 300,
@@ -52,15 +59,22 @@ export const TouristIntroSection: React.FC = () => {
         >
           More than a destination,{" "}
           <br />
-          <span style={{ fontWeight: 700 }}>Naga City</span> is a feeling.
+          <motion.span 
+            style={{ fontWeight: 700, display: "inline-block" }}
+            whileHover={shouldReduceMotion ? undefined : { 
+              color: "#C5A059",
+              scale: 1.02,
+            }}
+            transition={{ duration: 0.2 }}
+          >
+            Naga City
+          </motion.span>{" "}
+          is a feeling.
         </motion.h3>
 
-        {/* Description */}
+        {/* Description with delayed fade */}
         <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.4 }}
+          variants={introVariants.description}
           style={{
             marginTop: "32px",
             fontSize: "clamp(1rem, 2vw, 1.25rem)",
@@ -74,7 +88,24 @@ export const TouristIntroSection: React.FC = () => {
           Immerse yourself in a city that dances to the rhythm of faith, flavor,
           and festivity. Your journey into the heart of Bicol begins here.
         </motion.p>
-      </div>
+
+        {/* Decorative animated line */}
+        <motion.div
+          initial={{ scaleX: 0, opacity: 0 }}
+          whileInView={{ scaleX: 1, opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.6, ease: EASE.smooth }}
+          style={{
+            marginTop: "48px",
+            height: "2px",
+            width: "80px",
+            backgroundColor: "#C5A059",
+            marginLeft: "auto",
+            marginRight: "auto",
+            transformOrigin: "center",
+          }}
+        />
+      </motion.div>
     </section>
   );
 };
