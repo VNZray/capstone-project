@@ -10,7 +10,6 @@ import Container from "@/src/components/Container";
 
 interface RoomCardProps {
   image: string;
-  status: string;
   floor: string;
   roomNumber: string;
   roomType: string;
@@ -22,13 +21,11 @@ interface RoomCardProps {
   discountPercentage?: number | null;
   onDeleted: () => void;
   onClick: () => void;
-  onStatusUpdate?: (id: string, newStatus: string) => void;
   onUpdate?: () => void;
 }
 
 const RoomCard: React.FC<RoomCardProps> = ({
   image,
-  status,
   floor,
   roomNumber,
   roomType,
@@ -39,9 +36,6 @@ const RoomCard: React.FC<RoomCardProps> = ({
   discountPercentage,
   onClick,
 }) => {
-  // local state (initialize with prop)
-  const [room_status] = React.useState(status);
-  
   // Calculate discounted price if discount exists
   const originalPrice = parseFloat(price.toString().replace(/,/g, ""));
   const hasDiscount = discountPercentage && discountPercentage > 0;
@@ -73,48 +67,6 @@ const RoomCard: React.FC<RoomCardProps> = ({
           }}
         />
 
-        {/* status chip */}
-        {room_status === "Available" && (
-          <Chip
-            color="success"
-            variant="solid"
-            size="md"
-            sx={{ position: "absolute", top: 12, left: 12 }}
-          >
-            {room_status}
-          </Chip>
-        )}
-        {room_status === "Reserved" && (
-          <Chip
-            color="neutral"
-            variant="solid"
-            size="md"
-            sx={{ position: "absolute", top: 12, left: 12 }}
-          >
-            {room_status}
-          </Chip>
-        )}
-        {room_status === "Occupied" && (
-          <Chip
-            color="warning"
-            variant="solid"
-            size="md"
-            sx={{ position: "absolute", top: 12, left: 12 }}
-          >
-            {room_status}
-          </Chip>
-        )}
-        {room_status === "Maintenance" && (
-          <Chip
-            color="danger"
-            variant="solid"
-            size="md"
-            sx={{ position: "absolute", top: 12, left: 12 }}
-          >
-            {room_status}
-          </Chip>
-        )}
-
         <Chip
           color="primary"
           variant="soft"
@@ -123,7 +75,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
         >
           Floor {floor}
         </Chip>
-        
+
         {/* Discount Badge */}
         {hasDiscount && (
           <Chip

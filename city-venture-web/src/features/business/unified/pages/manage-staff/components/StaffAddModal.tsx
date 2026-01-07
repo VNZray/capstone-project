@@ -6,18 +6,15 @@ import {
   Input,
   FormHelperText,
   CircularProgress,
-  Checkbox,
   Box,
-  Chip,
-  Tooltip,
 } from "@mui/joy";
 import Typography from "@/src/components/Typography";
-import { ChevronDown, ChevronUp, Mail, Phone, User, Briefcase, Shield, AlertCircle } from "lucide-react";
-import { 
-  fetchAvailableStaffPermissions, 
+import { Mail, Phone, User, Briefcase, AlertCircle } from "lucide-react";
+import {
+  fetchAvailableStaffPermissions,
   type PermissionCategory,
-  type Permission 
 } from "@/src/services/manage-staff/StaffService";
+import PermissionSelector from "./PermissionSelector";
 
 export type StaffFormData = {
   first_name: string;
@@ -48,11 +45,14 @@ export default function StaffAddModal({
   const [phone, setPhone] = React.useState("");
   const [password, setPassword] = React.useState("123456");
   const [title, setTitle] = React.useState("");
-  const [selectedPermissions, setSelectedPermissions] = React.useState<Set<number>>(new Set());
+  const [selectedPermissions, setSelectedPermissions] = React.useState<
+    Set<number>
+  >(new Set());
   const [error, setError] = React.useState<string>("");
-  const [permissionCategories, setPermissionCategories] = React.useState<PermissionCategory[]>([]);
+  const [permissionCategories, setPermissionCategories] = React.useState<
+    PermissionCategory[]
+  >([]);
   const [loading, setLoading] = React.useState(false);
-  const [expandedCategories, setExpandedCategories] = React.useState<Set<string>>(new Set());
 
   // Load available permissions when modal opens
   React.useEffect(() => {
@@ -83,12 +83,11 @@ export default function StaffAddModal({
     setPassword("123456");
     setTitle("");
     setSelectedPermissions(new Set());
-    setExpandedCategories(new Set());
     setError("");
   }, [open]);
 
   const togglePermission = (permissionId: number) => {
-    setSelectedPermissions(prev => {
+    setSelectedPermissions((prev) => {
       const next = new Set(prev);
       if (next.has(permissionId)) {
         next.delete(permissionId);
@@ -99,29 +98,17 @@ export default function StaffAddModal({
     });
   };
 
-  const toggleCategory = (permissions: Permission[]) => {
-    const allSelected = permissions.every(p => selectedPermissions.has(p.id));
-    setSelectedPermissions(prev => {
+  const toggleCategory = (permissions: any[]) => {
+    const allSelected = permissions.every((p) => selectedPermissions.has(p.id));
+    setSelectedPermissions((prev) => {
       const next = new Set(prev);
-      permissions.forEach(p => {
+      permissions.forEach((p) => {
         if (allSelected) {
           next.delete(p.id);
         } else {
           next.add(p.id);
         }
       });
-      return next;
-    });
-  };
-
-  const toggleCategoryExpanded = (categoryName: string) => {
-    setExpandedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(categoryName)) {
-        next.delete(categoryName);
-      } else {
-        next.add(categoryName);
-      }
       return next;
     });
   };
@@ -137,7 +124,7 @@ export default function StaffAddModal({
       setError("Enter a valid email address.");
       return;
     }
-    
+
     onSave({
       first_name: firstName.trim(),
       last_name: lastName.trim() || undefined,
@@ -150,8 +137,6 @@ export default function StaffAddModal({
 
     onClose();
   };
-
-  const totalPermissions = permissionCategories.reduce((acc, cat) => acc + cat.permissions.length, 0);
 
   return (
     <BaseEditModal
@@ -184,7 +169,10 @@ export default function StaffAddModal({
               borderColor: "danger.300",
             }}
           >
-            <AlertCircle size={16} style={{ color: "var(--joy-palette-danger-500)" }} />
+            <AlertCircle
+              size={16}
+              style={{ color: "var(--joy-palette-danger-500)" }}
+            />
             <Typography.Body size="sm" sx={{ color: "danger.700" }}>
               {error}
             </Typography.Body>
@@ -201,7 +189,10 @@ export default function StaffAddModal({
         >
           <FormControl size="sm">
             <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
-              First Name <Typography.Body component="span" sx={{ color: "danger.500" }}>*</Typography.Body>
+              First Name{" "}
+              <Typography.Body component="span" sx={{ color: "danger.500" }}>
+                *
+              </Typography.Body>
             </FormLabel>
             <Input
               placeholder="John"
@@ -214,7 +205,9 @@ export default function StaffAddModal({
             />
           </FormControl>
           <FormControl size="sm">
-            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Last Name</FormLabel>
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
+              Last Name
+            </FormLabel>
             <Input
               placeholder="Doe"
               type="text"
@@ -236,7 +229,10 @@ export default function StaffAddModal({
         >
           <FormControl size="sm">
             <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
-              Email <Typography.Body component="span" sx={{ color: "danger.500" }}>*</Typography.Body>
+              Email{" "}
+              <Typography.Body component="span" sx={{ color: "danger.500" }}>
+                *
+              </Typography.Body>
             </FormLabel>
             <Input
               placeholder="staff@business.com"
@@ -249,7 +245,9 @@ export default function StaffAddModal({
             />
           </FormControl>
           <FormControl size="sm">
-            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Phone</FormLabel>
+            <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
+              Phone
+            </FormLabel>
             <Input
               placeholder="09*********"
               type="tel"
@@ -264,7 +262,9 @@ export default function StaffAddModal({
 
         {/* Title/Position - Full Width */}
         <FormControl size="sm">
-          <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>Title / Position</FormLabel>
+          <FormLabel sx={{ fontSize: "12px", fontWeight: 600, mb: 0.5 }}>
+            Title / Position
+          </FormLabel>
           <Input
             placeholder="e.g., Manager, Receptionist"
             type="text"
@@ -276,149 +276,30 @@ export default function StaffAddModal({
           />
         </FormControl>
 
-        {/* Permissions Section - Compact */}
-        <Box sx={{ mt: 0.5 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-            <Shield size={14} style={{ opacity: 0.6 }} />
-            <Typography.Label sx={{ fontSize: "12px" }}>Permissions</Typography.Label>
-            <Chip size="sm" variant="soft" color="neutral" sx={{ fontSize: "11px", height: "20px" }}>
-              {selectedPermissions.size}/{totalPermissions} selected
-            </Chip>
-          </Box>
-          
+        {/* Permissions Section */}
+        <Box sx={{ mt: 1 }}>
           {loading ? (
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", py: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                py: 4,
+              }}
+            >
               <CircularProgress size="sm" />
             </Box>
           ) : permissionCategories.length === 0 ? (
-            <FormHelperText sx={{ fontSize: "12px" }}>No permissions available.</FormHelperText>
+            <FormHelperText sx={{ fontSize: "12px" }}>
+              No permissions available.
+            </FormHelperText>
           ) : (
-            <Box
-              sx={{
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: "8px",
-                overflow: "hidden",
-                maxHeight: "200px",
-                overflowY: "auto",
-              }}
-            >
-              {permissionCategories.map((category, idx) => {
-                const allSelected = category.permissions.every(p => selectedPermissions.has(p.id));
-                const someSelected = category.permissions.some(p => selectedPermissions.has(p.id));
-                const isExpanded = expandedCategories.has(category.category_name);
-                const selectedCount = category.permissions.filter(p => selectedPermissions.has(p.id)).length;
-                
-                return (
-                  <Box
-                    key={category.category_name}
-                    sx={{
-                      borderBottom: idx < permissionCategories.length - 1 ? "1px solid" : "none",
-                      borderColor: "divider",
-                    }}
-                  >
-                    {/* Category Header */}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        px: 1.5,
-                        py: 1,
-                        bgcolor: isExpanded ? "background.level1" : "transparent",
-                        cursor: "pointer",
-                        transition: "background-color 0.15s",
-                        "&:hover": { bgcolor: "background.level1" },
-                      }}
-                      onClick={() => toggleCategoryExpanded(category.category_name)}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Checkbox
-                          checked={allSelected}
-                          indeterminate={someSelected && !allSelected}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            toggleCategory(category.permissions);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          size="sm"
-                          sx={{ "--Checkbox-size": "16px" }}
-                        />
-                        <Typography.Body size="sm" weight="medium" sx={{ fontSize: "13px" }}>
-                          {category.category_name}
-                        </Typography.Body>
-                        <Chip 
-                          size="sm" 
-                          variant="soft" 
-                          color={selectedCount > 0 ? "primary" : "neutral"}
-                          sx={{ fontSize: "10px", height: "18px", minHeight: "18px" }}
-                        >
-                          {selectedCount}/{category.permissions.length}
-                        </Chip>
-                      </Box>
-                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    </Box>
-
-                    {/* Expanded Permissions */}
-                    {isExpanded && (
-                      <Box
-                        sx={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-                          gap: 0.5,
-                          px: 1.5,
-                          py: 1,
-                          bgcolor: "background.level1",
-                        }}
-                      >
-                        {category.permissions.map((permission) => (
-                          <Tooltip
-                            key={permission.id}
-                            title={permission.description || permission.name}
-                            placement="top"
-                            arrow
-                            size="sm"
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 0.75,
-                                py: 0.5,
-                                px: 0.75,
-                                borderRadius: "4px",
-                                cursor: "pointer",
-                                transition: "background-color 0.1s",
-                                "&:hover": { bgcolor: "background.level2" },
-                              }}
-                              onClick={() => togglePermission(permission.id)}
-                            >
-                              <Checkbox
-                                checked={selectedPermissions.has(permission.id)}
-                                onChange={() => togglePermission(permission.id)}
-                                size="sm"
-                                sx={{ "--Checkbox-size": "14px" }}
-                              />
-                              <Typography.Body 
-                                size="sm" 
-                                sx={{ 
-                                  fontSize: "12px",
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                }}
-                              >
-                                {permission.name}
-                              </Typography.Body>
-                            </Box>
-                          </Tooltip>
-                        ))}
-                      </Box>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
+            <PermissionSelector
+              categories={permissionCategories}
+              selectedPermissions={selectedPermissions}
+              onTogglePermission={togglePermission}
+              onToggleCategory={toggleCategory}
+            />
           )}
         </Box>
       </Box>
