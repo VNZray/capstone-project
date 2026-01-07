@@ -148,7 +148,7 @@ export const TouristExperiencesSection: React.FC = () => {
     <section
       id="guide"
       style={{
-        padding: "48px 24px",
+        padding: "0px 24px 48px 24px",
         backgroundColor: "#F5F5F7",
       }}
     >

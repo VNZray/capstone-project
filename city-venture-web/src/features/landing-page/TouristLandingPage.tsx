@@ -23,7 +23,7 @@ export default function TouristLandingPage() {
   }, []);
 
   return (
-    <PageContainer gap={0} padding={0} id="top">
+    <PageContainer gap={0} padding={0} id="top" style={{ overflowX: "hidden" }}>
       {/* Navbar - Seamless transparent mode for hero overlay with tourist mode */}
       <Navbar seamless touristMode />
 

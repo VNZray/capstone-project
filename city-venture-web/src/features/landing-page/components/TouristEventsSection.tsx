@@ -227,7 +227,7 @@ export const TouristEventsSection: React.FC = () => {
       id="events"
       style={{
         position: "relative",
-        padding: "128px 24px",
+        padding: "102px 24px",
         backgroundColor: "#0A1B47",
         overflow: "hidden",
       }}
