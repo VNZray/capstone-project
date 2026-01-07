@@ -8,6 +8,7 @@ import {
   updateTourismStaff,
   changeTourismStaffStatus,
   resetTourismStaffPassword,
+  deleteTourismStaff,
 } from "../controller/admin/TourismStaffManagementController.js";
 
 const router = express.Router();
@@ -21,5 +22,6 @@ router.post('/', createTourismStaff);
 router.put('/:id', updateTourismStaff);
 router.patch('/:id/status', changeTourismStaffStatus);
 router.post('/:id/reset-password', resetTourismStaffPassword);
+router.delete('/:id', deleteTourismStaff);
 
 export default router;

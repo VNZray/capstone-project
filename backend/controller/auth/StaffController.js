@@ -37,6 +37,7 @@ export async function onboardStaff(req, res) {
 			password,
 			business_id,
 			role_id,
+			title,
 		} = req.body;
 
 		// Validate required fields
@@ -71,9 +72,9 @@ export async function onboardStaff(req, res) {
 		const tempPassword = password || crypto.randomBytes(8).toString("hex");
 		const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-		// Call the simplified onboarding procedure (no invitation tokens)
+		// Call the onboarding procedure with title parameter
 		const [rows] = await db.query(
-			"CALL OnboardStaff(?,?,?,?,?,?,?,?,?)",
+			"CALL OnboardStaff(?,?,?,?,?,?,?,?,?,?)",
 			[
 				userId,
 				staffId,
@@ -84,6 +85,7 @@ export async function onboardStaff(req, res) {
 				last_name || "",
 				business_id,
 				role_id,
+				title || "Staff",
 			]
 		);
 

@@ -97,12 +97,18 @@ export const createTouristSpot = async (request, response) => {
       });
     }
 
+    // Determine status and submitted_by
+    const userRole = (request.user?.role || '').toLowerCase();
+    const isAdmin = userRole === 'admin';
+    const status = isAdmin ? 'active' : 'pending';
+    const submittedBy = request.user?.id || null;
+
     conn = await db.getConnection();
     await conn.beginTransaction();
 
     // Use InsertTouristSpot procedure (without type_id)
     const [insertRes] = await conn.query(
-      "CALL InsertTouristSpot(?,?,?,?,?,?,?,?,?)",
+      "CALL InsertTouristSpot(?,?,?,?,?,?,?,?,?,?,?)",
       [
         name,
         description,
@@ -113,6 +119,8 @@ export const createTouristSpot = async (request, response) => {
         contact_email ?? null,
         website ?? null,
         entry_fee ?? null,
+        submittedBy,
+        status
       ]
     );
     const spotId = insertRes[0] && insertRes[0][0] ? insertRes[0][0].id : null;
@@ -141,10 +149,15 @@ export const createTouristSpot = async (request, response) => {
     }
 
     await conn.commit();
+    
+    const message = isAdmin 
+      ? "Tourist spot created successfully" 
+      : "Tourist spot submitted for approval";
+
     response.status(201).json({
       success: true,
-      message: "Tourist spot created successfully",
-      data: { id: spotId },
+      message: message,
+      data: { id: spotId, status: status },
     });
   } catch (error) {
     if (conn) {
@@ -231,6 +244,36 @@ export const unfeatureTouristSpot = async (request, response) => {
       return response.status(400).json({ success: false, message: "Unable to unfeature tourist spot" });
     }
     response.json({ success: true, message: "Tourist spot unfeatured successfully" });
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+};
+
+export const deleteTouristSpot = async (request, response) => {
+  try {
+    const { id } = request.params;
+    const userRole = (request.user?.role || '').toLowerCase();
+    const isAdmin = userRole === 'admin';
+    const userId = request.user?.id || null;
+
+    if (isAdmin) {
+      await db.query("CALL DeleteTouristSpot(?)", [id]);
+      response.json({ success: true, message: "Tourist spot deleted successfully" });
+    } else {
+      await db.query("CALL RequestDeleteTouristSpot(?, ?)", [id, userId]);
+      response.json({ success: true, message: "Deletion request submitted for approval" });
+    }
+  } catch (error) {
+    return handleDbError(error, response);
+  }
+};
+
+export const getMySubmittedTouristSpots = async (request, response) => {
+  try {
+    const userId = request.user.id;
+    const [data] = await db.query("CALL GetMySubmittedTouristSpots(?)", [userId]);
+    const rows = data[0] || [];
+    response.json({ success: true, data: rows, message: "My submitted spots retrieved" });
   } catch (error) {
     return handleDbError(error, response);
   }

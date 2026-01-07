@@ -40,6 +40,10 @@ export const submitEditRequest = async (req, res) => {
     const approvalFields = [changed.name, changed.description, changed.address];
     const directFields = [changed.latitude, changed.longitude, changed.contact_phone, changed.contact_email, changed.website, changed.entry_fee, changed.spot_status];
 
+    const userRole = (req.user?.role || '').toLowerCase();
+    const isAdmin = userRole === 'admin';
+    const submittedBy = req.user?.id || null;
+
     let categoriesChanged = false;
     if (Array.isArray(category_ids)) {
       const [currentCategoriesRows] = await db.query('CALL GetTouristSpotCategoryIds(?)', [id]);
@@ -54,6 +58,15 @@ export const submitEditRequest = async (req, res) => {
           await db.query('CALL InsertTouristSpotCategory(?, ?, ?)', [id, catId, false]);
         }
       }
+    }
+
+    if (isAdmin) {
+      await db.query('CALL UpdateTouristSpot(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+          id, name, description, barangay_id, 
+          latitude, longitude, contact_phone, contact_email, website, entry_fee,
+          spot_status, is_featured ? 1 : 0
+      ]);
+      return res.json({ success: true, message: "Tourist spot updated successfully" });
     }
 
     if (!Object.values(changed).some(Boolean) && categoriesChanged) {
@@ -79,7 +92,7 @@ export const submitEditRequest = async (req, res) => {
     if (changed.address) {
       barangay_id_to_use = barangay_id;
     }
-    await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?)", [
+    await db.query("CALL SubmitTouristSpotEditRequest(?,?,?,?,?,?,?,?,?,?,?,?,?)", [
       id,
       name,
       description,
@@ -92,6 +105,7 @@ export const submitEditRequest = async (req, res) => {
       entry_fee ?? current.entry_fee,
       spot_status ?? current.spot_status,
       Number(current.is_featured) ? 1 : 0,
+      submittedBy
     ]);
     return res.json({ success: true, message: "Core information changes submitted for approval!" });
   } catch (error) {

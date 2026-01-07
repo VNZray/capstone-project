@@ -49,6 +49,11 @@ class ApiService {
     return response.data.data || [];
   }
 
+  async getMySubmittedTouristSpots(): Promise<TouristSpot[]> {
+    const response: AxiosResponse<ApiResponse<TouristSpot[]>> = await api.get('/tourist-spots/my-submissions');
+    return response.data.data || [];
+  }
+
   async featureTouristSpot(id: string): Promise<ApiResponse<void>> {
     const response: AxiosResponse<ApiResponse<void>> = await api.put(`/tourist-spots/featured/${id}`);
     return response.data;
@@ -366,6 +371,21 @@ class ApiService {
       return response.data;
     } catch (err: any) {
       console.error('[apiService] Failed POST /tourism-staff/:id/reset-password', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async deleteTourismStaff(id: string): Promise<void> {
+    try {
+      console.debug('[apiService] DELETE /tourism-staff/:id', id);
+      await apiClient.delete(`/tourism-staff/${id}`);
+    } catch (err: any) {
+      console.error('[apiService] Failed DELETE /tourism-staff/:id', {
         id,
         message: err?.message,
         status: err?.response?.status,

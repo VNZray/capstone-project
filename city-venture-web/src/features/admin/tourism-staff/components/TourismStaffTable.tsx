@@ -1,21 +1,24 @@
 import React, { useMemo } from "react";
 import { Chip, Stack } from "@mui/joy";
-import { CheckCircle, MinusCircle, ShieldCheck, ShieldAlert, Briefcase, Mail } from "lucide-react";
+import { CheckCircle, MinusCircle, ShieldCheck, ShieldAlert, Briefcase, Mail, Trash2 } from "lucide-react";
 import Button from "@/src/components/Button";
 import type { TourismStaff } from "@/src/types/TourismStaff";
 import Table, { type TableColumn } from "@/src/components/ui/Table";
 import Typography from "@/src/components/Typography";
+import IconButton from "@/src/components/IconButton";
 
 interface TourismStaffTableProps {
   staff: TourismStaff[];
   onEdit: (s: TourismStaff) => void;
   onResetPassword: (s: TourismStaff) => void;
+  onDelete: (s: TourismStaff) => void;
 }
 
 const TourismStaffTable: React.FC<TourismStaffTableProps> = ({
   staff,
   onEdit,
   onResetPassword,
+  onDelete,
 }) => {
   const getStatusColor = (s: TourismStaff) => (s.is_active ? "success" : "neutral");
   const getVerifiedColor = (s: TourismStaff) => (s.is_verified ? "primary" : "warning");
@@ -86,13 +89,16 @@ const TourismStaffTable: React.FC<TourismStaffTableProps> = ({
           <Button size="sm" variant="outlined" colorScheme="primary" onClick={() => onEdit(row)} sx={{ minWidth: 56, px: 1.5 }}>
             Edit
           </Button>
-          <Button size="sm" variant="outlined" colorScheme="error" onClick={() => onResetPassword(row)} sx={{ minWidth: 54, px: 1.5 }}>
+          <Button size="sm" variant="outlined" colorScheme="warning" onClick={() => onResetPassword(row)} sx={{ minWidth: 54, px: 1.5 }}>
             Reset
           </Button>
+          <IconButton size="sm" variant="plain" colorScheme="error" onClick={() => onDelete(row)}>
+            <Trash2 size={16} />
+          </IconButton>
         </Stack>
       ),
     },
-  ], [onEdit, onResetPassword]);
+  ], [onEdit, onResetPassword, onDelete]);
 
   return (
     <Table

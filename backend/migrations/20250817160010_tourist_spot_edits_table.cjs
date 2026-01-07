@@ -16,6 +16,7 @@ exports.up = async function(knex) {
     // Note: type_id removed - using entity_categories table instead
     table.enu('approval_status', ['pending', 'approved', 'rejected']).notNullable().defaultTo('pending');
     table.string('remarks', 255).notNullable().defaultTo('');
+    table.uuid('submitted_by').nullable();
     table.timestamp('submitted_at').defaultTo(knex.fn.now());
     table.timestamp('reviewed_at').nullable();
 
