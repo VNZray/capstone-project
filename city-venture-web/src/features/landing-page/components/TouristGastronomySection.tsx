@@ -9,6 +9,12 @@ import {
   EASE,
 } from "../utils/animationVariants";
 
+// Import local food highlight images
+import bicolExpress from "@/src/assets/foodhighlights/bicol-express.png";
+import kinalas from "@/src/assets/foodhighlights/kinalas.png";
+import laing from "@/src/assets/foodhighlights/laing.png";
+import piliNuts from "@/src/assets/foodhighlights/pili-nuts.png";
+
 interface DishCardProps {
   id: number;
   title: string;
@@ -267,35 +273,31 @@ export const TouristGastronomySection: React.FC = () => {
   const dishes = [
     {
       id: 1,
-      category: "The Heat",
-      title: "Bicol Express",
-      image:
-        "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-      desc: "A fiery symphony of pork, shrimp paste, and coconut milk that defines Bicolano resilience.",
+      category: "The Comfort",
+      title: "Kinalas",
+      image: kinalas,
+      desc: "Savory noodle soup topped with a unique gravy made from brain and tender meat. A local secret.",
     },
     {
       id: 2,
-      category: "The Comfort",
-      title: "Kinalas",
-      image:
-        "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-      desc: "Savory noodle soup topped with a unique gravy made from brain and tender meat. A local secret.",
+      category: "The Cream",
+      title: "Laing",
+      image: laing,
+      desc: "Dried taro leaves simmered for hours in coconut cream. Earthy, creamy, and spicy.",
     },
     {
       id: 3,
       category: "The Sweet",
       title: "Pili Nut",
-      image:
-        "https://images.unsplash.com/photo-1599522100867-b5074cecb2e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+      image: piliNuts,
       desc: "Indigenous nuts glazed in honey or roasted. The butteriest nut you will ever taste.",
     },
     {
       id: 4,
-      category: "The Cream",
-      title: "Laing",
-      image:
-        "https://images.unsplash.com/photo-1600863007661-be3244c00030?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
-      desc: "Dried taro leaves simmered for hours in coconut cream. Earthy, creamy, and spicy.",
+      category: "The Heat",
+      title: "Bicol Express",
+      image: bicolExpress,
+      desc: "A fiery symphony of pork, shrimp paste, and coconut milk that defines Bicolano resilience.",
     },
   ];
 

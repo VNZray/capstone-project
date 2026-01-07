@@ -384,8 +384,7 @@ const TouristAppDownloadSection: React.FC = () => {
                 y: -4,
                 boxShadow: "0 25px 30px -5px rgba(10, 27, 71, 0.25)",
               }}
-              whileTap={{ scale: 0.98 }}
-            >
+              whileTap={{ scale: 0.98 }}              style={{ borderRadius: "9999px" }}            >
               <Button
                 sx={{
                   height: "64px",
@@ -429,6 +428,7 @@ const TouristAppDownloadSection: React.FC = () => {
                 boxShadow: "0 15px 20px -3px rgba(0,0,0,0.1)",
               }}
               whileTap={{ scale: 0.98 }}
+              style={{ borderRadius: "9999px" }}
             >
               <Button
                 variant="outlined"
