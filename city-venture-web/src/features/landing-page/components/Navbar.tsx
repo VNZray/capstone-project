@@ -9,6 +9,7 @@ import {
   ListDivider,
   IconButton,
 } from "@mui/joy";
+import { Download } from "lucide-react";
 import "../style/navbar.css";
 import { useNavigate } from "react-router-dom";
 import { colors } from "../../../utils/Colors";
@@ -19,11 +20,20 @@ interface NavbarProps {
   servicesId?: string;
   /** ID of the About section to scroll to */
   aboutId?: string;
+  /** Whether the navbar should have a solid background */
+  solid?: boolean;
+  /** Whether the navbar should blend seamlessly with the page background */
+  seamless?: boolean;
+  /** Whether to show Download App button instead of Login/Sign Up (for tourist landing page) */
+  touristMode?: boolean;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
   servicesId = "features",
   aboutId = "about",
+  solid = false,
+  seamless = false,
+  touristMode = false,
 }) => {
   const navigate = useNavigate();
   const [open, setOpen] = React.useState(false);
@@ -77,13 +87,16 @@ const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const navStyle = { "--nav-bg": String(bgOpacity) } as React.CSSProperties & {
+  const navStyle = { 
+    "--nav-bg": seamless ? "0" : solid ? "1" : String(bgOpacity),
+    "--nav-seamless": seamless ? "1" : "0",
+  } as React.CSSProperties & {
     [key: string]: string;
   };
 
   return (
     <nav
-      className={`navbar navbar-dark ${scrolled ? "scrolled" : ""}`}
+      className={`navbar navbar-dark ${scrolled ? "scrolled" : ""} ${seamless ? "seamless" : ""}`}
       style={navStyle}
     >
       <div className="nav-inner">
@@ -118,38 +131,83 @@ const Navbar: React.FC<NavbarProps> = ({
           </a>
           <a
             className="nav-link"
-            href={`#${aboutId}`}
+            href="/about"
             onClick={(e) => {
               e.preventDefault();
-              scrollTo(aboutId);
+              navigate("/about");
             }}
           >
             About
           </a>
+          {!touristMode && (
+            <>
+              <a
+                className="nav-link"
+                href="/faq"
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate("/faq");
+                }}
+              >
+                FAQ
+              </a>
+              <a
+                className="nav-link"
+                href="#features"
+                onClick={(e) => {
+                  navigate("/test");
+                }}
+              >
+                Components
+              </a>
+            </>
+          )}
           <a
             className="nav-link"
-            href="#features"
+            href="/for-business"
             onClick={(e) => {
               e.preventDefault();
-              scrollTo(servicesId);
+              navigate("/for-business");
             }}
           >
-            Services
-          </a>
-          <a
-            className="nav-link"
-            href="#features"
-            onClick={(e) => {
-              navigate("/test");
-            }}
-          >
-            Components
+            For Business
           </a>
         </div>
 
         {/* Actions (desktop) */}
         <div className="nav-actions">
           {!user ? (
+            touristMode ? (
+              <Button
+                variant="solid"
+                onClick={() => {
+                  const appSection = document.getElementById("app-download");
+                  if (appSection) {
+                    appSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                  } else {
+                    // Fallback: scroll to bottom where app download section is
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                  }
+                }}
+                startDecorator={<Download size={18} />}
+                sx={{
+                  backgroundColor: "#C5A059",
+                  color: "#0A1B47",
+                  fontWeight: 700,
+                  textTransform: "none",
+                  borderRadius: 9999,
+                  padding: "10px 24px",
+                  boxShadow: "0 4px 14px rgba(197,160,89,0.3)",
+                  "&:hover": {
+                    backgroundColor: "#D4AF6A",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 6px 20px rgba(197,160,89,0.4)",
+                  },
+                }}
+              >
+                Download App
+              </Button>
+            ) : (
             <>
               <Button
                 variant="plain"
@@ -190,7 +248,7 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 Sign Up
               </Button>
-            </>
+            </>)
           ) : (
             <Dropdown>
               <MenuButton
@@ -346,14 +404,34 @@ const Navbar: React.FC<NavbarProps> = ({
                 padding: "12px 8px",
                 borderBottom: `1px solid rgba(13,27,42,0.1)`,
               }}
-              href={`#${aboutId}`}
+              href="/about"
               onClick={(e) => {
                 e.preventDefault();
-                scrollTo(aboutId);
+                navigate("/about");
               }}
             >
               About
             </a>
+            {!touristMode && (
+              <a
+                className="nav-link"
+                style={{
+                  color: colors.primary,
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  padding: "12px 8px",
+                  borderBottom: `1px solid rgba(13,27,42,0.1)`,
+                }}
+                href="/faq"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setOpen(false);
+                  navigate("/faq");
+                }}
+              >
+                FAQ
+              </a>
+            )}
             <a
               className="nav-link"
               style={{
@@ -363,13 +441,14 @@ const Navbar: React.FC<NavbarProps> = ({
                 padding: "12px 8px",
                 borderBottom: `1px solid rgba(13,27,42,0.1)`,
               }}
-              href={`#${servicesId}`}
+              href="/for-business"
               onClick={(e) => {
                 e.preventDefault();
-                scrollTo(servicesId);
+                setOpen(false);
+                navigate("/for-business");
               }}
             >
-              Services
+              For Business
             </a>
             <div
               style={{
@@ -382,6 +461,37 @@ const Navbar: React.FC<NavbarProps> = ({
               }}
             >
               {!user ? (
+                touristMode ? (
+                  <Button
+                    variant="solid"
+                    startDecorator={<Download size={18} />}
+                    onClick={() => {
+                      setOpen(false);
+                      const appSection = document.getElementById("app-download");
+                      if (appSection) {
+                        appSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                      } else {
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                      }
+                    }}
+                    sx={{
+                      backgroundColor: "#C5A059",
+                      color: "#0A1B47",
+                      fontWeight: 700,
+                      textTransform: "none",
+                      borderRadius: 9999,
+                      padding: "14px 24px",
+                      fontSize: "16px",
+                      boxShadow: "0 4px 14px rgba(197,160,89,0.3)",
+                      "&:hover": {
+                        backgroundColor: "#D4AF6A",
+                        boxShadow: "0 6px 20px rgba(197,160,89,0.4)",
+                      },
+                    }}
+                  >
+                    Download App
+                  </Button>
+                ) : (
                 <>
                   <Button
                     variant="outlined"
@@ -430,6 +540,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     Sign Up
                   </Button>
                 </>
+                )
               ) : (
                 <>
                   <Button
