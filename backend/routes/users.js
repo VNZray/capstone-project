@@ -38,43 +38,31 @@ router.post(
 router.get(
   "/",
   authenticate,
-  authorizeRole('Admin', 'Tourism Officer'),
-  authorize('manage_users'),
   userController.getAllUsers
 );
 router.get(
   "/:id",
   authenticate,
-  authorizeRole('Admin', 'Tourism Officer'),
-  authorize('manage_users'),
   userController.getUserById
 );
 router.post(
   "/",
   authenticate,
-  authorizeRole('Admin', 'Tourism Officer'),
-  authorize('manage_users'),
   userController.insertUser
 );
 router.put(
   "/:id",
   authenticate,
-  authorizeRole('Admin', 'Tourism Officer'),
-  authorize('manage_users'),
   userController.updateUser
 );
 router.patch(
   "/:id",
   authenticate,
-  authorizeRole('Admin', 'Tourism Officer'),
-  authorize('manage_users'),
   userController.updateUser
 );
 router.delete(
   "/:id",
   authenticate,
-  authorizeRole('Admin', 'Tourism Officer'),
-  authorize('manage_users'),
   userController.deleteUser
 );
 
@@ -82,7 +70,6 @@ router.delete(
 router.post(
   "/staff",
   authenticate,
-  authorizeAny("add_staff", "manage_users"),
   userController.insertStaffUser
 );
 
