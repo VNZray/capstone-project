@@ -9,6 +9,13 @@ import {
   EASE,
 } from "../utils/animationVariants";
 
+// Import local bento grid images
+import penafranciaBasilica from "@/src/assets/bentogrid/penafrancia-basilica.png";
+import mtIsarog from "@/src/assets/bentogrid/mt-isarog.png";
+import jesseRobredoMuseum from "@/src/assets/bentogrid/jesse-robredo-museum.png";
+import kinalasCircuit from "@/src/assets/bentogrid/kinalas-circuit.png";
+import centuryTree from "@/src/assets/bentogrid/century-tree.png";
+
 interface BentoCardProps {
   title: string;
   subtitle: string;
@@ -165,28 +172,29 @@ const BentoCard: React.FC<BentoCardProps> = ({
 export const TouristExperiencesSection: React.FC = () => {
   const experiences = [
     {
-      title: "Basilica Minore",
+      title: "Peñafrancia Basilica",
       subtitle: "Faith & Heritage",
-      image:
-        "https://images.unsplash.com/photo-1548625361-12e756c2d159?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      image: penafranciaBasilica,
     },
     {
       title: "Mt. Isarog Adventures",
       subtitle: "Nature & Eco-Tourism",
-      image:
-        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80",
+      image: mtIsarog,
     },
     {
-      title: "Local Delicacies",
+      title: "Kinalas Circuit",
       subtitle: "Gastronomy",
-      image:
-        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      image: kinalasCircuit,
     },
     {
-      title: "City Nightlife",
-      subtitle: "Lifestyle",
-      image:
-        "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      title: "Jesse Robredo Museum",
+      subtitle: "History & Culture",
+      image: jesseRobredoMuseum,
+    },
+    {
+      title: "Century Tree",
+      subtitle: "Heritage Landmark",
+      image: centuryTree,
     },
   ];
 
@@ -272,7 +280,7 @@ export const TouristExperiencesSection: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Bento Grid with staggered animation */}
+        {/* Asymmetric Bento Grid with dynamic proportions */}
         <motion.div
           variants={bentoContainerVariants}
           initial="hidden"
@@ -280,57 +288,63 @@ export const TouristExperiencesSection: React.FC = () => {
           viewport={viewportSettings}
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gridTemplateRows: "repeat(2, 1fr)",
-            gap: "24px",
-            height: "600px",
+            gridTemplateColumns: "repeat(12, 1fr)",
+            gridTemplateRows: "180px 220px 200px",
+            gap: "16px",
           }}
         >
-          {/* Left Column: Large Vertical Card */}
+          {/* Large Hero Card - Top Left */}
           <BentoCard
             title={experiences[0].title}
             subtitle={experiences[0].subtitle}
             image={experiences[0].image}
-            index={0}
             style={{
-              gridColumn: "1 / 2",
+              gridColumn: "1 / 6",
               gridRow: "1 / 3",
             }}
           />
 
-          {/* Top Right: Wide Card */}
+          {/* Medium Card - Top Right */}
           <BentoCard
             title={experiences[1].title}
             subtitle={experiences[1].subtitle}
             image={experiences[1].image}
-            index={1}
             style={{
-              gridColumn: "2 / 4",
+              gridColumn: "6 / 13",
               gridRow: "1 / 2",
             }}
           />
 
-          {/* Bottom Right 1: Square Card */}
+          {/* Small Accent Card - Middle Right */}
           <BentoCard
             title={experiences[2].title}
             subtitle={experiences[2].subtitle}
             image={experiences[2].image}
-            index={2}
             style={{
-              gridColumn: "2 / 3",
+              gridColumn: "6 / 9",
               gridRow: "2 / 3",
             }}
           />
 
-          {/* Bottom Right 2: Square Card */}
+          {/* Tall Card - Right Side */}
           <BentoCard
             title={experiences[3].title}
             subtitle={experiences[3].subtitle}
             image={experiences[3].image}
-            index={3}
             style={{
-              gridColumn: "3 / 4",
-              gridRow: "2 / 3",
+              gridColumn: "9 / 13",
+              gridRow: "2 / 4",
+            }}
+          />
+
+          {/* Wide Bottom Card */}
+          <BentoCard
+            title={experiences[4].title}
+            subtitle={experiences[4].subtitle}
+            image={experiences[4].image}
+            style={{
+              gridColumn: "1 / 9",
+              gridRow: "3 / 4",
             }}
           />
         </motion.div>
@@ -347,7 +361,7 @@ export const TouristExperiencesSection: React.FC = () => {
             #guide > div > div:last-child > div {
               grid-column: auto !important;
               grid-row: auto !important;
-              min-height: 250px !important;
+              min-height: 220px !important;
             }
           }
         `}</style>

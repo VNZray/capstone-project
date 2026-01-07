@@ -171,7 +171,8 @@ export const TouristHeroSection: React.FC = () => {
               color: "white",
               letterSpacing: "0.2em",
               textTransform: "uppercase",
-              marginBottom: "32px",
+              marginBottom: "0.1em",
+              marginTop: "0px",
             }}
           >
             The{" "}
@@ -197,7 +198,7 @@ export const TouristHeroSection: React.FC = () => {
               color: "rgba(255,255,255,0.8)",
               fontSize: "clamp(1rem, 2vw, 1.25rem)",
               lineHeight: 1.7,
-              marginBottom: "48px",
+              marginBottom: "2rem",
               backdropFilter: "blur(8px)",
               backgroundColor: "rgba(255,255,255,0.05)",
               padding: "16px",
