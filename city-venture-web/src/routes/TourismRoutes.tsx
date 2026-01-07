@@ -9,6 +9,8 @@ import Report from "@/src/features/admin/report/Report";
 import Accommodation from "@/src/features/admin/services/accommodation/Accommodation";
 import Shop from "@/src/features/admin/services/shop/Shop";
 import Event from "@/src/features/admin/services/event/Event";
+import EventDetailsScreen from "@/src/features/admin/services/event/EventDetailsScreen";
+import EventReviews from "@/src/features/admin/services/event/reviews/Reviews";
 import Spot from "@/src/features/admin/services/tourist-spot/Spot";
 import TouristSpotDetailsScreen from "@/src/features/admin/services/tourist-spot/TouristSpotDetailsScreen";
 import TouristSpotReviews from "@/src/features/admin/services/tourist-spot/reviews/Reviews";
@@ -119,6 +121,26 @@ export default function TourismRoutes({ tourismRoles }: TourismRoutesProps) {
         element={
           <ProtectedRoute requiredRoles={tourismRoles}>
             <Event />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Event Reviews - must come before :id to match correctly */}
+      <Route
+        path={`${tourism}/services/event/:id/reviews`}
+        element={
+          <ProtectedRoute requiredRoles={tourismRoles}>
+            <EventReviews />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Event Details */}
+      <Route
+        path={`${tourism}/services/event/:id`}
+        element={
+          <ProtectedRoute requiredRoles={tourismRoles}>
+            <EventDetailsScreen />
           </ProtectedRoute>
         }
       />
