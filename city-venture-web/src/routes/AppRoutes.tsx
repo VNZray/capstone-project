@@ -114,16 +114,16 @@ export default function AppRoutes() {
       >
         {/* Public routes */}
         <Route element={<MainLayout />}>
-          <Route index element={<LandingPage />} />
-          <Route path={`${home}`} element={<LandingPage />} />
+          <Route path={`${home}old-home`} element={<LandingPage />} />
           <Route path={`${home}about`} element={<About />} />
           <Route path={`${home}faq`} element={<FAQ />} />
           <Route path={`${home}forget-password`} element={<ForgetPassword />} />
           <Route path="/for-business" element={<BusinessLandingPage />} />
         </Route>
 
-        {/* Tourist landing page - has its own navbar */}
-        <Route path="/explore" element={<TouristLandingPage />} />
+        {/* Tourist landing page - now the default home page */}
+        <Route index element={<TouristLandingPage />} />
+        <Route path={`${home}`} element={<TouristLandingPage />} />
 
         <Route path={`/unauthorized`} element={<Unauthorized />} />
         <Route path={`/change-password`} element={<ChangePassword />} />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Plus, Minus, HelpCircle, MessageCircle, Mail } from "lucide-react";
@@ -151,6 +151,11 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
 export default function FAQ() {
   const navigate = useNavigate();
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const toggleItem = (id: string) => {
     setOpenItems((prev) => {

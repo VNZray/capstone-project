@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Grid } from "@mui/joy";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
@@ -102,10 +102,10 @@ const TeamMemberCard: React.FC<TeamMemberProps> = ({ name, position, image, inde
 
         {/* Name & Position */}
         <div style={{ textAlign: "center" }}>
-          <Typography.CardTitle size="sm" color="primary" style={{ marginBottom: 4 }}>
+          <Typography.CardTitle size="sm" color="primary" sx={{ marginBottom: "4px" }}>
             {name}
           </Typography.CardTitle>
-          <Typography.Body size="sm" style={{ color: colors.secondary, fontWeight: 500 }}>
+          <Typography.Body size="sm" sx={{ color: colors.secondary, fontWeight: 500 }}>
             {position}
           </Typography.Body>
         </div>
@@ -150,6 +150,10 @@ const TeamMemberCard: React.FC<TeamMemberProps> = ({ name, position, image, inde
 
 export default function About() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const teamMembers = [
     { name: "John Doe", position: "Project Lead", image: "https://api.dicebear.com/7.x/notionists/svg?seed=john" },
@@ -274,7 +278,7 @@ export default function About() {
               size="lg"
               color="primary"
               weight="bold"
-              style={{ lineHeight: 1.1, marginBottom: 24 }}
+              sx={{ lineHeight: 1.1, marginBottom: "24px" }}
             >
               We're building the future of{" "}
               <span
@@ -296,7 +300,7 @@ export default function About() {
           >
             <Typography.Body
               size="md"
-              style={{
+              sx={{
                 lineHeight: 1.8,
                 color: colors.gray,
                 maxWidth: 560,
@@ -360,10 +364,10 @@ export default function About() {
                 <div style={{ paddingLeft: 16 }}>
                   <Typography.Label
                     size="sm"
-                    style={{
+                    sx={{
                       color: colors.secondary,
-                      letterSpacing: 2,
-                      marginBottom: 16,
+                      letterSpacing: "2px",
+                      marginBottom: "16px",
                       display: "block",
                     }}
                   >
@@ -373,11 +377,11 @@ export default function About() {
                     size="md"
                     color="primary"
                     weight="bold"
-                    style={{ marginBottom: 20, lineHeight: 1.3 }}
+                    sx={{ marginBottom: "20px", lineHeight: 1.3 }}
                   >
                     Connecting travelers with authentic local experiences
                   </Typography.Header>
-                  <Typography.Body size="md" style={{ lineHeight: 1.9, color: colors.gray }}>
+                  <Typography.Body size="md" sx={{ lineHeight: 1.9, color: colors.gray }}>
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
                     tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
                     quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
@@ -425,10 +429,10 @@ export default function About() {
                 <div style={{ paddingRight: 16 }}>
                   <Typography.Label
                     size="sm"
-                    style={{
+                    sx={{
                       color: colors.secondary,
-                      letterSpacing: 2,
-                      marginBottom: 16,
+                      letterSpacing: "2px",
+                      marginBottom: "16px",
                       display: "block",
                     }}
                   >
@@ -438,11 +442,11 @@ export default function About() {
                     size="md"
                     color="primary"
                     weight="bold"
-                    style={{ marginBottom: 20, lineHeight: 1.3 }}
+                    sx={{ marginBottom: "20px", lineHeight: 1.3 }}
                   >
                     A world where every journey tells a story
                   </Typography.Header>
-                  <Typography.Body size="md" style={{ lineHeight: 1.9, color: colors.gray }}>
+                  <Typography.Body size="md" sx={{ lineHeight: 1.9, color: colors.gray }}>
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
                     tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
                     quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
@@ -494,19 +498,19 @@ export default function About() {
           >
             <Typography.Label
               size="sm"
-              style={{
+              sx={{
                 color: colors.secondary,
-                letterSpacing: 2,
-                marginBottom: 16,
+                letterSpacing: "2px",
+                marginBottom: "16px",
                 display: "block",
               }}
             >
               THE TEAM
             </Typography.Label>
-            <Typography.Header size="lg" color="primary" weight="bold" style={{ marginBottom: 16 }}>
+            <Typography.Header size="lg" color="primary" weight="bold" sx={{ marginBottom: "16px" }}>
               Meet the people behind City Venture
             </Typography.Header>
-            <Typography.Body size="md" style={{ color: colors.gray }}>
+            <Typography.Body size="md" sx={{ color: colors.gray }}>
               Lorem ipsum dolor sit amet, consectetur adipiscing elit.
             </Typography.Body>
           </motion.div>
