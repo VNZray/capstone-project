@@ -442,6 +442,357 @@ class ApiService {
       throw err;
     }
   }
+
+  // ===== EVENT MANAGEMENT =====
+  
+  async getEvents(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /events');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/events');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /events', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async getEventById(id: string): Promise<any> {
+    try {
+      console.debug('[apiService] GET /events/:id', id);
+      const response: AxiosResponse<ApiResponse<any>> = await api.get(`/events/${id}`);
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /events/:id', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async createEvent(eventData: any): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] POST /events', eventData);
+      const response: AxiosResponse<ApiResponse<any>> = await api.post('/events', eventData);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed POST /events', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async updateEvent(id: string, eventData: any): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] PUT /events/:id', { id, eventData });
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${id}`, eventData);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed PUT /events/:id', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async deleteEvent(id: string): Promise<void> {
+    try {
+      console.debug('[apiService] DELETE /events/:id', id);
+      await api.delete(`/events/${id}`);
+    } catch (err: any) {
+      console.error('[apiService] Failed DELETE /events/:id', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // Event Categories
+  async getEventCategories(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /events/categories');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/events/categories');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /events/categories', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // Featured Events
+  async getFeaturedEvents(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /events/featured/list');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/events/featured/list');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /events/featured/list', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async getNonFeaturedEvents(): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /events/featured/non-featured');
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get('/events/featured/non-featured');
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /events/featured/non-featured', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async featureEvent(id: string, featuredOrder?: number): Promise<ApiResponse<void>> {
+    try {
+      console.debug('[apiService] PUT /events/featured/:id', { id, featuredOrder });
+      const response: AxiosResponse<ApiResponse<void>> = await api.put(`/events/featured/${id}`, { featured_order: featuredOrder });
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed PUT /events/featured/:id', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async unfeatureEvent(id: string): Promise<ApiResponse<void>> {
+    try {
+      console.debug('[apiService] DELETE /events/featured/:id', id);
+      const response: AxiosResponse<ApiResponse<void>> = await api.delete(`/events/featured/${id}`);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed DELETE /events/featured/:id', {
+        id,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // ===== EVENT IMAGE MANAGEMENT =====
+
+  async getEventImages(eventId: string): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /events/:id/images', eventId);
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get(`/events/${eventId}/images`);
+      return (response.data as any).data ?? (response.data as any);
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /events/:id/images', {
+        eventId,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async addEventImage(eventId: string, imageData: {
+    file_url: string;
+    file_format?: string;
+    file_size?: number;
+    is_primary?: boolean;
+    alt_text?: string;
+    display_order?: number;
+  }): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] POST /events/:id/images', { eventId, imageData });
+      const response: AxiosResponse<ApiResponse<any>> = await api.post(`/events/${eventId}/images`, imageData);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed POST /events/:id/images', {
+        eventId,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async deleteEventImage(eventId: string, imageId: string): Promise<void> {
+    try {
+      console.debug('[apiService] DELETE /events/:id/images/:imageId', { eventId, imageId });
+      await api.delete(`/events/${eventId}/images/${imageId}`);
+    } catch (err: any) {
+      console.error('[apiService] Failed DELETE /events/:id/images/:imageId', {
+        eventId,
+        imageId,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  async setEventPrimaryImage(eventId: string, imageId: string): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] PUT /events/:id/images/:imageId/primary', { eventId, imageId });
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${eventId}/images/${imageId}/primary`);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed PUT /events/:id/images/:imageId/primary', {
+        eventId,
+        imageId,
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
+  // ===== EVENT CATEGORY MAPPINGS (Multiple Categories) =====
+
+  async getEventCategoryMappings(eventId: string): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /events/:id/categories', { eventId });
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get(`/events/${eventId}/categories`);
+      return response.data.data || [];
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /events/:id/categories', { eventId, message: err?.message });
+      throw err;
+    }
+  }
+
+  async setEventCategoryMappings(eventId: string, categoryIds: string[]): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] PUT /events/:id/categories', { eventId, categoryIds });
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${eventId}/categories`, { category_ids: categoryIds });
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed PUT /events/:id/categories', { eventId, message: err?.message });
+      throw err;
+    }
+  }
+
+  async addEventCategoryMapping(eventId: string, categoryId: string): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] POST /events/:id/categories', { eventId, categoryId });
+      const response: AxiosResponse<ApiResponse<any>> = await api.post(`/events/${eventId}/categories`, { category_id: categoryId });
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed POST /events/:id/categories', { eventId, message: err?.message });
+      throw err;
+    }
+  }
+
+  async removeEventCategoryMapping(eventId: string, categoryId: string): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] DELETE /events/:id/categories/:categoryId', { eventId, categoryId });
+      const response: AxiosResponse<ApiResponse<any>> = await api.delete(`/events/${eventId}/categories/${categoryId}`);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed DELETE /events/:id/categories/:categoryId', { eventId, message: err?.message });
+      throw err;
+    }
+  }
+
+  // ===== EVENT LOCATIONS (Multiple Locations) =====
+
+  async getEventLocations(eventId: string): Promise<any[]> {
+    try {
+      console.debug('[apiService] GET /events/:id/locations', { eventId });
+      const response: AxiosResponse<ApiResponse<any[]>> = await api.get(`/events/${eventId}/locations`);
+      return response.data.data || [];
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /events/:id/locations', { eventId, message: err?.message });
+      throw err;
+    }
+  }
+
+  async addEventLocation(eventId: string, location: {
+    venue_name: string;
+    venue_address?: string;
+    barangay_id?: number;
+    latitude?: number;
+    longitude?: number;
+    is_primary?: boolean;
+    display_order?: number;
+  }): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] POST /events/:id/locations', { eventId, location });
+      const response: AxiosResponse<ApiResponse<any>> = await api.post(`/events/${eventId}/locations`, location);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed POST /events/:id/locations', { eventId, message: err?.message });
+      throw err;
+    }
+  }
+
+  async updateEventLocation(eventId: string, locationId: string, location: {
+    venue_name?: string;
+    venue_address?: string;
+    barangay_id?: number;
+    latitude?: number;
+    longitude?: number;
+    is_primary?: boolean;
+    display_order?: number;
+  }): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] PUT /events/:id/locations/:locationId', { eventId, locationId, location });
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${eventId}/locations/${locationId}`, location);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed PUT /events/:id/locations/:locationId', { eventId, message: err?.message });
+      throw err;
+    }
+  }
+
+  async deleteEventLocation(eventId: string, locationId: string): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] DELETE /events/:id/locations/:locationId', { eventId, locationId });
+      const response: AxiosResponse<ApiResponse<any>> = await api.delete(`/events/${eventId}/locations/${locationId}`);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed DELETE /events/:id/locations/:locationId', { eventId, message: err?.message });
+      throw err;
+    }
+  }
+
+  async setPrimaryEventLocation(eventId: string, locationId: string): Promise<ApiResponse<any>> {
+    try {
+      console.debug('[apiService] PUT /events/:id/locations/:locationId/set-primary', { eventId, locationId });
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${eventId}/locations/${locationId}/set-primary`);
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed PUT /events/:id/locations/:locationId/set-primary', { eventId, message: err?.message });
+      throw err;
+    }
+  }
 }
 
 export const apiService = new ApiService();

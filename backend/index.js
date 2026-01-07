@@ -65,6 +65,7 @@ import refundRoutes from "./routes/refunds.js";
 import roomBlockedDatesRoutes from "./routes/room-blocked-dates.js";
 import seasonalPricingRoutes from "./routes/seasonal-pricing.js";
 import emergencyFacilitiesRoutes from "./routes/emergency-facilities.js";
+import eventRoutes from "./routes/event.js";
 
 const app = express();
 const PORT = 3000;
@@ -180,6 +181,11 @@ const routeSections = [
         path: "/api/tourist-spots",
         handler: touristSpotRoutes,
         label: "Tourist Spots",
+      },
+      {
+        path: "/api/events",
+        handler: eventRoutes,
+        label: "Events",
       },
       { path: "/api/reports", handler: reportRoutes, label: "Reports" },
       {
