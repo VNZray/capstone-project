@@ -12,6 +12,7 @@ import {
   CircularProgress,
 } from "@mui/joy";
 import { UploadIcon, Trash2, Star, StarOff } from "lucide-react";
+import Alert from "@/src/components/Alert";
 import { 
   uploadTouristSpotImage, 
   getTouristSpotImages, 
@@ -53,6 +54,47 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
   const [images, setImages] = useState<TouristSpotImage[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    showCancel?: boolean;
+    confirmText?: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message: string,
+    options?: {
+      onConfirm?: () => void;
+      showCancel?: boolean;
+      confirmText?: string;
+    }
+  ) => {
+    setAlertConfig({
+      open: true,
+      type,
+      title,
+      message,
+      onConfirm: options?.onConfirm,
+      showCancel: options?.showCancel,
+      confirmText: options?.confirmText,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, open: false }));
+  };
 
   // Helper function to safely check if image is primary
   const isPrimary = (image: TouristSpotImage) => {
@@ -116,7 +158,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
       await loadImages();
     } catch (error) {
       console.error("Upload failed:", error);
-      alert("Failed to upload image. Please try again.");
+      showAlert("error", "Error", "Failed to upload image. Please try again.");
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -125,21 +167,42 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
 
   const handleDeleteImage = async (imageId: string, fileUrl: string) => {
     if (!touristSpotId) return;
-    
-    if (!window.confirm("Are you sure you want to delete this image?")) return;
 
-    try {
-      await deleteTouristSpotImage(touristSpotId, imageId, fileUrl);
-      await loadImages();
-    } catch (error) {
-      console.error("Delete failed:", error);
-      alert("Failed to delete image. Please try again.");
-    }
+    showAlert(
+      "warning",
+      "Delete Image",
+      "Are you sure you want to delete this image?",
+      {
+        onConfirm: async () => {
+          try {
+            await deleteTouristSpotImage(touristSpotId, imageId, fileUrl);
+            closeAlert();
+            await loadImages();
+          } catch (error) {
+            console.error("Delete failed:", error);
+            showAlert("error", "Error", "Failed to delete image. Please try again.");
+          }
+        },
+        showCancel: true,
+        confirmText: "Delete",
+      }
+    );
   };
 
   const handleDeletePendingImage = (imageId: string) => {
-    if (!window.confirm("Are you sure you want to remove this image?")) return;
-    onPendingImagesChange?.(pendingImages.filter(img => img.id !== imageId));
+    showAlert(
+      "warning",
+      "Remove Image",
+      "Are you sure you want to remove this image?",
+      {
+        onConfirm: () => {
+          onPendingImagesChange?.(pendingImages.filter((img) => img.id !== imageId));
+          closeAlert();
+        },
+        showCancel: true,
+        confirmText: "Remove",
+      }
+    );
   };
 
   const handleSetPrimary = async (imageId: string) => {
@@ -150,7 +213,7 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
       await loadImages();
     } catch (error) {
       console.error("Set primary failed:", error);
-      alert("Failed to set primary image. Please try again.");
+      showAlert("error", "Error", "Failed to set primary image. Please try again.");
     }
   };
 
@@ -291,6 +354,18 @@ const TouristSpotImageManager: React.FC<TouristSpotImageManagerProps> = ({
           )}
         </Grid>
       )}
+
+      <Alert
+        open={alertConfig.open}
+        onClose={closeAlert}
+        onConfirm={alertConfig.onConfirm}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        showCancel={alertConfig.showCancel}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+      />
     </Box>
   );
 };

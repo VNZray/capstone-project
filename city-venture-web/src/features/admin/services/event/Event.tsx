@@ -10,7 +10,7 @@ import Table, { type TableColumn } from "@/src/components/ui/Table";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import NoDataFound from "@/src/components/NoDataFound";
 import IconButton from "@/src/components/IconButton";
-import ConfirmDialog from "@/src/components/modals/ConfirmDialog";
+import Alert from "@/src/components/Alert";
 import Card from "@/src/components/Card";
 import { Input, Chip, Stack, Select, Option } from "@mui/joy";
 import { apiService } from "@/src/utils/api";
@@ -640,11 +640,12 @@ const Event = () => {
         onSuccess={fetchEventsAndCategories}
       />
 
-      <ConfirmDialog
+      <Alert
         open={showDelete}
+        type="warning"
         title="Delete Event"
-        description={`Are you sure you want to delete "${selectedEventForEdit?.name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
+        message={`Are you sure you want to delete "${selectedEventForEdit?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
         loading={deleteLoading}
         onClose={() => setShowDelete(false)}
         onConfirm={doDeleteEvent}

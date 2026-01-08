@@ -13,6 +13,7 @@ import Button from '@/src/components/Button';
 import Autocomplete from '@mui/joy/Autocomplete';
 import { IoClose } from 'react-icons/io5';
 import "./TouristSpotTable.css";
+import Alert from "@/src/components/Alert";
 
 interface FeaturedSpotsModalProps {
   open: boolean;
@@ -25,8 +26,50 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
   const [selectedToAddId, setSelectedToAddId] = useState<string>('');
   const [selectedOption, setSelectedOption] = useState<TouristSpot | null>(null);
   const [loading, setLoading] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingUnfeatureId, setPendingUnfeatureId] = useState<string | null>(null);
+
+  const [alertConfig, setAlertConfig] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    showCancel?: boolean;
+    confirmText?: string;
+    cancelText?: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message: string,
+    options?: {
+      onConfirm?: () => void;
+      showCancel?: boolean;
+      confirmText?: string;
+      cancelText?: string;
+    }
+  ) => {
+    setAlertConfig({
+      open: true,
+      type,
+      title,
+      message,
+      onConfirm: options?.onConfirm,
+      showCancel: options?.showCancel,
+      confirmText: options?.confirmText,
+      cancelText: options?.cancelText,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, open: false }));
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -39,7 +82,7 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
       setNonFeatured(nf);
     } catch (e) {
       console.error('Failed to load featured spots', e);
-      alert('Failed to load featured spots');
+      showAlert("error", "Error", "Failed to load featured spots");
     } finally {
       setLoading(false);
     }
@@ -61,7 +104,7 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
       await loadData();
     } catch (e) {
       console.error('Failed to feature spot', e);
-      alert('Failed to feature spot');
+      showAlert("error", "Error", "Failed to feature spot");
     } finally {
       setLoading(false);
     }
@@ -73,11 +116,11 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
     try {
       await apiService.unfeatureTouristSpot(pendingUnfeatureId);
       setPendingUnfeatureId(null);
-      setConfirmOpen(false);
+      closeAlert();
       await loadData();
     } catch (e) {
       console.error('Failed to unfeature spot', e);
-      alert('Failed to unfeature spot');
+      showAlert("error", "Error", "Failed to unfeature spot");
     } finally {
       setLoading(false);
     }
@@ -135,36 +178,26 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
             <div key={s.id} style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: 8, marginBottom: 8, boxShadow: '0 1px 4px rgba(0,0,0,0.03)', padding: '8px 16px' }}>
               <Typography level="body-md" color="neutral" sx={{ flex: 4 }}>{s.name}</Typography>
               <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-                <IconButton color="danger" variant="soft" onClick={() => { setPendingUnfeatureId(s.id); setConfirmOpen(true); }} disabled={loading}>
-                  <IoClose />
-                </IconButton>
-        {confirmOpen && (
-          <Modal open onClose={() => { setConfirmOpen(false); setPendingUnfeatureId(null); }} sx={{ zIndex: 2500 }}>
-            <ModalDialog>
-              <Typography level="title-lg" sx={{ mb: 1 }}>Remove from Featured?</Typography>
-              <Typography sx={{ mb: 2 }}>Are you sure you want to remove this tourist spot from featured?</Typography>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <Button
+                <IconButton
+                  color="danger"
                   variant="soft"
-                  colorScheme="gray"
-                  size="sm"
-                  onClick={() => { setConfirmOpen(false); setPendingUnfeatureId(null); }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  colorScheme="error"
-                  variant="solid"
-                  size="sm"
-                  onClick={handleUnfeature}
+                  onClick={() => {
+                    setPendingUnfeatureId(s.id);
+                    showAlert(
+                      "warning",
+                      "Remove Featured Spot",
+                      `Are you sure you want to remove "${s.name}" from featured spots?`,
+                      {
+                        onConfirm: () => handleUnfeature(),
+                        showCancel: true,
+                        confirmText: "Remove",
+                      }
+                    );
+                  }}
                   disabled={loading}
                 >
-                  Remove
-                </Button>
-              </div>
-            </ModalDialog>
-          </Modal>
-        )}
+                  <IoClose />
+                </IconButton>
               </div>
             </div>
           ))}
@@ -186,6 +219,17 @@ const FeaturedSpotsModal: React.FC<FeaturedSpotsModalProps> = ({ open, onClose }
             Close
           </Button>
         </div>
+        <Alert
+          open={alertConfig.open}
+          onClose={closeAlert}
+          onConfirm={alertConfig.onConfirm}
+          type={alertConfig.type}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          showCancel={alertConfig.showCancel}
+          confirmText={alertConfig.confirmText}
+          cancelText={alertConfig.cancelText}
+        />
       </ModalDialog>
     </Modal>
   );

@@ -9,7 +9,7 @@ import type { TourismStaff } from "@/src/types/TourismStaff";
 import { apiService } from "@/src/utils/api";
 import ResetPasswordModal from "@/src/features/admin/tourism-staff/components/ResetPasswordModal";
 import EditStaffModal from "@/src/features/admin/tourism-staff/components/EditStaffModal";
-import ConfirmDialog from "@/src/components/modals/ConfirmDialog";
+import Alert from "@/src/components/Alert";
 import type { UserRoles } from "@/src/types/User";
 import StaffSkeleton from "@/src/features/admin/tourism-staff/components/StaffSkeleton";
 import Button from "@/src/components/Button";
@@ -396,11 +396,12 @@ const TourismStaffManagement: React.FC = () => {
       />
 
       {/* Delete Confirmation */}
-      <ConfirmDialog
+      <Alert
         open={showDelete}
+        type="warning"
         title="Delete Staff Member"
-        description={`Are you sure you want to delete ${selected?.first_name} ${selected?.last_name}? This action cannot be undone.`}
-        confirmLabel="Delete"
+        message={`Are you sure you want to delete ${selected?.first_name} ${selected?.last_name}? This action cannot be undone.`}
+        confirmText="Delete"
         loading={deleteLoading}
         onClose={() => setShowDelete(false)}
         onConfirm={doDelete}
