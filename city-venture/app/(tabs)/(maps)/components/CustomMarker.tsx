@@ -4,6 +4,7 @@ import { Marker } from 'react-native-maps';
 import { colors } from '@/constants/color';
 import type { Business } from '@/types/Business';
 import type { TouristSpot } from '@/types/TouristSpot';
+import type { Event, EventImage } from '@/types/Event';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -13,8 +14,8 @@ const IMAGE_BORDER_RADIUS = (MARKER_SIZE - BORDER_WIDTH * 2) / 2;
 const ICON_SIZE = MARKER_SIZE * 0.48;
 const ARROW_SIZE = MARKER_SIZE * 0.24;
 
-type LocationData = Business | TouristSpot;
-type LocationType = 'accommodation' | 'shop' | 'tourist-spot';
+type LocationData = Business | TouristSpot | Event;
+type LocationType = 'accommodation' | 'shop' | 'tourist-spot' | 'event';
 
 interface CustomMarkerProps {
   location: LocationData;
@@ -33,14 +34,28 @@ const CustomMarker: React.FC<CustomMarkerProps> = ({
     return 'business_name' in loc;
   };
 
+  const isEvent = (loc: LocationData): loc is Event => {
+    return 'start_date' in loc && 'is_free' in loc;
+  };
+
   // Use displayCoords if provided, otherwise fall back to location coords
   const latitude = displayCoords?.latitude ?? (Number(location.latitude) || 0);
   const longitude =
     displayCoords?.longitude ?? (Number(location.longitude) || 0);
 
-  const image = isBusiness(location)
-    ? location.business_image
-    : (location as TouristSpot).images?.[0]?.file_url;
+  const getImage = () => {
+    if (isBusiness(location)) {
+      return location.business_image;
+    } else if (isEvent(location)) {
+      // Event images are in location.images array
+      const eventImages = (location as Event & { images?: EventImage[] }).images;
+      return eventImages?.[0]?.file_url;
+    } else {
+      return (location as TouristSpot).images?.[0]?.file_url;
+    }
+  };
+
+  const image = getImage();
 
   const getMarkerColor = () => {
     switch (locationType) {
@@ -50,6 +65,8 @@ const CustomMarker: React.FC<CustomMarkerProps> = ({
         return '#FF6B35';
       case 'tourist-spot':
         return '#00B4D8';
+      case 'event':
+        return '#9B59B6'; // Purple for events
       default:
         return colors.primary;
     }
@@ -63,6 +80,8 @@ const CustomMarker: React.FC<CustomMarkerProps> = ({
         return 'shopping';
       case 'tourist-spot':
         return 'map-marker';
+      case 'event':
+        return 'calendar-star';
       default:
         return 'map-marker';
     }

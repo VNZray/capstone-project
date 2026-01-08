@@ -93,6 +93,7 @@ const Profile = () => {
   const onAccount = () => push(Routes.profile.account);
   const onSettings = () => push(Routes.profile.settings);
   const onBookings = () => push(Routes.profile.bookings.index);
+  const onEvents = () => push(Routes.profile.events.index);
   const onReports = () => push(Routes.profile.reports.index);
   const onReviews = () => push(Routes.profile.reviews);
   const onSecurity = () => push(Routes.profile.security);
@@ -174,6 +175,15 @@ const Profile = () => {
               iconBg="#EBF8FF"
               label="My Bookings"
               onPress={onBookings}
+              border={border}
+            />
+
+            <MenuItem
+              icon="megaphone-outline"
+              iconColor="#EC4899"
+              iconBg="#FCE7F3"
+              label="Events"
+              onPress={onEvents}
               border={border}
             />
 

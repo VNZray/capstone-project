@@ -27,6 +27,7 @@ import Button from "@/src/components/Button";
 import MapInput from "../../tourist-spot/components/MapInput";
 import { colors } from "@/src/utils/Colors";
 import type { Event, EventCategory, EventFormData, EventImage, EventLocation } from "@/src/types/Event";
+import ReviewStep from "./steps/ReviewStep";
 
 interface FormOption {
   id: number;
@@ -212,11 +213,12 @@ const EventForm: React.FC<EventFormProps> = ({
   );
 
   // State for new/editing location
+  // Default to Camarines Sur (id: 20) and Naga City (id: 24)
   const emptyLocation: LocationFormData = {
     venue_name: "",
     venue_address: "",
-    province_id: "",
-    municipality_id: "",
+    province_id: "20",
+    municipality_id: "24",
     barangay_id: "",
     latitude: "",
     longitude: "",
@@ -863,6 +865,7 @@ const EventForm: React.FC<EventFormProps> = ({
     "Pricing & Capacity",
     "Contact & Organizer",
     "Images & Gallery",
+    "Review & Submit",
   ];
 
   const totalSteps = stepTitles.length;
@@ -1520,6 +1523,23 @@ const EventForm: React.FC<EventFormProps> = ({
               )}
             </Stack>
           </Box>
+        );
+
+      case 6: // Review & Submit
+        return (
+          <ReviewStep
+            mode={mode}
+            formData={formData}
+            selectedCategories={sortedCategories.filter((cat) =>
+              formData.category_ids.includes(cat.id)
+            )}
+            locations={locations}
+            images={images}
+            provinces={provinces}
+            municipalities={municipalities}
+            barangays={barangays}
+            onFormDataChange={handleFormDataChange}
+          />
         );
 
       default:

@@ -668,11 +668,11 @@ class ApiService {
 
   async setEventPrimaryImage(eventId: string, imageId: string): Promise<ApiResponse<any>> {
     try {
-      console.debug('[apiService] PUT /events/:id/images/:imageId/primary', { eventId, imageId });
-      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${eventId}/images/${imageId}/primary`);
+      console.debug('[apiService] PUT /events/:id/images/:imageId/set-primary', { eventId, imageId });
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${eventId}/images/${imageId}/set-primary`);
       return response.data;
     } catch (err: any) {
-      console.error('[apiService] Failed PUT /events/:id/images/:imageId/primary', {
+      console.error('[apiService] Failed PUT /events/:id/images/:imageId/set-primary', {
         eventId,
         imageId,
         message: err?.message,
