@@ -7,7 +7,6 @@ import { ThemedText } from '@/components/themed-text';
 import { colors } from '@/constants/color';
 import { useAuth } from '@/context/AuthContext';
 import { Routes } from '@/routes/mainRoutes';
-import { usePreventDoubleNavigation } from '@/hooks/usePreventDoubleNavigation';
 import Entypo from '@expo/vector-icons/Entypo';
 import { Link, router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -35,14 +34,7 @@ const LoginPage = () => {
   const [passwordError, setPasswordError] = useState('');
   const [loginError, setLoginError] = useState('');
   const [emailError, setEmailError] = useState('');
-  const { login, user } = useAuth();
-  const { replace } = usePreventDoubleNavigation();
-
-  useEffect(() => {
-    if (user) {
-      replace(Routes.tabs.home);
-    }
-  }, [user, replace]);
+  const { login } = useAuth();
 
   // Clear field-specific errors when user types
   useEffect(() => {
@@ -92,8 +84,8 @@ const LoginPage = () => {
         title: 'Login: ✅ Login successful',
       });
 
-      // Navigate to home on success
-      replace(Routes.tabs.home);
+      // Navigation is handled automatically by useProtectedRoute in _layout.tsx
+      // No manual navigation needed here
     } catch (error: any) {
       debugLogger({
         title: 'Login: ❌ Login failed',
