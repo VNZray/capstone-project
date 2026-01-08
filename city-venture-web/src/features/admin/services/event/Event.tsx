@@ -190,8 +190,22 @@ const Event = () => {
     return filtered;
   }, [events, searchQuery, categoryTab, statusFilter]);
 
-  // Get event cover image
+  // Get event cover image - prioritize primary image from images array
   const getEventImageUrl = (event: EventType): string => {
+    // First, try to get primary image from images array
+    if (event.images && event.images.length > 0) {
+      const primaryImage = event.images.find(
+        (img) => img.is_primary === true || (img as any).is_primary === 1
+      );
+      if (primaryImage?.file_url) {
+        return primaryImage.file_url;
+      }
+      // Fallback to first image if no primary
+      if (event.images[0]?.file_url) {
+        return event.images[0].file_url;
+      }
+    }
+    // Fallback to cover_image_url
     return event.cover_image_url || placeholderImage;
   };
 

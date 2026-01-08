@@ -48,6 +48,16 @@ const ProfileLayout = () => {
         }}
       />
       <Stack.Screen
+        name="(events)"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          headerTitle: 'Events',
+          headerBackTitle: 'Back',
+        }}
+      />
+      <Stack.Screen
         name="(notifications)"
         options={{
           headerShown: false,

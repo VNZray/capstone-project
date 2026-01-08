@@ -202,6 +202,13 @@ export const Routes = {
         params: { orderId },
       }),
     },
+    events: {
+      index: '/(tabs)/(profile)/(events)',
+      detail: (id: string) => ({
+        pathname: '/(tabs)/(profile)/(events)/[id]' as const,
+        params: { id },
+      }),
+    },
     reports: {
       index: '/(tabs)/(profile)/(reports)',
       submit: '/(tabs)/(profile)/(reports)/submit',
