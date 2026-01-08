@@ -17,6 +17,9 @@ import {
   Table,
   Button as JoyButton,
   Select,
+  Modal,
+  ModalDialog,
+  Textarea,
 } from "@mui/joy";
 import Option from "@mui/joy/Option";
 import RefreshRoundedIcon from "@mui/icons-material/RefreshRounded";
@@ -26,6 +29,7 @@ import BusinessRoundedIcon from "@mui/icons-material/BusinessRounded";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import TableRowsRoundedIcon from "@mui/icons-material/TableRowsRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import Alert from "@/src/components/Alert";
 
 import type { EntityType, UnifiedApprovalItem } from "@/src/types/approval";
 import {
@@ -45,7 +49,7 @@ interface PendingItem {
   contact_phone?: string | null;
   website?: string | null;
   entry_fee?: number | null;
-  action_type: "new" | "edit";
+  action_type: "new" | "edit" | "delete";
   entityType?: EntityType;
   [k: string]: unknown;
 }
@@ -99,6 +103,36 @@ const ApprovalDashboard: React.FC = () => {
   const [statusTab, setStatusTab] = useState<"all" | "new" | "edit">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
+  // Alerts
+  const [alertConfig, setAlertConfig] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message: string
+  ) => {
+    setAlertConfig({ open: true, type, title, message });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, open: false }));
+  };
+
+  // Reject Modal
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [itemToRejectId, setItemToRejectId] = useState<string | null>(null);
+
   // Initialize EmailJS on component mount
   useEffect(() => {
     initializeEmailJS();
@@ -108,14 +142,16 @@ const ApprovalDashboard: React.FC = () => {
     (async () => {
       setLoading(true);
       try {
-        const [spotsData, editsData, bizData] = await Promise.all([
+        const [spotsData, editsData, deletionsData, bizData] = await Promise.all([
           apiService.getPendingItems("tourist_spots"),
           apiService.getPendingEditsByEntity("tourist_spots"),
+          apiService.getPendingDeletionRequests(),
           apiService.getPendingItems("businesses"),
         ]);
 
         const spots = (spotsData as unknown[] | null) || [];
         const edits = (editsData as unknown[] | null) || [];
+        const deletions = (deletionsData as unknown[] | null) || [];
 
         const transformedSpots: PendingItem[] = spots.map((s) => {
           const rec = (s as Record<string, unknown>) || {};
@@ -223,6 +259,19 @@ const ApprovalDashboard: React.FC = () => {
         });
 
         setPendingEdits(enriched);
+        setPendingDeletions(
+          deletions.map((d) => {
+            const rec = (d as Record<string, unknown>) || {};
+            return {
+              ...rec,
+              id: String(rec["id"] ?? rec["request_id"] ?? ""),
+              name: String(rec["name"] ?? rec["spot_name"] ?? "Deletion Request"),
+              description: `Deletion Reason: ${rec["reason"] ?? "No reason provided"}`,
+              action_type: "delete",
+              entityType: "tourist_spots",
+            } as PendingItem;
+          })
+        );
       } catch (err) {
         console.error("Error loading approval data:", err);
       } finally {
@@ -234,9 +283,10 @@ const ApprovalDashboard: React.FC = () => {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [spotsData, editsData, bizData] = await Promise.all([
+      const [spotsData, editsData, deletionsData, bizData] = await Promise.all([
         apiService.getPendingItems("tourist_spots"),
         apiService.getPendingEditsByEntity("tourist_spots"),
+        apiService.getPendingDeletionRequests(),
         apiService.getPendingItems("businesses"),
       ]);
       const spotsArr = (spotsData as unknown[] | null) || [];
@@ -267,6 +317,22 @@ const ApprovalDashboard: React.FC = () => {
           } as PendingEdit;
         })
       );
+      
+      const deletionsArr = (deletionsData as unknown[] | null) || [];
+      setPendingDeletions(
+        deletionsArr.map((d) => {
+          const rec = (d as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? rec["request_id"] ?? ""),
+            name: String(rec["name"] ?? rec["spot_name"] ?? "Deletion Request"),
+            description: `Deletion Reason: ${rec["reason"] ?? "No reason provided"}`,
+            action_type: "delete",
+            entityType: "tourist_spots",
+          } as PendingItem;
+        })
+      );
+
       setPendingBusinesses(((bizData as any[]) || []).map((b) => ({ ...b })));
     } catch (err) {
       console.error(err);
@@ -365,13 +431,22 @@ const ApprovalDashboard: React.FC = () => {
         }
       }
 
-      window.alert(
+      showAlert(
+        "success",
+        "Success",
         `${action === "approve" ? "Approved" : "Rejected"} successfully!`
       );
+      
+      if (action === "reject") {
+        setRejectModalOpen(false);
+        setRejectReason("");
+        setItemToRejectId(null);
+      }
+      
       await refresh();
     } catch (err) {
       console.error(err);
-      window.alert(`Error performing ${action}. Please try again.`);
+      showAlert("error", "Error", `Error performing ${action}. Please try again.`);
     } finally {
       setProcessingId(null);
     }
@@ -379,9 +454,9 @@ const ApprovalDashboard: React.FC = () => {
 
   const handleApprove = (id: string) => handleAction(id, "approve");
   const handleReject = (id: string) => {
-    const r = window.prompt("Please provide a reason for rejection:");
-    if (r === null) return;
-    return handleAction(id, "reject", r || "");
+    setItemToRejectId(id);
+    setRejectReason("");
+    setRejectModalOpen(true);
   };
 
   const handleView = (item: Record<string, unknown>) => setSelectedItem(item);
@@ -771,8 +846,8 @@ const ApprovalDashboard: React.FC = () => {
                 key={`event-${ev.id}`}
                 item={unified}
                 onView={(u) => handleView(u.raw)}
-                onApprove={() => window.alert("Event approval not implemented")}
-                onReject={() => window.alert("Event rejection not implemented")}
+                onApprove={() => showAlert("info", "Not Implemented", "Event approval not implemented")}
+                onReject={() => showAlert("info", "Not Implemented", "Event rejection not implemented")}
               />
             );
           })}
@@ -929,6 +1004,65 @@ const ApprovalDashboard: React.FC = () => {
         onReject={handleReject}
         processingId={processingId}
       />
+
+      <Alert
+        open={alertConfig.open}
+        onClose={closeAlert}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        showCancel={false}
+      />
+
+      {/* Reject Modal */}
+      <Modal
+        open={rejectModalOpen}
+        onClose={() => {
+          setRejectModalOpen(false);
+          setRejectReason("");
+          setItemToRejectId(null);
+        }}
+      >
+        <ModalDialog>
+          <Typography level="h4">Reject Submission</Typography>
+          <Typography level="body-sm">
+            Please provide a reason for rejecting this submission.
+          </Typography>
+          <Stack spacing={2} mt={2}>
+            <Textarea
+              minRows={3}
+              placeholder="Reason for rejection..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <JoyButton
+                variant="outlined"
+                color="primary"
+                onClick={() => {
+                  setRejectModalOpen(false);
+                  setRejectReason("");
+                  setItemToRejectId(null);
+                }}
+              >
+                Cancel
+              </JoyButton>
+              <JoyButton
+                variant="solid"
+                color="danger"
+                disabled={!rejectReason.trim() || processingId !== null}
+                onClick={() => {
+                  if (itemToRejectId) {
+                    handleAction(itemToRejectId, "reject", rejectReason);
+                  }
+                }}
+              >
+                Reject
+              </JoyButton>
+            </Stack>
+          </Stack>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 };

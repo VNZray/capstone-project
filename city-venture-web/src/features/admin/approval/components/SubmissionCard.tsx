@@ -19,7 +19,7 @@ interface SubmissionCardProps {
   submitterName?: string;
   submittedDate?: string;
   location?: string;
-  actionType?: "new" | "edit";
+  actionType?: "new" | "edit" | "delete";
   onView?: () => void;
   onApprove?: () => void;
   onReject?: () => void;
@@ -92,13 +92,23 @@ const SubmissionCard = ({
             <Chip
               size="sm"
               variant="solid"
-              color={actionType === "new" ? "success" : "warning"}
+              color={
+                actionType === "new"
+                  ? "success"
+                  : actionType === "delete"
+                  ? "danger"
+                  : "warning"
+              }
               sx={{
                 fontSize: "clamp(0.625rem, 1.5vw, 0.75rem)",
                 fontWeight: 600,
               }}
             >
-              {actionType === "new" ? "New" : "Edit"}
+              {actionType === "new"
+                ? "New"
+                : actionType === "delete"
+                ? "Deletion"
+                : "Edit"}
             </Chip>
           </Box>
         )}

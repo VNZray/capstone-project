@@ -222,6 +222,22 @@ class ApiService {
     return response.data;
   }
 
+  // ===== DELETION REQUESTS =====
+  async getPendingDeletionRequests(): Promise<unknown[]> {
+    const response: AxiosResponse<ApiResponse<unknown[]>> = await api.get('/approval/pending-deletions');
+    return response.data.data || [];
+  }
+
+  async approveDeletionRequest(id: string): Promise<ApiResponse<void>> {
+    const response: AxiosResponse<ApiResponse<void>> = await api.put(`/approval/approve-deletion/${id}`);
+    return response.data;
+  }
+
+  async rejectDeletionRequest(id: string, reason?: string): Promise<ApiResponse<void>> {
+    const response: AxiosResponse<ApiResponse<void>> = await api.put(`/approval/reject-deletion/${id}`, { reason });
+    return response.data;
+  }
+
   // ===== REPORT MANAGEMENT =====
   async getReports(): Promise<Report[]> {
     const response: AxiosResponse<ApiResponse<Report[]>> = await api.get('/reports');

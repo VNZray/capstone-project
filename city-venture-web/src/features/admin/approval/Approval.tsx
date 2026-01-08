@@ -3,21 +3,18 @@ import { apiService } from "@/src/utils/api";
 import ViewModal from "./components/ViewModal";
 import StatCard from "./components/StatCard";
 import SubmissionCard from "./components/SubmissionCard";
-import { Box, Grid, Chip, Input, CircularProgress } from "@mui/joy";
+import { Box, Grid, Chip, Input, CircularProgress, Modal, ModalDialog, Textarea, Stack } from "@mui/joy";
 import SearchIcon from "@mui/icons-material/Search";
 import DescriptionIcon from "@mui/icons-material/Description";
 import PlaceIcon from "@mui/icons-material/Place";
 import EventIcon from "@mui/icons-material/Event";
 import BusinessIcon from "@mui/icons-material/Business";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import BarChartIcon from "@mui/icons-material/BarChart";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import type { EntityType } from "@/src/types/approval";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import { colors } from "@/src/utils/Colors";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
-import { useNavigate } from "react-router-dom";
+import Alert from "@/src/components/Alert";
 
 interface PendingItem {
   id: string;
@@ -31,7 +28,7 @@ interface PendingItem {
   contact_phone?: string | null;
   website?: string | null;
   entry_fee?: number | null;
-  action_type: "new" | "edit";
+  action_type: "new" | "edit" | "delete";
   entityType?: EntityType;
   [k: string]: unknown;
 }
@@ -53,23 +50,10 @@ interface PendingEdit extends PendingItem {
 
 type TabType = EntityType | "overview";
 
-const makeMock = (prefix: string) => [
-  {
-    id: "1",
-    name: `${prefix} A`,
-    action_type: "new" as const,
-    submitted_at: "2024-01-15",
-    entityType: prefix.toLowerCase().includes("event")
-      ? ("events" as const)
-      : prefix.toLowerCase().includes("business")
-      ? ("businesses" as const)
-      : ("accommodations" as const),
-  },
-];
-
 const ApprovalDashboard: React.FC = () => {
   const [pendingSpots, setPendingSpots] = useState<PendingItem[]>([]);
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
+  const [pendingDeletions, setPendingDeletions] = useState<PendingItem[]>([]);
   const [pendingBusinesses, setPendingBusinesses] = useState<PendingItem[]>([]);
   const [pendingEvents, setPendingEvents] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,20 +121,52 @@ const ApprovalDashboard: React.FC = () => {
     } catch {}
   }, [businessCategory]);
 
+  // Alerts
+  const [alertConfig, setAlertConfig] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message: string
+  ) => {
+    setAlertConfig({ open: true, type, title, message });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, open: false }));
+  };
+
+  // Reject Modal
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [itemToRejectId, setItemToRejectId] = useState<string | null>(null);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
         const safeFetch = (p: Promise<any>) => p.catch(() => []);
-        const [spotsData, editsData, businessesData, eventsData] = await Promise.all([
+        const [spotsData, editsData, deletionsData, businessesData, eventsData] = await Promise.all([
           safeFetch(apiService.getPendingItems("tourist_spots")),
           safeFetch(apiService.getPendingEditsByEntity("tourist_spots")),
+          safeFetch(apiService.getPendingDeletionRequests()),
           safeFetch(apiService.getPendingItems("businesses")),
           safeFetch(apiService.getPendingItems("events")),
         ]);
 
         const spots = (spotsData as unknown[] | null) || [];
         const edits = (editsData as unknown[] | null) || [];
+        const deletions = (deletionsData as unknown[] | null) || [];
         const businesses = (businessesData as unknown[] | null) || [];
         const events = (eventsData as unknown[] | null) || [];
 
@@ -260,6 +276,19 @@ const ApprovalDashboard: React.FC = () => {
 
         setPendingEdits(enriched);
 
+        const transformedDeletions: PendingItem[] = deletions.map((d) => {
+          const rec = (d as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? rec["request_id"] ?? ""),
+            name: String(rec["name"] ?? rec["spot_name"] ?? "Deletion Request"),
+            description: `Deletion Reason: ${rec["reason"] ?? "No reason provided"}`,
+            action_type: "delete",
+            entityType: "tourist_spots",
+          } as PendingItem;
+        });
+        setPendingDeletions(transformedDeletions);
+
         // Businesses mapping
         const transformedBusinesses: PendingItem[] = businesses.map((b) => {
           const rec = (b as Record<string, unknown>) || {};
@@ -300,9 +329,10 @@ const ApprovalDashboard: React.FC = () => {
     setLoading(true);
     try {
       const safeFetch = (p: Promise<any>) => p.catch(() => []);
-      const [spotsData, editsData, businessesData, eventsData] = await Promise.all([
+      const [spotsData, editsData, deletionsData, businessesData, eventsData] = await Promise.all([
         safeFetch(apiService.getPendingItems("tourist_spots")),
         safeFetch(apiService.getPendingEditsByEntity("tourist_spots")),
+        safeFetch(apiService.getPendingDeletionRequests()),
         safeFetch(apiService.getPendingItems("businesses")),
         safeFetch(apiService.getPendingItems("events")),
       ]);
@@ -334,7 +364,22 @@ const ApprovalDashboard: React.FC = () => {
           } as PendingEdit;
         })
       );
-
+      
+      const deletionsArr = (deletionsData as unknown[] | null) || [];
+      setPendingDeletions(
+          deletionsArr.map((d) => {
+            const rec = (d as Record<string, unknown>) || {};
+            return {
+              ...rec,
+              id: String(rec["id"] ?? rec["request_id"] ?? ""),
+              name: String(rec["name"] ?? rec["spot_name"] ?? "Deletion Request"),
+              description: `Deletion Reason: ${rec["reason"] ?? "No reason provided"}`,
+              action_type: "delete",
+              entityType: "tourist_spots",
+            } as PendingItem;
+          })
+        );
+      
       const businessesArr = (businessesData as unknown[] | null) || [];
       setPendingBusinesses(
         businessesArr.map((b) => {
@@ -380,7 +425,7 @@ const ApprovalDashboard: React.FC = () => {
   ) => {
     setProcessingId(id);
     try {
-      const items = [...pendingSpots, ...pendingEdits, ...pendingBusinesses, ...pendingEvents];
+      const items = [...pendingSpots, ...pendingEdits, ...pendingDeletions, ...pendingBusinesses, ...pendingEvents];
       const item = items.find((i) => String(i.id) === String(id));
       if (!item) return;
 
@@ -391,19 +436,32 @@ const ApprovalDashboard: React.FC = () => {
       if (item.action_type === "new") {
         if (action === "approve") await apiService.approveNewEntity(entity, id);
         else await apiService.rejectNewEntity(entity, id, reason ?? "");
+      } else if (item.action_type === "delete") {
+        if (action === "approve") await apiService.approveDeletionRequest(id);
+        else await apiService.rejectDeletionRequest(id, reason ?? "");
       } else {
         if (action === "approve")
           await apiService.approveEditEntity(entity, id);
         else await apiService.rejectEditEntity(entity, id, reason ?? "");
       }
 
-      window.alert(
+      showAlert(
+        "success",
+        "Success",
         `${action === "approve" ? "Approved" : "Rejected"} successfully!`
       );
+      if (action === "reject") {
+        setRejectModalOpen(false);
+        setRejectReason("");
+        setItemToRejectId(null);
+      }
+      if (selectedItem?.id === id) {
+        closeModal();
+      }
       await refresh();
     } catch (err) {
       console.error(err);
-      window.alert(`Error performing ${action}. Please try again.`);
+      showAlert("error", "Error", `Error performing ${action}. Please try again.`);
     } finally {
       setProcessingId(null);
     }
@@ -411,15 +469,13 @@ const ApprovalDashboard: React.FC = () => {
 
   const handleApprove = (id: string) => handleAction(id, "approve");
   const handleReject = (id: string) => {
-    const r = window.prompt("Please provide a reason for rejection:");
-    if (r === null) return;
-    return handleAction(id, "reject", r || "");
+    setItemToRejectId(id);
+    setRejectReason("");
+    setRejectModalOpen(true);
   };
 
   const handleView = (item: Record<string, unknown>) => setSelectedItem(item);
   const closeModal = () => setSelectedItem(null);
-
-  const mockEvents = makeMock("Event");
   
   const filteredEvents = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -435,6 +491,7 @@ const ApprovalDashboard: React.FC = () => {
   const allPendingItems = [
     ...pendingSpots,
     ...pendingEdits,
+    ...pendingDeletions,
     ...pendingBusinesses,
     ...pendingEvents,
   ];
@@ -491,6 +548,17 @@ const ApprovalDashboard: React.FC = () => {
     return base;
   }, [pendingBusinesses, query, businessCategory]);
 
+  const filteredDeletions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return pendingDeletions.filter(
+      (d) =>
+        !q ||
+        String(d.name ?? "")
+          .toLowerCase()
+          .includes(q)
+    );
+  }, [pendingDeletions, query]);
+
   // Helper to extract a display image for tourist spots (new or edits)
   const getTouristSpotImage = (item: any): string | null => {
     if (!item || typeof item !== "object") return null;
@@ -526,7 +594,6 @@ const ApprovalDashboard: React.FC = () => {
     );
   };
 
-  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<"all" | EntityType>("all");
 
   if (loading)
@@ -729,6 +796,24 @@ const ApprovalDashboard: React.FC = () => {
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {currentView === "all" && (
           <>
+            {/* Deletions */}
+            {filteredDeletions.map((item) => (
+              <SubmissionCard
+                key={`del-${item.id}`}
+                image={getTouristSpotImage(item) || placeholderImage}
+                typeBadge="Tourist Spot"
+                typeBadgeColor="danger"
+                title={item.name}
+                description={item.description || "No reason provided"}
+                submitterName="Request"
+                submittedDate={undefined}
+                actionType="delete"
+                onView={() => handleView(item as any)}
+                onApprove={() => handleApprove(String(item.id))}
+                onReject={() => handleReject(String(item.id))}
+              />
+            ))}
+
             {/* Tourist Spots */}
             {[...filteredTouristSpots, ...filteredTouristEdits].map((item) => {
               const img = getTouristSpotImage(item) || placeholderImage;
@@ -850,6 +935,7 @@ const ApprovalDashboard: React.FC = () => {
             {/* Empty State */}
             {filteredTouristSpots.length === 0 &&
               filteredTouristEdits.length === 0 &&
+              filteredDeletions.length === 0 &&
               filteredEvents.length === 0 &&
               filteredBusinesses.length === 0 && (
                 <Box
@@ -869,7 +955,7 @@ const ApprovalDashboard: React.FC = () => {
 
         {currentView === "tourist_spots" && (
           <>
-            {[...filteredTouristSpots, ...filteredTouristEdits].map((item) => {
+            {[...filteredDeletions, ...filteredTouristSpots, ...filteredTouristEdits].map((item) => {
               const img = getTouristSpotImage(item) || placeholderImage;
               const categoryLabel =
                 (item as any).categories?.[0]?.category || "—";
@@ -878,7 +964,7 @@ const ApprovalDashboard: React.FC = () => {
                   key={`spot-${item.id}`}
                   image={img}
                   typeBadge="Tourist Spot"
-                  typeBadgeColor="success"
+                  typeBadgeColor={item.action_type === 'delete' ? 'danger' : 'success'}
                   categoryBadge={
                     categoryLabel !== "—" ? categoryLabel : undefined
                   }
@@ -912,7 +998,8 @@ const ApprovalDashboard: React.FC = () => {
               );
             })}
             {filteredTouristSpots.length === 0 &&
-              filteredTouristEdits.length === 0 && (
+              filteredTouristEdits.length === 0 &&
+              filteredDeletions.length === 0 && (
                 <Box
                   sx={{
                     textAlign: "center",
@@ -1042,6 +1129,65 @@ const ApprovalDashboard: React.FC = () => {
         onReject={handleReject}
         processingId={processingId}
       />
+
+      <Alert
+        open={alertConfig.open}
+        onClose={closeAlert}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        showCancel={false}
+      />
+
+      {/* Reject Modal */}
+      <Modal
+        open={rejectModalOpen}
+        onClose={() => {
+          setRejectModalOpen(false);
+          setRejectReason("");
+          setItemToRejectId(null);
+        }}
+      >
+        <ModalDialog>
+          <Typography.CardTitle>Reject Submission</Typography.CardTitle>
+          <Typography.Body size="sm">
+            Please provide a reason for rejecting this submission.
+          </Typography.Body>
+          <Stack spacing={2} mt={2}>
+            <Textarea
+              minRows={3}
+              placeholder="Reason for rejection..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+            />
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                colorScheme="primary"
+                onClick={() => {
+                  setRejectModalOpen(false);
+                  setRejectReason("");
+                  setItemToRejectId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="solid"
+                colorScheme="error"
+                disabled={!rejectReason.trim() || processingId !== null}
+                onClick={() => {
+                  if (itemToRejectId) {
+                    handleAction(itemToRejectId, "reject", rejectReason);
+                  }
+                }}
+              >
+                Reject
+              </Button>
+            </Stack>
+          </Stack>
+        </ModalDialog>
+      </Modal>
     </Box>
   );
 };

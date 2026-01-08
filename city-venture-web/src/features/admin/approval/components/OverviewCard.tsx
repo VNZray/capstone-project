@@ -13,13 +13,13 @@ interface OverviewCardProps {
   items: Array<{
     id: string;
     name: string;
-    action_type: "new" | "edit";
+    action_type: "new" | "edit" | "delete";
   }>;
   onApprove?: (id: string) => void;
   onView?: (item: {
     id: string;
     name: string;
-    action_type: "new" | "edit";
+    action_type: "new" | "edit" | "delete";
   }) => void;
 }
 
@@ -85,9 +85,19 @@ const OverviewCard: React.FC<OverviewCardProps> = ({
                 <Chip
                   size="sm"
                   variant="soft"
-                  color={item.action_type === "new" ? "success" : "primary"}
+                  color={
+                    item.action_type === "new"
+                      ? "success"
+                      : item.action_type === "delete"
+                      ? "danger"
+                      : "primary"
+                  }
                 >
-                  {item.action_type === "new" ? "New" : "Edit"}
+                  {item.action_type === "new"
+                    ? "New"
+                    : item.action_type === "delete"
+                    ? "Delete"
+                    : "Edit"}
                 </Chip>
                 <Typography.Body size="sm">{item.name}</Typography.Body>
               </Container>

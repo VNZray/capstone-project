@@ -620,6 +620,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             "Success",
             resp?.data?.message || "Fields updated successfully!",
             () => {
+              closeAlert();
               onSpotUpdated?.();
               handleClose();
             }
@@ -639,6 +640,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             resp?.data?.message ||
               "Core information changes submitted for approval!",
             () => {
+              closeAlert();
               onSpotUpdated?.();
               handleClose();
             }
@@ -659,6 +661,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             "Success",
             resp?.data?.message || "Categories updated successfully!",
             () => {
+              closeAlert();
               onSpotUpdated?.();
               handleClose();
             }

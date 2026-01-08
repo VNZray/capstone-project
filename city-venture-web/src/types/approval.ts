@@ -10,7 +10,7 @@ export type ApprovalTableItem = Record<string, unknown> & {
   business_name?: string;
   description?: string;
   // Action type for approval workflow
-  action_type?: "new" | "edit";
+  action_type?: "new" | "edit" | "delete";
   // Dates
   submitted_at?: string; // for edit requests
   created_at?: string; // for newly submitted entities
@@ -30,7 +30,7 @@ export interface UnifiedApprovalItem {
   // base identifiers
   id: string | number;
   entityType: EntityType; // tourist_spots | businesses | edits
-  actionType: 'new' | 'edit';
+  actionType: 'new' | 'edit' | 'delete';
   // display fields
   name: string; // resolved name/business_name
   typeLabel: string; // e.g. 'tourist spot', 'business', 'tourist spot edit'

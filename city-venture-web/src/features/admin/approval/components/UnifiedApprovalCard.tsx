@@ -63,9 +63,19 @@ const UnifiedApprovalCard: React.FC<UnifiedApprovalCardProps> = ({ item, onView,
         <Chip
           size="sm"
           variant="soft"
-          color={item.actionType === 'edit' ? 'warning' : 'success'}
+          color={
+            item.actionType === 'delete'
+              ? 'danger'
+              : item.actionType === 'edit'
+              ? 'warning'
+              : 'success'
+          }
         >
-          {item.actionType === 'edit' ? 'Edit' : 'New'}
+          {item.actionType === 'delete'
+            ? 'Delete Request'
+            : item.actionType === 'edit'
+            ? 'Edit'
+            : 'New'}
         </Chip>
       </div>
     </Card>
