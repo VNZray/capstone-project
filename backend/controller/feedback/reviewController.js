@@ -2,6 +2,33 @@ import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../../utils/errorHandler.js";
 
+// Helper function to normalize review_type from frontend format to DB ENUM format
+// Frontend: 'tourist_spot', 'accommodation', 'room', 'shop', 'event', 'product', 'service'
+// Database ENUM: 'Tourist Spot', 'Accommodation', 'Room', 'Shop', 'Event', 'Product', 'Service'
+function normalizeReviewTypeForDB(type) {
+  if (!type) return null;
+
+  const typeMap = {
+    'tourist_spot': 'Tourist Spot',
+    'accommodation': 'Accommodation',
+    'room': 'Room',
+    'shop': 'Shop',
+    'event': 'Event',
+    'product': 'Product',
+    'service': 'Service',
+    // Also handle already-normalized values
+    'Tourist Spot': 'Tourist Spot',
+    'Accommodation': 'Accommodation',
+    'Room': 'Room',
+    'Shop': 'Shop',
+    'Event': 'Event',
+    'Product': 'Product',
+    'Service': 'Service',
+  };
+
+  return typeMap[type] || type;
+}
+
 // ===== Reviews (review_and_rating) =====
 
 // Get all reviews
@@ -43,8 +70,9 @@ export async function getReviewById(req, res) {
 // Get reviews by type and entity id with photos and replies
 export async function getReviewsByTypeAndEntityId(req, res) {
   const { review_type, review_type_id } = req.params;
+  const normalizedType = normalizeReviewTypeForDB(review_type);
   try {
-    const [reviews] = await db.query("CALL GetReviewsByTypeAndEntityId(?, ?)", [review_type, review_type_id]);
+    const [reviews] = await db.query("CALL GetReviewsByTypeAndEntityId(?, ?)", [normalizedType, review_type_id]);
 
     // Fetch photos and replies for each review
     const enrichedReviews = await Promise.all(
@@ -91,9 +119,10 @@ export async function insertReview(req, res) {
       return res.status(400).json({ message: "Rating must be a number between 1 and 5" });
     }
 
+    const normalizedType = normalizeReviewTypeForDB(review_type);
     const [data] = await db.query("CALL InsertReview(?, ?, ?, ?, ?, ?)", [
       id,
-      review_type,
+      normalizedType,
       review_type_id,
       numRating,
       message,
@@ -138,9 +167,10 @@ export async function updateReview(req, res) {
       }
     }
 
+    const normalizedType = review_type ? normalizeReviewTypeForDB(review_type) : null;
     const [data] = await db.query("CALL UpdateReview(?, ?, ?, ?, ?)", [
       id,
-      review_type ?? null,
+      normalizedType,
       review_type_id ?? null,
       rating ?? null,
       message ?? null,
@@ -170,8 +200,9 @@ export async function deleteReview(req, res) {
 // calculate average rating for a given type and entity id
 export async function getAverageRating(req, res) {
   const { review_type, review_type_id } = req.params;
+  const normalizedType = normalizeReviewTypeForDB(review_type);
   try {
-    const [data] = await db.query("CALL CalculateAverageRating(?, ?)", [review_type, review_type_id]);
+    const [data] = await db.query("CALL CalculateAverageRating(?, ?)", [normalizedType, review_type_id]);
     const average_rating = data[0] ? data[0] : null;
     res.json(average_rating);
   } catch (error) {
@@ -182,8 +213,9 @@ export async function getAverageRating(req, res) {
 // calculate total reviews for a given type and entity id
 export async function getTotalReviews(req, res) {
   const { review_type, review_type_id } = req.params;
+  const normalizedType = normalizeReviewTypeForDB(review_type);
   try {
-    const [data] = await db.query("CALL CalculateTotalReviews(?, ?)", [review_type, review_type_id]);
+    const [data] = await db.query("CALL CalculateTotalReviews(?, ?)", [normalizedType, review_type_id]);
     const total_reviews = data[0] ? data[0] : 0;
     res.json(total_reviews);
   } catch (error) {
