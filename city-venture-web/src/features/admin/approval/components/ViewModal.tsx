@@ -111,7 +111,7 @@ const ViewModal: React.FC<ViewModalProps> = ({
       }
     }
     if (entityType === "events") {
-      return getString("category", "Food & Culture");
+      return getString("category_name", getString("category", "Food & Culture"));
     }
     return "-";
   };
@@ -204,10 +204,13 @@ const ViewModal: React.FC<ViewModalProps> = ({
     }
   })();
 
-  const entryFee = getString("entry_fee", "Free");
+  const entryFee = getString(
+    "entry_fee",
+    getString("ticket_price", "Free")
+  );
   const expectedAttendees = getString(
     "expected_attendees",
-    getString("capacity", "-")
+    getString("capacity", getString("max_capacity", "-"))
   );
 
   const handleApproveClick = () => {

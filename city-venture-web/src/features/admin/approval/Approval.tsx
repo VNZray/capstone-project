@@ -71,6 +71,7 @@ const ApprovalDashboard: React.FC = () => {
   const [pendingSpots, setPendingSpots] = useState<PendingItem[]>([]);
   const [pendingEdits, setPendingEdits] = useState<PendingEdit[]>([]);
   const [pendingBusinesses, setPendingBusinesses] = useState<PendingItem[]>([]);
+  const [pendingEvents, setPendingEvents] = useState<PendingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
   const [selectedItem, setSelectedItem] = useState<Record<
@@ -140,15 +141,18 @@ const ApprovalDashboard: React.FC = () => {
     (async () => {
       setLoading(true);
       try {
-        const [spotsData, editsData, businessesData] = await Promise.all([
-          apiService.getPendingItems("tourist_spots"),
-          apiService.getPendingEditsByEntity("tourist_spots"),
-          apiService.getPendingItems("businesses"),
+        const safeFetch = (p: Promise<any>) => p.catch(() => []);
+        const [spotsData, editsData, businessesData, eventsData] = await Promise.all([
+          safeFetch(apiService.getPendingItems("tourist_spots")),
+          safeFetch(apiService.getPendingEditsByEntity("tourist_spots")),
+          safeFetch(apiService.getPendingItems("businesses")),
+          safeFetch(apiService.getPendingItems("events")),
         ]);
 
         const spots = (spotsData as unknown[] | null) || [];
         const edits = (editsData as unknown[] | null) || [];
         const businesses = (businessesData as unknown[] | null) || [];
+        const events = (eventsData as unknown[] | null) || [];
 
         const transformedSpots: PendingItem[] = spots.map((s) => {
           const rec = (s as Record<string, unknown>) || {};
@@ -270,6 +274,20 @@ const ApprovalDashboard: React.FC = () => {
           } as PendingItem;
         });
         setPendingBusinesses(transformedBusinesses);
+
+        const transformedEvents: PendingItem[] = events.map((e) => {
+          const rec = (e as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            created_at: (rec["created_at"] as string) ?? null,
+            action_type: "new",
+            entityType: "events",
+          } as PendingItem;
+        });
+        setPendingEvents(transformedEvents);
       } catch (err) {
         console.error("Error loading approval data:", err);
       } finally {
@@ -281,10 +299,12 @@ const ApprovalDashboard: React.FC = () => {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [spotsData, editsData, businessesData] = await Promise.all([
-        apiService.getPendingItems("tourist_spots"),
-        apiService.getPendingEditsByEntity("tourist_spots"),
-        apiService.getPendingItems("businesses"),
+      const safeFetch = (p: Promise<any>) => p.catch(() => []);
+      const [spotsData, editsData, businessesData, eventsData] = await Promise.all([
+        safeFetch(apiService.getPendingItems("tourist_spots")),
+        safeFetch(apiService.getPendingEditsByEntity("tourist_spots")),
+        safeFetch(apiService.getPendingItems("businesses")),
+        safeFetch(apiService.getPendingItems("events")),
       ]);
       const spotsArr = (spotsData as unknown[] | null) || [];
       setPendingSpots(
@@ -330,6 +350,22 @@ const ApprovalDashboard: React.FC = () => {
           } as PendingItem;
         })
       );
+
+      const eventsArr = (eventsData as unknown[] | null) || [];
+      setPendingEvents(
+        eventsArr.map((e) => {
+          const rec = (e as Record<string, unknown>) || {};
+          return {
+            ...rec,
+            id: String(rec["id"] ?? ""),
+            name: String(rec["name"] ?? ""),
+            description: (rec["description"] as string) ?? null,
+            created_at: (rec["created_at"] as string) ?? null,
+            action_type: "new",
+            entityType: "events",
+          } as PendingItem;
+        })
+      );
     } catch (err) {
       console.error(err);
     } finally {
@@ -344,7 +380,7 @@ const ApprovalDashboard: React.FC = () => {
   ) => {
     setProcessingId(id);
     try {
-      const items = [...pendingSpots, ...pendingEdits, ...pendingBusinesses];
+      const items = [...pendingSpots, ...pendingEdits, ...pendingBusinesses, ...pendingEvents];
       const item = items.find((i) => String(i.id) === String(id));
       if (!item) return;
 
@@ -384,11 +420,23 @@ const ApprovalDashboard: React.FC = () => {
   const closeModal = () => setSelectedItem(null);
 
   const mockEvents = makeMock("Event");
+  
+  const filteredEvents = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return pendingEvents.filter(
+      (e) =>
+        !q ||
+        String(e.name ?? "")
+          .toLowerCase()
+          .includes(q)
+    );
+  }, [pendingEvents, query]);
 
   const allPendingItems = [
     ...pendingSpots,
     ...pendingEdits,
     ...pendingBusinesses,
+    ...pendingEvents,
   ];
   const allItems: PendingItem[] = allPendingItems as PendingItem[];
 
@@ -558,7 +606,7 @@ const ApprovalDashboard: React.FC = () => {
           <StatCard
             icon={<EventIcon sx={{ color: colors.warning }} />}
             title="Events"
-            count={mockEvents.length}
+            count={pendingEvents.length}
             iconBgColor={colors.warning + "20"}
           />
         </Grid>
@@ -726,24 +774,42 @@ const ApprovalDashboard: React.FC = () => {
             })}
 
             {/* Events */}
-            {mockEvents.map((event) => (
-              <SubmissionCard
-                key={`event-${event.id}`}
-                image={placeholderImage}
-                typeBadge="Event"
-                typeBadgeColor="warning"
-                categoryBadge="Food & Culture"
-                title={event.name}
-                description="Annual food festival showcasing local cuisine and culinary traditions"
-                submitterName="Maria Santos"
-                submittedDate="Dec 5, 2025"
-                location="Plaza Rizal, Naga City"
-                actionType={event.action_type}
-                onView={() => handleView(event as any)}
-                onApprove={() => alert("Events approval not yet implemented")}
-                onReject={() => alert("Events rejection not yet implemented")}
-              />
-            ))}
+            {filteredEvents.map((event) => {
+              const img = (event as any).primary_image || placeholderImage;
+              return (
+                <SubmissionCard
+                  key={`event-${event.id}`}
+                  image={img}
+                  typeBadge="Event"
+                  typeBadgeColor="warning"
+                  categoryBadge={
+                    (event as any).category_name || "Food & Culture"
+                  }
+                  title={event.name}
+                  description={event.description || "No description available"}
+                  submitterName={(event as any).submitter_name || "Organizer"}
+                  submittedDate={
+                    (event as any).created_at
+                      ? new Date((event as any).created_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          }
+                        )
+                      : undefined
+                  }
+                  location={
+                    (event as any).barangay_name || "Plaza Rizal, Naga City"
+                  }
+                  actionType={event.action_type}
+                  onView={() => handleView(event as any)}
+                  onApprove={() => handleApprove(String(event.id))}
+                  onReject={() => handleReject(String(event.id))}
+                />
+              );
+            })}
 
             {/* Businesses */}
             {filteredBusinesses.map((biz) => {
@@ -784,7 +850,7 @@ const ApprovalDashboard: React.FC = () => {
             {/* Empty State */}
             {filteredTouristSpots.length === 0 &&
               filteredTouristEdits.length === 0 &&
-              mockEvents.length === 0 &&
+              filteredEvents.length === 0 &&
               filteredBusinesses.length === 0 && (
                 <Box
                   sx={{
@@ -864,25 +930,43 @@ const ApprovalDashboard: React.FC = () => {
 
         {currentView === "events" && (
           <>
-            {mockEvents.map((event) => (
-              <SubmissionCard
-                key={`event-${event.id}`}
-                image={placeholderImage}
-                typeBadge="Event"
-                typeBadgeColor="warning"
-                categoryBadge="Food & Culture"
-                title={event.name}
-                description="Annual food festival showcasing local cuisine and culinary traditions"
-                submitterName="Maria Santos"
-                submittedDate="Dec 5, 2025"
-                location="Plaza Rizal, Naga City"
-                actionType={event.action_type}
-                onView={() => handleView(event as any)}
-                onApprove={() => alert("Events approval not yet implemented")}
-                onReject={() => alert("Events rejection not yet implemented")}
-              />
-            ))}
-            {mockEvents.length === 0 && (
+            {filteredEvents.map((event) => {
+              const img = (event as any).primary_image || placeholderImage;
+              return (
+                <SubmissionCard
+                  key={`event-${event.id}`}
+                  image={img}
+                  typeBadge="Event"
+                  typeBadgeColor="warning"
+                  categoryBadge={
+                    (event as any).category_name || "Food & Culture"
+                  }
+                  title={event.name}
+                  description={event.description || "No description available"}
+                  submitterName={(event as any).submitter_name || "Organizer"}
+                  submittedDate={
+                    (event as any).created_at
+                      ? new Date((event as any).created_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          }
+                        )
+                      : undefined
+                  }
+                  location={
+                    (event as any).barangay_name || "Plaza Rizal, Naga City"
+                  }
+                  actionType={event.action_type}
+                  onView={() => handleView(event as any)}
+                  onApprove={() => handleApprove(String(event.id))}
+                  onReject={() => handleReject(String(event.id))}
+                />
+              );
+            })}
+            {filteredEvents.length === 0 && (
               <Box
                 sx={{
                   textAlign: "center",

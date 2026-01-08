@@ -36,11 +36,38 @@ import {
 import { supabase } from "@/src/lib/supabase";
 import { getData, updateData } from "@/src/services/Service";
 import LegalPoliciesTab from "./LegalPoliciesTab";
+import Alert from "@/src/components/Alert";
 
 type SettingsTab = "appearance" | "legal-policies" | "configuration";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message: string
+  ) => {
+    setAlertConfig({ open: true, type, title, message });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, open: false }));
+  };
+
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadingLanding, setUploadingLanding] = useState(false);
@@ -142,7 +169,7 @@ const Settings = () => {
     try {
       // Save to database (assuming app_settings table exists)
       await updateData("1", settings, "app_settings");
-      alert("Settings saved successfully!");
+      showAlert("success", "Success", "Settings saved successfully!");
     } catch (error) {
       console.error("Error saving settings:", error);
       setErrors({ submit: "Failed to save settings. Please try again." });
@@ -586,6 +613,15 @@ const Settings = () => {
           </Container>
         </TabPanel>
       </Tabs>
+
+      <Alert
+        open={alertConfig.open}
+        onClose={closeAlert}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        showCancel={false}
+      />
     </PageContainer>
   );
 };

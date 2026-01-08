@@ -17,6 +17,7 @@ interface AlertProps {
   confirmText?: string;
   cancelText?: string;
   showCancel?: boolean;
+  loading?: boolean;
 }
 
 const Alert: React.FC<AlertProps> = ({
@@ -29,12 +30,14 @@ const Alert: React.FC<AlertProps> = ({
   confirmText = "Confirm",
   cancelText = "Cancel",
   showCancel = true,
+  loading = false,
 }) => {
   const handleConfirm = () => {
     if (onConfirm) {
       onConfirm();
+    } else {
+      onClose();
     }
-    onClose();
   };
 
   const getIcon = () => {
@@ -82,7 +85,7 @@ const Alert: React.FC<AlertProps> = ({
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={loading ? undefined : onClose}
       sx={{
         display: "flex",
         justifyContent: "center",
@@ -141,6 +144,7 @@ const Alert: React.FC<AlertProps> = ({
                 variant="outlined"
                 colorScheme="secondary"
                 onClick={onClose}
+                disabled={loading}
                 sx={{
                   flex: 1,
                   py: 1.5,
@@ -153,6 +157,7 @@ const Alert: React.FC<AlertProps> = ({
               variant="solid"
               colorScheme={getButtonColor()}
               onClick={handleConfirm}
+              loading={loading}
               sx={{
                 flex: 1,
                 py: 1.5,

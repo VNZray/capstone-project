@@ -20,6 +20,7 @@ import FeedbackServices from "@/src/services/feedback/FeedbackServices";
 import type { ReviewWithAuthor } from "@/src/types/Feedback";
 import { useTouristSpot } from "@/src/context/TouristSpotContext";
 import { useAuth } from "@/src/context/AuthContext";
+import Alert from "@/src/components/Alert";
 
 // Helper function to transform API reviews to component format
 const transformReview = (apiReview: ReviewWithAuthor): Review => {
@@ -60,6 +61,41 @@ const TouristSpotReviews: React.FC = () => {
   const [activeFilter, setActiveFilter] = React.useState<string | number>(
     "All"
   );
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning" | "info";
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    showCancel?: boolean;
+    confirmText?: string;
+  }>({
+    open: false,
+    type: "info",
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    type: "success" | "error" | "warning" | "info",
+    title: string,
+    message: string
+  ) => {
+    setAlertConfig({
+      open: true,
+      type,
+      title,
+      message,
+      showCancel: false,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, open: false }));
+  };
+
   const [reviews, setReviews] = React.useState<Review[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -126,7 +162,7 @@ const TouristSpotReviews: React.FC = () => {
     try {
       const responderId = user?.id;
       if (!responderId) {
-        alert("You must be logged in to reply.");
+        showAlert("error", "Access Denied", "You must be logged in to reply.");
         return;
       }
 
@@ -366,6 +402,18 @@ const TouristSpotReviews: React.FC = () => {
           </Box>
         </>
       )}
+
+      <Alert
+        open={alertConfig.open}
+        onClose={closeAlert}
+        onConfirm={alertConfig.onConfirm}
+        type={alertConfig.type}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        showCancel={alertConfig.showCancel}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+      />
     </PageContainer>
   );
 };

@@ -11,7 +11,7 @@ import { apiService } from "@/src/utils/api";
 import Container from "@/src/components/Container";
 import FeaturedSpotsModal from "@/src/features/admin/services/tourist-spot/components/FeaturedSpotsModal";
 import MySubmissionsModal from "@/src/features/admin/services/tourist-spot/components/MySubmissionsModal";
-import ConfirmDialog from "@/src/components/modals/ConfirmDialog";
+import Alert from "@/src/components/Alert";
 import PageContainer from "@/src/components/PageContainer";
 import Table, { type TableColumn } from "@/src/components/ui/Table";
 import DynamicTab from "@/src/components/ui/DynamicTab";
@@ -715,11 +715,12 @@ const Spot = () => {
         onClose={() => setMySubmissionsModalOpen(false)}
       />
 
-      <ConfirmDialog
+      <Alert
         open={showDelete}
+        type="warning"
         title="Delete Tourist Spot"
-        description={`Are you sure you want to delete "${selectedSpotForEdit?.name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
+        message={`Are you sure you want to delete "${selectedSpotForEdit?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
         loading={deleteLoading}
         onClose={() => setShowDelete(false)}
         onConfirm={doDeleteSpot}
