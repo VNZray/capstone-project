@@ -38,7 +38,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
       LEFT JOIN municipality om ON ob.municipality_id = om.id
       LEFT JOIN province op ON om.province_id = op.id
       LEFT JOIN user u ON tse.submitted_by = u.id
-      LEFT JOIN tourism_staff ts_staff ON u.id = ts_staff.user_id
+      LEFT JOIN tourism ts_staff ON u.id = ts_staff.user_id
       WHERE tse.approval_status = 'pending'
       ORDER BY tse.submitted_at DESC;
 
@@ -71,7 +71,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
       JOIN municipality m ON b.municipality_id = m.id
       JOIN province p ON m.province_id = p.id
       LEFT JOIN user u ON ts.submitted_by = u.id
-      LEFT JOIN tourism_staff ts_staff ON u.id = ts_staff.user_id
+      LEFT JOIN tourism ts_staff ON u.id = ts_staff.user_id
       WHERE ts.spot_status = 'pending'
       ORDER BY ts.created_at DESC;
 
@@ -196,7 +196,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
       JOIN municipality m ON b.municipality_id = m.id
       JOIN province p ON m.province_id = p.id
       LEFT JOIN user u ON ts.deletion_requested_by = u.id
-      LEFT JOIN tourism_staff ts_staff ON u.id = ts_staff.user_id
+      LEFT JOIN tourism ts_staff ON u.id = ts_staff.user_id
       WHERE ts.spot_status = 'pending_deletion'
       ORDER BY ts.updated_at DESC;
     END;

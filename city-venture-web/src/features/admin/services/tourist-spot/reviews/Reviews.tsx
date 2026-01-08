@@ -19,6 +19,7 @@ import DynamicTab from "@/src/components/ui/DynamicTab";
 import FeedbackServices from "@/src/services/feedback/FeedbackServices";
 import type { ReviewWithAuthor } from "@/src/types/Feedback";
 import { useTouristSpot } from "@/src/context/TouristSpotContext";
+import { useAuth } from "@/src/context/AuthContext";
 
 // Helper function to transform API reviews to component format
 const transformReview = (apiReview: ReviewWithAuthor): Review => {
@@ -41,6 +42,7 @@ const transformReview = (apiReview: ReviewWithAuthor): Review => {
     images: apiReview.photos?.map((p) => p.photo_url) || [],
     reply: apiReview.replies?.[0]
       ? {
+          id: apiReview.replies[0].id,
           text: apiReview.replies[0].message,
           updatedAt:
             apiReview.replies[0].updated_at || apiReview.replies[0].created_at,
@@ -52,6 +54,7 @@ const transformReview = (apiReview: ReviewWithAuthor): Review => {
 const TouristSpotReviews: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { selectedTouristSpotId } = useTouristSpot();
+  const { user } = useAuth();
   const spotId = selectedTouristSpotId || id;
   
   const [activeFilter, setActiveFilter] = React.useState<string | number>(
@@ -76,7 +79,7 @@ const TouristSpotReviews: React.FC = () => {
         setError(null);
         const apiReviews = await FeedbackServices.getEnrichedReviews(
           spotId,
-          "Tourist Spot"
+          "tourist_spot"
         );
         const transformedReviews = apiReviews.map(transformReview);
         setReviews(transformedReviews);
@@ -121,37 +124,53 @@ const TouristSpotReviews: React.FC = () => {
 
   const handleSaveReply = async (reviewId: string, text: string) => {
     try {
-      // TODO: Get business owner/responder ID from auth context
-      const responderId = "temp-owner-id"; // Replace with actual owner ID
+      const responderId = user?.id;
+      if (!responderId) {
+        alert("You must be logged in to reply.");
+        return;
+      }
 
       // Check if reply already exists
       const review = reviews.find((r) => r.id === reviewId);
-      if (review?.reply) {
+      if (review?.reply?.id) {
         // Update existing reply
-        const replies = await FeedbackServices.getRepliesByReviewId(reviewId);
-        if (replies.length > 0) {
-          await FeedbackServices.updateReply(replies[0].id, { message: text });
-        }
+        await FeedbackServices.updateReply(review.reply.id, { message: text });
+        
+        // Update local state
+        setReviews((prev) =>
+          prev.map((r) =>
+            r.id === reviewId && r.reply
+              ? {
+                  ...r,
+                  reply: { ...r.reply, text, updatedAt: new Date().toISOString() },
+                }
+              : r
+          )
+        );
       } else {
         // Create new reply
-        await FeedbackServices.createReply({
+        const newReply = await FeedbackServices.createReply({
           review_and_rating_id: reviewId,
           message: text,
           responder_id: responderId,
         });
-      }
 
-      // Update local state
-      setReviews((prev) =>
-        prev.map((r) =>
-          r.id === reviewId
-            ? {
-                ...r,
-                reply: { text, updatedAt: new Date().toISOString() },
-              }
-            : r
-        )
-      );
+        // Update local state
+        setReviews((prev) =>
+          prev.map((r) =>
+            r.id === reviewId
+              ? {
+                  ...r,
+                  reply: { 
+                    id: newReply.id,
+                    text: newReply.message, 
+                    updatedAt: newReply.created_at 
+                  },
+                }
+              : r
+          )
+        );
+      }
     } catch (err) {
       console.error("Error saving reply:", err);
       alert("Failed to save reply");
@@ -160,18 +179,30 @@ const TouristSpotReviews: React.FC = () => {
 
   const handleDeleteReply = async (reviewId: string) => {
     try {
-      const replies = await FeedbackServices.getRepliesByReviewId(reviewId);
-      if (replies.length > 0) {
-        await FeedbackServices.deleteReply(replies[0].id);
+      const review = reviews.find((r) => r.id === reviewId);
+      if (review?.reply?.id) {
+        await FeedbackServices.deleteReply(review.reply.id);
+        
+        // Update local state
+        setReviews((prev) =>
+          prev.map((r) => (r.id === reviewId ? { ...r, reply: undefined } : r))
+        );
       }
-
-      // Update local state
-      setReviews((prev) =>
-        prev.map((r) => (r.id === reviewId ? { ...r, reply: undefined } : r))
-      );
     } catch (err) {
       console.error("Error deleting reply:", err);
       alert("Failed to delete reply");
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm("Are you sure you want to delete this review?")) return;
+    
+    try {
+      await FeedbackServices.deleteReview(reviewId);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    } catch (err) {
+      console.error("Error deleting review:", err);
+      alert("Failed to delete review");
     }
   };
 
@@ -328,6 +359,7 @@ const TouristSpotReviews: React.FC = () => {
                   review={rev}
                   onSaveReply={(text: string) => handleSaveReply(rev.id, text)}
                   onDeleteReply={() => handleDeleteReply(rev.id)}
+                  onDeleteReview={() => handleDeleteReview(rev.id)}
                 />
               ))}
             </Box>
