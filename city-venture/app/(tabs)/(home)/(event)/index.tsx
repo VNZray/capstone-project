@@ -16,16 +16,72 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Routes } from '@/routes/mainRoutes';
 import EventSkeleton from '@/components/skeleton/EventSkeleton';
-import { PLACEHOLDER_EVENTS } from '@/components/home/data';
 import HorizontalDateScroll from '@/components/HorizontalDateScroll';
 import EventFilterModal from '@/app/(tabs)/(home)/(event)/components/EventFilterModal';
 import Container from '@/components/Container';
 import Divider from '@/components/Divider';
 import { AppHeader } from '@/components/header/AppHeader';
 import PageContainer from '@/components/PageContainer';
+import { usePublishedEvents, useFeaturedEvents } from '@/query/eventQuery';
+import type { Event } from '@/types/Event';
 
 const toLowerSafe = (v?: string | null) =>
   typeof v === 'string' ? v.toLowerCase() : '';
+
+// Helper to format date as YYYY-MM-DD for comparison
+const formatDateForComparison = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+// Helper to check if an event matches a selected date
+const eventMatchesDate = (event: Event, selectedDate: Date): boolean => {
+  const selectedDateStr = formatDateForComparison(selectedDate);
+  const startDate = event.start_date?.split('T')[0];
+  const endDate = event.end_date?.split('T')[0] || startDate;
+  
+  if (!startDate) return false;
+  
+  // Event matches if selected date is between start and end date
+  return selectedDateStr >= startDate && selectedDateStr <= endDate;
+};
+
+// Helper to format event date for display
+const formatEventDate = (event: Event): string => {
+  if (!event.start_date) return 'Date TBD';
+  
+  const startDate = new Date(event.start_date);
+  const options: Intl.DateTimeFormatOptions = { 
+    month: 'short', 
+    day: 'numeric',
+    year: 'numeric'
+  };
+  
+  if (event.end_date && event.end_date !== event.start_date) {
+    const endDate = new Date(event.end_date);
+    return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
+  }
+  
+  return startDate.toLocaleDateString('en-US', options);
+};
+
+// Helper to get event location display
+const getEventLocation = (event: Event): string => {
+  const parts = [];
+  if (event.venue_name) parts.push(event.venue_name);
+  if (event.municipality_name) parts.push(event.municipality_name);
+  if (parts.length === 0 && event.venue_address) parts.push(event.venue_address);
+  return parts.join(', ') || 'Location TBD';
+};
+
+// Helper to get event image URL
+const getEventImageUrl = (event: Event): string => {
+  if (event.cover_image_url) return event.cover_image_url;
+  if (event.images && event.images.length > 0) {
+    const primaryImage = event.images.find(img => img.is_primary);
+    return primaryImage?.file_url || event.images[0].file_url;
+  }
+  return 'https://via.placeholder.com/400x200?text=Event';
+};
 
 const EventScreen = () => {
   const router = useRouter();
@@ -36,54 +92,59 @@ const EventScreen = () => {
     'all',
   ]);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [loading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+
+  // Fetch events from API
+  const { 
+    data: publishedEvents = [], 
+    isLoading: loading, 
+    refetch,
+    isRefetching: refreshing 
+  } = usePublishedEvents();
+
+  const { data: featuredEvents = [] } = useFeaturedEvents();
 
   const lastScrollOffset = useRef(0);
   const atTopRef = useRef(true);
   const wasScrollingUpRef = useRef(false);
 
-  // Use placeholder data - replace with actual event data from context/service
-  const events = PLACEHOLDER_EVENTS.map((event, index) => ({
-    ...event,
-    category: index === 0 ? 'music' : index === 1 ? 'sports' : 'food',
-    distance: Math.random() * 10,
-    isNearby: Math.random() > 0.5,
-  }));
-
-  // Filter events
+  // Filter events by date, category and search query
   const filteredEvents = useMemo(() => {
-    let result = events;
+    let result = [...publishedEvents];
 
+    // Filter by selected date
+    result = result.filter((event) => eventMatchesDate(event, selectedDate));
+
+    // Filter by category
     if (!selectedCategories.includes('all')) {
-      result = result.filter((event) =>
-        selectedCategories.includes(event.category)
-      );
+      result = result.filter((event) => {
+        const eventCategoryId = event.category_id || '';
+        const eventCategoryName = (event.category_name || '').toLowerCase();
+        return selectedCategories.some(
+          (cat) => cat === eventCategoryId || cat === eventCategoryName
+        );
+      });
     }
 
+    // Filter by search query
     if (query.trim()) {
       const term = toLowerSafe(query.trim());
       result = result.filter(
         (event) =>
           toLowerSafe(event.name).includes(term) ||
-          toLowerSafe(event.location).includes(term)
+          toLowerSafe(event.description).includes(term) ||
+          toLowerSafe(event.venue_name).includes(term) ||
+          toLowerSafe(event.municipality_name).includes(term)
       );
     }
 
     return result;
-  }, [events, selectedCategories, query]);
+  }, [publishedEvents, selectedCategories, query, selectedDate]);
 
   // Pull-to-refresh functionality
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      // TODO: Replace with actual API call to refresh events
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
+    await refetch();
+  }, [refetch]);
 
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -109,18 +170,28 @@ const EventScreen = () => {
 
   // Categorize events into sections
   const nearbyEvents = useMemo(
-    () => filteredEvents.filter((event) => event.isNearby).slice(0, 5),
-    [filteredEvents]
-  );
-
-  const comingSoonEvents = useMemo(
     () => filteredEvents.slice(0, 5),
     [filteredEvents]
   );
 
+  // Events coming up in the next 7 days from selected date
+  const comingSoonEvents = useMemo(() => {
+    const now = selectedDate;
+    const weekLater = new Date(selectedDate);
+    weekLater.setDate(weekLater.getDate() + 7);
+    
+    return publishedEvents
+      .filter((event) => {
+        const startDate = new Date(event.start_date);
+        return startDate >= now && startDate <= weekLater;
+      })
+      .slice(0, 5);
+  }, [publishedEvents, selectedDate]);
+
+  // Featured/popular events
   const popularEvents = useMemo(
-    () => [...filteredEvents].sort(() => Math.random() - 0.5).slice(0, 5),
-    [filteredEvents]
+    () => featuredEvents.slice(0, 5),
+    [featuredEvents]
   );
 
   const handleCategoryToggle = (categoryId: string) => {
@@ -273,7 +344,7 @@ const EventScreen = () => {
                     onPress={() => handleEventPress(event.id)}
                   >
                     <Image
-                      source={{ uri: event.image }}
+                      source={{ uri: getEventImageUrl(event) }}
                       style={styles.eventImage}
                       resizeMode="cover"
                     />
@@ -296,7 +367,7 @@ const EventScreen = () => {
                           type="label-small"
                           style={{ color: colors.textSecondary }}
                         >
-                          {event.date}
+                          {formatEventDate(event)}
                         </ThemedText>
                       </View>
                       <View style={styles.eventMeta}>
@@ -310,7 +381,7 @@ const EventScreen = () => {
                           numberOfLines={1}
                           style={{ color: colors.textSecondary }}
                         >
-                          {event.location}
+                          {getEventLocation(event)}
                         </ThemedText>
                       </View>
                     </View>
@@ -359,7 +430,7 @@ const EventScreen = () => {
                     onPress={() => handleEventPress(event.id)}
                   >
                     <Image
-                      source={{ uri: event.image }}
+                      source={{ uri: getEventImageUrl(event) }}
                       style={styles.listEventImage}
                       resizeMode="cover"
                     />
@@ -382,7 +453,7 @@ const EventScreen = () => {
                           type="label-small"
                           style={{ color: colors.textSecondary }}
                         >
-                          {event.date}
+                          {formatEventDate(event)}
                         </ThemedText>
                       </View>
                       <View style={styles.eventMeta}>
@@ -395,7 +466,7 @@ const EventScreen = () => {
                           type="label-small"
                           style={{ color: colors.textSecondary }}
                         >
-                          {event.location}
+                          {getEventLocation(event)}
                         </ThemedText>
                       </View>
                     </View>
@@ -448,7 +519,7 @@ const EventScreen = () => {
                     onPress={() => handleEventPress(event.id)}
                   >
                     <Image
-                      source={{ uri: event.image }}
+                      source={{ uri: getEventImageUrl(event) }}
                       style={styles.eventImage}
                       resizeMode="cover"
                     />
@@ -471,7 +542,7 @@ const EventScreen = () => {
                           type="label-small"
                           style={{ color: colors.textSecondary }}
                         >
-                          {event.date}
+                          {formatEventDate(event)}
                         </ThemedText>
                       </View>
                       <View style={styles.eventMeta}>
@@ -485,7 +556,7 @@ const EventScreen = () => {
                           numberOfLines={1}
                           style={{ color: colors.textSecondary }}
                         >
-                          {event.location}
+                          {getEventLocation(event)}
                         </ThemedText>
                       </View>
                     </View>

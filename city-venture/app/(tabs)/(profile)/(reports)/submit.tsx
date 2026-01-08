@@ -220,7 +220,7 @@ export default function SubmitReport() {
   };
 
   return (
-    <PageContainer padding={0} style={{ paddingBottom: 200 }}>
+    <PageContainer padding={0}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}

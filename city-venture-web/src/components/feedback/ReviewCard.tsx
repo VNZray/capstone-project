@@ -13,18 +13,19 @@ export interface Review {
   createdAt: string; // ISO
   text: string;
   images?: string[];
-  reply?: { text: string; updatedAt: string };
+  reply?: { id?: string; text: string; updatedAt: string };
 }
 
 interface ReviewCardProps {
   review: Review;
   onSaveReply?: (text: string) => void;
   onDeleteReply?: () => void;
+  onDeleteReview?: () => void;
 }
 
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
-const ReviewCard: React.FC<ReviewCardProps> = ({ review, onSaveReply, onDeleteReply }) => {
+const ReviewCard: React.FC<ReviewCardProps> = ({ review, onSaveReply, onDeleteReply, onDeleteReview }) => {
   const [expanded, setExpanded] = React.useState(false);
   const [editingReply, setEditingReply] = React.useState(false);
   const [draftReply, setDraftReply] = React.useState(review.reply?.text || '');
@@ -179,7 +180,7 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review, onSaveReply, onDeleteRe
             <Menu>
               <MenuItem>Report</MenuItem>
               <MenuItem>Flag</MenuItem>
-              <MenuItem color="danger">Delete</MenuItem>
+              <MenuItem color="danger" onClick={onDeleteReview}>Delete</MenuItem>
             </Menu>
           </Dropdown>
         </Box>
