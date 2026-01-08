@@ -6,6 +6,16 @@ import { authorizeAny, authorizeRole, authorize } from "../middleware/authorizeR
 const router = express.Router();
 
 // ============================================================
+// PUBLIC ROUTES (No authentication required)
+// ============================================================
+
+// Public user registration - for new users signing up
+router.post(
+  "/register",
+  userController.insertUser
+);
+
+// ============================================================
 // SELF-SERVICE ROUTES (Any authenticated user for their own data)
 // ============================================================
 
@@ -72,13 +82,6 @@ router.post(
   authenticate,
   userController.insertStaffUser
 );
-
-// User role management
-router.get("/", userController.getAllUserRoles);
-router.get("/:user_role_id", userController.getUsersByRoleId);
-router.post("/", userController.insertUserRole);
-router.put("/:id", userController.updateUserRole);
-router.put("/role", userController.updateUserRoleByName);
 
 // Login removed - use /api/auth/login
 // router.post("/login", userController.loginUser);
