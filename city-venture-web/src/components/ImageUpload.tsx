@@ -1,13 +1,19 @@
 import React, { useRef, useState } from "react";
-import { Button, CircularProgress, Typography, Modal, ModalDialog } from "@mui/joy";
+import {
+  Button,
+  CircularProgress,
+  Typography,
+  Modal,
+  ModalDialog,
+} from "@mui/joy";
 import { Upload, X, Eye } from "lucide-react";
 import { useFileUpload } from "@/src/hooks/useFileUpload";
 import type { UploadOptions } from "@/src/services/upload/FileUploadService";
 import Container from "@/src/components/Container";
 
 export interface ImageUploadProps {
-  folderName: string;
-  uploadTo: string;
+  folderName: string; // subfolder in storage
+  uploadTo: string; // bucket
   onUploadComplete?: (publicUrl: string, localUrl?: string) => void;
   onError?: (error: string) => void;
   placeholder?: string;

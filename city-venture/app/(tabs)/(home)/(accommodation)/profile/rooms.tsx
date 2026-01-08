@@ -32,6 +32,7 @@ import {
 import placeholder from '@/assets/images/room-placeholder.png';
 import Button from '@/components/Button';
 import Container from '@/components/Container';
+import TextInput from '@/components/TextInput';
 import RangeDateCalendar from '@/components/calendar/RangeDateCalendar';
 import Dropdown, { DropdownItem } from '@/components/Dropdown';
 import {
@@ -84,6 +85,10 @@ const Rooms = () => {
   );
   // Selected floor (null = all)
   const [selectedFloor, setSelectedFloor] = React.useState<number | null>(null);
+  // Selected capacity (null = all)
+  const [selectedCapacity, setSelectedCapacity] = React.useState<number | null>(
+    null
+  );
   const [range, setRange] = useState<{ start: Date | null; end: Date | null }>({
     start: null,
     end: null,
@@ -354,7 +359,7 @@ const Rooms = () => {
     return sorted.map((f) => ({ id: f, label: String(f) }));
   }, [rooms]);
 
-  // Filter rooms by selected floor
+  // Filter rooms by selected floor, capacity, and date availability
   const filteredRooms = useMemo(() => {
     if (!rooms) return [];
 
@@ -376,6 +381,18 @@ const Rooms = () => {
             return floor === selectedFloor;
           });
 
+    // Then filter by capacity
+    if (selectedCapacity != null) {
+      filtered = filtered.filter((r) => {
+        if (!r.capacity) return false;
+        const cap =
+          typeof r.capacity === 'number'
+            ? r.capacity
+            : parseInt(String(r.capacity), 10);
+        return !Number.isNaN(cap) && cap >= selectedCapacity;
+      });
+    }
+
     // Then filter by date availability if both dates are selected
     if (range.start && range.end && bookings.length > 0) {
       filtered = filterAvailableRooms(
@@ -387,7 +404,7 @@ const Rooms = () => {
     }
 
     return filtered;
-  }, [rooms, selectedFloor, range, bookings]);
+  }, [rooms, selectedFloor, selectedCapacity, range, bookings]);
 
   // Fetch ratings and total reviews for visible rooms
   useEffect(() => {
@@ -450,7 +467,7 @@ const Rooms = () => {
       <Container
         style={{ overflow: 'visible' }}
         backgroundColor="transparent"
-        gap={16}
+        gap={8}
         paddingBottom={0}
         padding={0}
         direction="row"
@@ -459,7 +476,7 @@ const Rooms = () => {
           withSearch={false}
           style={{ width: 120 }}
           placeholder="Floor"
-          items={[{ id: 'all', label: 'All' }, ...floorItems]}
+          items={[{ id: 'all', label: 'All Floors' }, ...floorItems]}
           value={selectedFloor === null ? 'all' : selectedFloor}
           onSelect={(item) => {
             if (item.id === 'all') {
@@ -477,17 +494,30 @@ const Rooms = () => {
           clearable={false}
         />
 
-        <Button
+        <TextInput
           style={{ flex: 1 }}
-          label={
-            range.start && range.end
-              ? `${range.start.toLocaleDateString()} - ${range.end.toLocaleDateString()}`
-              : 'Select Dates'
-          }
+          placeholder="Pax"
+          value={selectedCapacity !== null ? String(selectedCapacity) : ''}
+          onChangeText={(text) => {
+            if (text === '') {
+              setSelectedCapacity(null);
+            } else {
+              const num = parseInt(text, 10);
+              if (!Number.isNaN(num) && num > 0) {
+                setSelectedCapacity(num);
+              }
+            }
+          }}
+          keyboardType="numeric"
           variant="solid"
-          color="white"
+          color="primary"
+        />
+
+        <Button
           elevation={1}
+          color={range.start && range.end ? 'primary' : 'white'}
           startIcon="calendar"
+          icon
           onPress={() => setShowCalendar(true)}
         />
         <Button

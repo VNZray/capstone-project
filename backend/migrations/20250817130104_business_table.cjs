@@ -19,7 +19,7 @@ exports.up = async function (knex) {
     table.text("address").notNullable();
     table.uuid("owner_id").notNullable().references("id").inTable("owner");
     table
-      .enu("status", ["Pending", "Active", "Inactive", "Maintenance"])
+      .enu("status", ["Pending", "Active", "Inactive", "Maintenance", "Rejected"])
       .notNullable()
       .defaultTo("Pending");
     table.text("business_image").nullable();

@@ -81,8 +81,19 @@ apiClient.interceptors.response.use(
       try {
         // Use centralized refresh with lock
         const newAccessToken = await refreshTokens();
-        
+
         if (!newAccessToken) {
+          // Refresh failed - session expired, redirect to login
+          console.error('[apiClient] Session expired - redirecting to login');
+
+          // Trigger logout event for all tabs
+          localStorage.setItem('logout-event', Date.now().toString());
+          localStorage.removeItem('logout-event');
+
+          // Clear session and redirect
+          setAccessToken(null);
+          window.location.href = '/login';
+
           return Promise.reject(error);
         }
 
@@ -91,6 +102,17 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
 
       } catch (refreshError) {
+        // Refresh failed - session expired, redirect to login
+        console.error('[apiClient] Refresh failed - redirecting to login');
+
+        // Trigger logout event for all tabs
+        localStorage.setItem('logout-event', Date.now().toString());
+        localStorage.removeItem('logout-event');
+
+        // Clear session and redirect
+        setAccessToken(null);
+        window.location.href = '/login';
+
         return Promise.reject(refreshError);
       }
     }
