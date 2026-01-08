@@ -84,7 +84,7 @@ export default function ServiceFormModal({
       });
       setContactMethods(service.contact_methods || []);
       setSelectedCategoryIds(
-        service.categories?.map((cat) => cat.id) || []
+        service.categories?.map((cat) => cat.id).filter((id): id is string => !!id) || []
       );
     } else {
       // Reset form for new service
@@ -132,6 +132,9 @@ export default function ServiceFormModal({
     setLoading(true);
 
     try {
+      // Filter out any null/undefined category IDs as a safety measure
+      const validCategoryIds = selectedCategoryIds.filter((id): id is string => !!id);
+      
       const payload: CreateServicePayload = {
         business_id: businessId,
         name: formData.name.trim(),
@@ -144,7 +147,7 @@ export default function ServiceFormModal({
         contact_notes: formData.contact_notes.trim() || undefined,
         display_order: formData.display_order ? parseInt(formData.display_order) : undefined,
         status: formData.status,
-        category_ids: selectedCategoryIds,
+        category_ids: validCategoryIds,
       };
 
       await onSubmit(payload);
@@ -208,7 +211,9 @@ export default function ServiceFormModal({
       });
 
       // Add the new category to selected categories
-      setSelectedCategoryIds([...selectedCategoryIds, newCategory.id]);
+      if (newCategory?.id) {
+        setSelectedCategoryIds([...selectedCategoryIds, newCategory.id]);
+      }
       
       // Reset category form and close modal
       setNewCategoryName("");

@@ -50,12 +50,13 @@ import {
 } from '@/services/HomeContentService';
 import {
   ACTIONS,
-  PLACEHOLDER_EVENTS,
   PLACEHOLDER_NEWS,
   type ActionItem,
 } from '@/components/home/data';
 import { Image } from 'expo-image';
 import { getUnreadNotificationCount } from '@/services/NotificationService';
+import { useUpcomingEvents } from '@/query/eventQuery';
+import type { Event } from '@/types/Event';
 
 // Enable LayoutAnimation for Android
 if (
@@ -80,6 +81,28 @@ const HomeScreen = () => {
   // Extract user_id to a stable reference to prevent unnecessary re-renders
   const userId = user?.user_id;
 
+  // Fetch upcoming events from API
+  const { 
+    data: upcomingEvents = [], 
+    isLoading: eventsLoading,
+    refetch: refetchEvents 
+  } = useUpcomingEvents();
+
+  // Convert API events to HomeEvent format for NewsAndEventsSection
+  const homeEvents: HomeEvent[] = upcomingEvents.map((event: Event) => ({
+    id: event.id,
+    name: event.name,
+    date: event.start_date ? new Date(event.start_date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    }) : 'Date TBD',
+    location: event.venue_name || event.municipality_name || 'Location TBD',
+    image: event.cover_image_url || 
+      (event.images?.[0]?.file_url) || 
+      'https://via.placeholder.com/400x200?text=Event',
+  }));
+
   // --- Animation Values ---
   const scrollY = useSharedValue(0);
   const prevScrollY = useSharedValue(0);
@@ -91,14 +114,6 @@ const HomeScreen = () => {
   const [greeting, setGreeting] = useState('Hello');
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const [eventState, setEventState] = useState<{
-    data: HomeEvent[];
-    loading: boolean;
-    error?: string;
-  }>({
-    data: [],
-    loading: true,
-  });
   const [newsState, setNewsState] = useState<{
     data: NewsArticle[];
     loading: boolean;
@@ -148,14 +163,16 @@ const HomeScreen = () => {
   const loadHomeContent = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else {
-      setEventState((prev) => ({ ...prev, loading: true }));
       setNewsState((prev) => ({ ...prev, loading: true }));
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
-    setEventState({ data: PLACEHOLDER_EVENTS, loading: false });
+    // Refetch events from API
+    if (isRefresh) {
+      refetchEvents();
+    }
     setNewsState({ data: PLACEHOLDER_NEWS, loading: false });
     setRefreshing(false);
-  }, []);
+  }, [refetchEvents]);
 
   const handleRefresh = useCallback(() => {
     loadHomeContent(true);
@@ -262,7 +279,7 @@ const HomeScreen = () => {
   }, []);
 
   // Show skeleton during initial load
-  if (eventState.loading && newsState.loading && eventState.data.length === 0) {
+  if (eventsLoading && newsState.loading && homeEvents.length === 0) {
     return <HomepageSkeleton />;
   }
 
@@ -403,9 +420,9 @@ const HomeScreen = () => {
             />
             <NewsAndEventsSection
               newsData={newsState.data}
-              eventsData={eventState.data}
-              loading={newsState.loading || eventState.loading}
-              error={newsState.error || eventState.error}
+              eventsData={homeEvents}
+              loading={newsState.loading || eventsLoading}
+              error={newsState.error}
               onPressArticle={(article) => router.push(Routes.tabs.home)}
               onPressEvent={() => router.push(Routes.event.index as any)}
               onPressViewAllEvents={navigateToEventHome}

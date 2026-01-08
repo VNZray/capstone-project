@@ -14,7 +14,7 @@ import { colors } from "@/src/utils/Colors";
 import logo from "@/src/assets/logo/city-ventures-main.png";
 
 interface FooterSectionProps {
-  logoImage: string;
+  logoImage?: string;
 }
 
 const FooterSection: React.FC<FooterSectionProps> = () => {
@@ -27,7 +27,7 @@ const FooterSection: React.FC<FooterSectionProps> = () => {
         { label: "Popular Attractions", href: "#" },
         { label: "Local Events", href: "#" },
         { label: "Travel Guide", href: "#" },
-        { label: "FAQ for Tourists", href: "#" },
+        { label: "FAQ for Tourists", href: "/faq" },
       ],
     },
     {
@@ -38,13 +38,13 @@ const FooterSection: React.FC<FooterSectionProps> = () => {
         { label: "Partner Portal Login", href: "/business/login" },
         { label: "Business Resources", href: "#" },
         { label: "Pricing/Plans", href: "#" },
-        { label: "FAQ for Businesses", href: "#" },
+        { label: "FAQ for Businesses", href: "/faq" },
       ],
     },
     {
       title: "Company",
       links: [
-        { label: "About City Venture", href: "#about" },
+        { label: "About City Venture", href: "/about" },
         { label: "How It Works", href: "#how-it-works" },
         { label: "Blog/News", href: "#" },
         { label: "Careers", href: "#" },

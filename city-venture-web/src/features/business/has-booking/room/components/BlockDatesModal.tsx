@@ -320,7 +320,7 @@ const BlockDatesModal: React.FC<BlockDatesModalProps> = ({
           {/* Header */}
           <Box
             sx={{
-              background: `linear-gradient(135deg, ${colors.warning} 0%, #f59e0b 100%)`,
+              background: colors.primary,
               color: "white",
               p: 3,
             }}

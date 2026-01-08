@@ -6,6 +6,7 @@ import {
   DialogContent,
   IconButton,
   Box,
+  ModalClose,
 } from "@mui/joy";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import Button from "./Button";
@@ -121,27 +122,7 @@ export default function BaseModal({
       >
         {/* Close Button - Upper Right */}
         {showCloseButton && (
-          <IconButton
-            variant="plain"
-            color="neutral"
-            onClick={onClose}
-            size="sm"
-            sx={{
-              position: "absolute",
-              top: "clamp(0.75rem, 2vw, 1rem)",
-              right: "clamp(0.75rem, 2vw, 1rem)",
-              zIndex: 10,
-              borderRadius: "50%",
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
-              backdropFilter: "blur(4px)",
-              "&:hover": {
-                backgroundColor: colors.error + "10",
-                color: colors.error,
-              },
-            }}
-          >
-            <CloseRoundedIcon />
-          </IconButton>
+          <ModalClose variant="plain" sx={{ m: 1.5, zIndex: 2 }} />
         )}
 
         {/* Header */}

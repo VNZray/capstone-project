@@ -7,21 +7,12 @@ import {
   DialogTitle,
   DialogActions,
 } from "@mui/joy";
-import {
-  Calendar,
-  ListChecks,
-  PauseCircle,
-  PlayCircle,
-  Search,
-  TimerOff,
-  Lock,
-} from "lucide-react";
+import { Calendar, Search, Lock } from "lucide-react";
 import { Add, SortRounded } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import AddRoomModal from "./components/AddRoomModal";
 import BlockDatesModal from "./components/BlockDatesModal";
 import RoomCard from "./components/RoomCard";
-type Status = "All" | "Available" | "Occupied" | "Maintenance";
 import { useBusiness } from "@/src/context/BusinessContext";
 import { getData } from "@/src/services/Service";
 import type { Room } from "@/src/types/Business";
@@ -37,14 +28,12 @@ import dayjs, { Dayjs } from "dayjs";
 import NoDataFound from "@/src/components/NoDataFound";
 import Button from "@/src/components/Button";
 import IconButton from "@/src/components/IconButton";
-import DynamicTab from "@/src/components/ui/DynamicTab";
 import Typography from "@/src/components/Typography";
 
 import Alert from "@/src/components/Alert";
 
 const RoomPage = () => {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<Status>("All");
   const [openModal, setOpenModal] = useState(false);
   const [blockDatesModalOpen, setBlockDatesModalOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -61,15 +50,7 @@ const RoomPage = () => {
   const [search, setSearch] = useState("");
   const { setRoomId, clearRoomId } = useRoom();
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [activeTab, setActiveTab] = useState("all");
   const [roomDiscount, setRoomDiscount] = useState<number | null>(null);
-
-  const tabs = [
-    { id: "all", label: "All", icon: <ListChecks size={16} /> },
-    { id: "available", label: "Available", icon: <PlayCircle size={16} /> },
-    { id: "occupied", label: "Occupied", icon: <PauseCircle size={16} /> },
-    { id: "maintenance", label: "Maintenance", icon: <TimerOff size={16} /> },
-  ];
   // Filter and sort rooms dynamically
   const filteredRooms = rooms
     .filter((room) => {
@@ -77,13 +58,11 @@ const RoomPage = () => {
         room.room_number?.toLowerCase().includes(search.toLowerCase()) ||
         room.room_type?.toLowerCase().includes(search.toLowerCase());
 
-      const matchesStatus = status === "All" ? true : room.status === status;
-
       const matchesDateFilter = isFilteringByDate
         ? availableRoomIds.includes(room.id)
         : true;
 
-      return matchesSearch && matchesStatus && matchesDateFilter;
+      return matchesSearch && matchesDateFilter;
     })
     .sort((a, b) => {
       // If room_number is numeric, sort numerically; otherwise, lexicographically
@@ -305,7 +284,7 @@ const RoomPage = () => {
 
         {/* Search + Filter */}
         <Container
-          padding="20px 20px 0 20px"
+          padding="20px 20px 20px 20px"
           direction="row"
           justify="space-between"
           align="center"
@@ -322,26 +301,6 @@ const RoomPage = () => {
             <SortRounded />
           </IconButton>
         </Container>
-
-        {/* Tabs */}
-        <DynamicTab
-          tabs={tabs}
-          activeTabId={activeTab}
-          onChange={(tabId) => {
-            setActiveTab(String(tabId));
-            setStatus(
-              tabId === "all"
-                ? "All"
-                : tabId === "available"
-                ? "Available"
-                : tabId === "occupied"
-                ? "Occupied"
-                : tabId === "maintenance"
-                ? "Maintenance"
-                : "All"
-            );
-          }}
-        />
       </Container>
 
       <Container background="transparent" padding="0">
@@ -380,7 +339,6 @@ const RoomPage = () => {
                 onDeleted={() => fetchRooms()}
                 key={room.id}
                 image={room.room_image || placeholderImage}
-                status={room.status!}
                 floor={room.floor!}
                 roomNumber={room.room_number!}
                 type={room.room_type!}
@@ -410,7 +368,6 @@ const RoomPage = () => {
           room_number: r.room_number || "",
           room_type: r.room_type || "",
         }))}
-        businessId={businessDetails?.id || ""}
         onSuccess={() => {
           setBlockSuccessOpen(true);
           fetchRooms();

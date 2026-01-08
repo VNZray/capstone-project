@@ -124,14 +124,18 @@ export async function insertService(req, res) {
       category_ids
     } = req.body;
 
-    // Determine the primary category
+    // Determine the primary category (filter out null/undefined values)
+    const validCategoryIds = Array.isArray(category_ids) 
+      ? category_ids.filter(id => id != null) 
+      : [];
+    
     let primaryCategoryId = shop_category_id;
-    if (category_ids && Array.isArray(category_ids) && category_ids.length > 0) {
-      primaryCategoryId = category_ids[0]; // First category is primary
+    if (validCategoryIds.length > 0) {
+      primaryCategoryId = validCategoryIds[0]; // First valid category is primary
     }
 
-    // Validate required fields
-    if (!business_id || !primaryCategoryId || !name || !base_price || !price_type) {
+    // Validate required fields - use explicit checks for base_price to handle 0 values
+    if (!business_id || !primaryCategoryId || !name || (base_price === undefined || base_price === null || base_price === '') || !price_type) {
       return res.status(400).json({ 
         message: "Missing required fields: business_id, category_ids (or shop_category_id), name, base_price, price_type"
       });
@@ -149,21 +153,19 @@ export async function insertService(req, res) {
     const rows = extractRows(data);
     const service = rows && rows[0] ? mapServiceRow(rows[0]) : null;
 
-    // Insert category mappings if category_ids is provided
-    if (category_ids && Array.isArray(category_ids) && category_ids.length > 0) {
-      const mappingValues = category_ids.map((categoryId, index) => [
+    // Insert category mappings using validated category IDs
+    if (validCategoryIds.length > 0) {
+      const mappingValues = validCategoryIds.map((categoryId, index) => [
         uuidv4(),
         serviceId,
         categoryId,
         index === 0 ? 1 : 0 // First category is primary
       ]);
 
-      if (mappingValues.length > 0) {
-        await db.query(
-          "INSERT INTO service_category_map (id, service_id, category_id, is_primary) VALUES ?",
-          [mappingValues]
-        );
-      }
+      await db.query(
+        "INSERT INTO service_category_map (id, service_id, category_id, is_primary) VALUES ?",
+        [mappingValues]
+      );
     }
     
     res.status(201).json({

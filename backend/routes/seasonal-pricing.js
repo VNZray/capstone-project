@@ -9,8 +9,6 @@ const router = express.Router();
 router.get(
   "/",
   authenticate,
-  authorizeRole('Admin', 'Tourism Officer'),
-  authorize('view_all_profiles'),
   seasonalPricingController.getAllSeasonalPricing
 );
 
