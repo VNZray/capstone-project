@@ -1,5 +1,5 @@
 import express from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import * as orderController from "../controller/order/index.js";
 import * as refundController from "../controller/refund/index.js";
 import { authenticate } from "../middleware/authenticate.js";
@@ -20,9 +20,9 @@ const orderCreationLimiter = rateLimit({
   max: 10, // 10 orders per window
   standardHeaders: true, // Return rate limit info in headers
   legacyHeaders: false, // Disable X-RateLimit-* headers
-  keyGenerator: (req) => {
-    // Use user ID if authenticated, otherwise fall back to IP
-    return req.user?.id || req.ip;
+  keyGenerator: (req, res) => {
+    // Use user ID if authenticated, otherwise fall back to IP (with proper IPv6 handling)
+    return req.user?.id?.toString() || ipKeyGenerator(req, res);
   },
   message: {
     success: false,
@@ -45,7 +45,7 @@ const orderCancellationLimiter = rateLimit({
   max: 5, // 5 cancellations per hour
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req, res) => req.user?.id?.toString() || ipKeyGenerator(req, res),
   message: {
     success: false,
     error: 'Too many cancellation attempts. Please try again later.',
@@ -93,7 +93,7 @@ const refundRequestLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req, res) => req.user?.id?.toString() || ipKeyGenerator(req, res),
   message: {
     success: false,
     error: 'Too many refund requests. Please try again later.',
