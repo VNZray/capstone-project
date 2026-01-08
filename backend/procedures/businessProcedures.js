@@ -1,9 +1,16 @@
 async function createBusinessProcedures(knex) {
-  // Get all businesses
+  // Get all businesses with optional category filter
   await knex.raw(`
-    CREATE PROCEDURE GetAllBusiness()
+    CREATE PROCEDURE GetAllBusiness(IN p_category_id INT)
     BEGIN
-      SELECT * FROM business;
+      IF p_category_id IS NULL THEN
+        SELECT * FROM business;
+      ELSE
+        SELECT DISTINCT b.*
+        FROM business b
+        INNER JOIN entity_categories ec ON ec.entity_id = b.id AND ec.entity_type = 'business'
+        WHERE ec.category_id = p_category_id;
+      END IF;
     END;
   `);
 

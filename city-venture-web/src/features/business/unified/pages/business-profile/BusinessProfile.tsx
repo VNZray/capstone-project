@@ -281,6 +281,17 @@ const BusinessProfile = () => {
                     </IconButton>
                   </div>
 
+                  {/* Accommodation Type Chip - shows if business is accommodation */}
+                  {businessDetails?.hasBooking &&
+                    businessDetails?.categories &&
+                    businessDetails.categories.length > 0 && (
+                      <div style={{ marginBottom: "8px" }}>
+                        <Chip size="sm" variant="soft" color="primary">
+                          {businessDetails.categories[0].category_title}
+                        </Chip>
+                      </div>
+                    )}
+
                   {/* Address */}
                   <div className="bp-hero__row">
                     <LocationOnIcon className="bp-hero__icon" />

@@ -296,8 +296,27 @@ const Accommodation: React.FC = () => {
                 elevation={2}
               >
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexWrap: "wrap",
+                  }}
                 >
+                  {/* Accommodation Type Chip */}
+                  {accommodation.category_ids &&
+                    accommodation.category_ids.length > 0 && (
+                      <Chip
+                        size="sm"
+                        variant="soft"
+                        color="primary"
+                        startDecorator={
+                          categoryIcons[accommodation.category_ids[0]]
+                        }
+                      >
+                        {getCategoryName(accommodation.category_ids[0])}
+                      </Chip>
+                    )}
                   <Chip
                     size="sm"
                     color={

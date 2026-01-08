@@ -41,43 +41,6 @@ import placeholder from '@/assets/images/placeholder.png';
 import { Colors } from '@/constants/color';
 import { clearStoredRoomId } from '@/services/RoomService';
 
-// ---- Category constants and helpers (module scope) ----
-const CATEGORY_ID_TO_KEY: Record<number, string> = {
-  1: 'hotel',
-  2: 'resort',
-  10: 'hostel',
-  11: 'inn',
-  12: 'bed_and_breakfast',
-  16: 'guesthouse',
-  17: 'motel',
-  18: 'serviced_apartment',
-  19: 'villa',
-  20: 'lodge',
-  21: 'homestay',
-  22: 'cottage',
-  23: 'capsule_hotel',
-  24: 'boutique_hotel',
-  25: 'eco_resort',
-};
-
-const CATEGORY_KEY_TO_LABEL: Record<string, string> = {
-  hotel: 'Hotel',
-  resort: 'Resort',
-  hostel: 'Hostel',
-  inn: 'Inn',
-  bed_and_breakfast: 'B&B',
-  guesthouse: 'Guesthouse',
-  motel: 'Motel',
-  serviced_apartment: 'Serviced Apt.',
-  villa: 'Villa',
-  lodge: 'Lodge',
-  homestay: 'Homestay',
-  cottage: 'Cottage',
-  capsule_hotel: 'Capsule Hotel',
-  boutique_hotel: 'Boutique Hotel',
-  eco_resort: 'Eco Resort',
-};
-
 const toLowerSafe = (v?: string | null) =>
   typeof v === 'string' ? v.toLowerCase() : '';
 
@@ -264,13 +227,25 @@ const AccommodationDirectory = () => {
 
   const formatSubtitle = (b: Business) => {
     const barangay = getBarangayName(b.barangay_id);
-    // Use category from entity_categories or fallback to "Accommodation"
-    const categoryName =
-      b.categories && b.categories.length > 0
-        ? b.categories[0].category_title
-        : 'Accommodation';
+    // Use the most specific category available (prefer child/type over parent category)
+    let accommodationType = 'Accommodation';
+    if (b.categories && b.categories.length > 0) {
+      // Find the most specific category (child categories have parent_category)
+      // Try to find a category with parent_category first (more specific type like "Hotel", "Resort")
+      const childCategory = b.categories.find(
+        (cat) =>
+          cat.parent_category !== null && cat.parent_category !== undefined
+      );
+
+      if (childCategory) {
+        accommodationType = childCategory.category_title;
+      } else if (b.categories[0]?.category_title) {
+        // Fallback to first category if no child found
+        accommodationType = b.categories[0].category_title;
+      }
+    }
     const location = barangay || b.address || 'City Center';
-    return `${categoryName} • ${location}`;
+    return `${accommodationType} • ${location}`;
   };
 
   // Ratings state - declared before filteredAccommodations
@@ -286,6 +261,10 @@ const AccommodationDirectory = () => {
       const hasBooking = b.hasBooking === true || b.hasBooking === 1;
       if (!hasBooking) return false;
 
+      // Only show Active or Approved businesses, exclude Pending, Inactive, Maintenance, Rejected
+      const status = b.status?.toLowerCase();
+      if (status !== 'active' && status !== 'approved') return false;
+
       const name = toLowerSafe(b.business_name);
       const addr = toLowerSafe(b.address);
       const brgy = toLowerSafe(getBarangayName(b.barangay_id));
@@ -294,9 +273,6 @@ const AccommodationDirectory = () => {
         name.includes(term) ||
         addr.includes(term) ||
         brgy.includes(term);
-
-      const status = toLowerSafe(b.status);
-      const isVisibleStatus = status === 'active' || status === 'pending';
 
       // Apply category filter
       const matchesCategory =
@@ -320,11 +296,7 @@ const AccommodationDirectory = () => {
         maxPrice <= appliedFilters.priceRange.max;
 
       return (
-        matchesSearch &&
-        isVisibleStatus &&
-        matchesCategory &&
-        matchesRating &&
-        matchesPriceRange
+        matchesSearch && matchesCategory && matchesRating && matchesPriceRange
       );
     });
 
@@ -518,7 +490,6 @@ const AccommodationDirectory = () => {
                   ratings={ratingInfo.avg}
                   noOfComments={ratingInfo.total}
                   badge={index === 0 ? 'GUEST FAVORITE' : undefined}
-                  tags={['Luxury', 'Spa']}
                   isOpen={true}
                   view="card"
                   favorite={favoriteIds.has(business.id!)}

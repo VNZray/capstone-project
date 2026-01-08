@@ -57,7 +57,6 @@ router.get(
 );
 router.post(
   "/",
-  authenticate,
   userController.insertUser
 );
 router.put(

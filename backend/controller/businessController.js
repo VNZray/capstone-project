@@ -7,7 +7,10 @@ import { handleDbError } from "../utils/errorHandler.js";
 // Get all businesses
 export async function getAllBusiness(req, res) {
   try {
-    const [data] = await db.query("CALL GetAllBusiness()");
+    const { category_id } = req.query;
+    const categoryIdParam = category_id ? parseInt(category_id) : null;
+
+    const [data] = await db.query("CALL GetAllBusiness(?)", [categoryIdParam]);
     const businesses = data[0];
 
     // Fetch categories for each business
