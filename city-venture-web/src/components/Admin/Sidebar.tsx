@@ -135,7 +135,13 @@ export default function Sidebar({
             icon={<AlertCircle size={24} />}
             onClick={onClose}
           />
-          {/* Dropdown for Staff */}
+          <NavItem
+            to="/tourism/staff"
+            label="Manage Staff"
+            icon={<Users size={24} color="white" />}
+            onClick={onClose}
+          />
+          {/* Dropdown for Staff 
           {canAny("manage_users", "manage_tourism_staff") && (
             <DropdownNavItem
               label="Staffs"
@@ -154,7 +160,7 @@ export default function Sidebar({
                 onClick={onClose}
               />
             </DropdownNavItem>
-          )}
+          )}*/}
           {canAny("manage_users") && (
             <NavItem
               to="/tourism/users"
