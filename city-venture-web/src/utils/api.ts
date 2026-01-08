@@ -166,6 +166,14 @@ class ApiService {
           rejectEdit: (id: string) => `/approval/businesses/reject-edit/${id}`,
         } as const;
       case 'events':
+        return {
+          pendingNew: '/approval/pending-events',
+          pendingEdits: '/approval/events/pending-edits',
+          approveNew: (id: string) => `/approval/approve-event/${id}`,
+          approveEdit: (id: string) => `/approval/events/approve-edit/${id}`,
+          rejectNew: (id: string) => `/approval/reject-event/${id}`,
+          rejectEdit: (id: string) => `/approval/events/reject-edit/${id}`,
+        } as const;
       default:
         return {
           pendingNew: `/approval/${entity}/pending`,

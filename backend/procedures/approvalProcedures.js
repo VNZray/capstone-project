@@ -5,7 +5,9 @@ export async function createTouristSpotApprovalProcedures(knex) {
     'ApproveTouristSpotEdit', 'RejectTouristSpotEdit', 'RejectTouristSpot',
     'GetPendingDeletionRequests', 'ApproveDeletionRequest', 'RejectDeletionRequest',
     // Business approval procedures
-    'GetPendingBusinesses', 'ApproveBusiness', 'RejectBusiness'
+    'GetPendingBusinesses', 'ApproveBusiness', 'RejectBusiness',
+    // Event approval procedures
+    'GetPendingEvents', 'ApproveEvent', 'RejectEvent'
   ];
   for (const n of approvalProcs) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);
@@ -287,13 +289,70 @@ export async function createTouristSpotApprovalProcedures(knex) {
       END IF;
     END;
   `);
+
+  // ==================== EVENT APPROVAL PROCEDURES ====================
+  await knex.raw(`
+    CREATE PROCEDURE GetPendingEvents()
+    BEGIN
+      SELECT 
+        e.*,
+        ec.name as category_name,
+        b.barangay as barangay_name,
+        u.email as submitter_email,
+        CONCAT(COALESCE(ts_staff.first_name, u.email), ' ', COALESCE(ts_staff.last_name, '')) AS submitter_name
+      FROM events e
+      LEFT JOIN event_categories ec ON e.category_id = ec.id
+      LEFT JOIN barangay b ON e.barangay_id = b.id
+      LEFT JOIN user u ON e.submitted_by = u.id
+      LEFT JOIN tourism ts_staff ON u.id = ts_staff.user_id
+      WHERE e.status = 'pending'
+      ORDER BY e.created_at ASC;
+
+      -- Return primary image for each pending event
+      SELECT event_id, file_url 
+      FROM event_images 
+      WHERE is_primary = 1 AND event_id IN (
+         SELECT id FROM events WHERE status = 'pending'
+      );
+    END;
+  `);
+
+  await knex.raw(`
+    CREATE PROCEDURE ApproveEvent(IN p_id CHAR(64), IN p_approver_id CHAR(64))
+    BEGIN
+      UPDATE events 
+      SET status = 'published', approved_by = p_approver_id, approved_at = NOW() 
+      WHERE id = p_id AND status = 'pending';
+      
+      IF ROW_COUNT() > 0 THEN
+         CALL LogApprovalRecord('new', 'event', p_id, 'approved', p_approver_id, NULL);
+      END IF;
+      SELECT ROW_COUNT() AS affected_rows;
+    END;
+  `);
+
+  await knex.raw(`
+    CREATE PROCEDURE RejectEvent(IN p_id CHAR(64), IN p_approver_id CHAR(64), IN p_reason VARCHAR(255))
+    BEGIN
+      UPDATE events 
+      SET status = 'rejected', approved_by = p_approver_id, approved_at = NOW(), rejection_reason = p_reason
+      WHERE id = p_id AND status = 'pending';
+      
+      IF ROW_COUNT() > 0 THEN
+         CALL LogApprovalRecord('new', 'event', p_id, 'rejected', p_approver_id, p_reason);
+      END IF;
+      SELECT ROW_COUNT() AS affected_rows;
+    END;
+  `);
 }
 
 export async function dropTouristSpotApprovalProcedures(knex) {
   const names = [
     'GetPendingEditRequests', 'GetPendingTouristSpots', 'ApproveTouristSpot',
     'ApproveTouristSpotEdit', 'RejectTouristSpotEdit', 'RejectTouristSpot',
-    'GetPendingBusinesses', 'ApproveBusiness', 'RejectBusiness'
+    'GetPendingDeletionRequests', 'ApproveDeletionRequest', 'RejectDeletionRequest',
+    'GetPendingBusinesses', 'ApproveBusiness', 'RejectBusiness',
+    'GetPendingEvents', 'ApproveEvent', 'RejectEvent'
   ];
   for (const n of names) {
     await knex.raw(`DROP PROCEDURE IF EXISTS ${n};`);

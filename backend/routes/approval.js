@@ -33,4 +33,9 @@ router.put('/reject-deletion/:id', approvalController.rejectDeletionRequest);
 // Approval records log endpoint
 router.get('/records', authorizeAny('view_reports', 'view_all_profiles'), getApprovalRecords);
 
+// Event approval endpoints
+router.get('/pending-events', authorizeAny('approve_event', 'view_all_profiles'), approvalController.getPendingEvents);
+router.put('/approve-event/:id', authorize('approve_event'), approvalController.approveEvent);
+router.put('/reject-event/:id', authorize('approve_event'), approvalController.rejectEvent);
+
 export default router;

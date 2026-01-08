@@ -256,3 +256,71 @@ export const rejectDeletionRequest = async (req, res) => {
     return handleDbError(error, res);
   }
 };
+
+// ===== EVENTS APPROVAL =====
+
+// Get all pending events
+export const getPendingEvents = async (req, res) => {
+  try {
+    const [data] = await db.query("CALL GetPendingEvents()");
+    const rows = data[0] || [];
+    const images = data[1] || [];
+
+    const imgMap = new Map();
+    for(const img of images) {
+       imgMap.set(img.event_id, img.file_url);
+    }
+       
+    for(const row of rows) {
+       row.primary_image = row.cover_image_url || imgMap.get(row.id) || null;
+    }
+
+    res.json({ success: true, data: rows, message: "Pending events retrieved successfully" });
+  } catch (error) {
+    console.error("Error fetching pending events:", error);
+    return handleDbError(error, res);
+  }
+};
+
+// Approve event
+export const approveEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const actorId = req.user?.id || null;
+
+    const [data] = await db.query("CALL ApproveEvent(?, ?)", [id, actorId]);
+    const row = data[0]?.[0];
+    const affected = row?.affected_rows ?? 0;
+
+    if (affected === 0) {
+      return res.status(400).json({ success: false, message: "Event not found or not pending" });
+    }
+
+    res.json({ success: true, message: "Event approved successfully" });
+  } catch (error) {
+    console.error("Error approving event:", error);
+    return handleDbError(error, res);
+  }
+};
+
+// Reject event
+export const rejectEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const actorId = req.user?.id || null;
+
+    const [data] = await db.query("CALL RejectEvent(?, ?, ?)", [id, actorId, reason || null]);
+    const row = data[0]?.[0];
+    const affected = row?.affected_rows ?? 0;
+
+    if (affected === 0) {
+      return res.status(400).json({ success: false, message: "Event not found or not pending" });
+    }
+
+    res.json({ success: true, message: "Event rejected successfully" });
+  } catch (error) {
+    console.error("Error rejecting event:", error);
+    return handleDbError(error, res);
+  }
+};
