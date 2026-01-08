@@ -62,7 +62,7 @@ export default function BaseEditModal({
           p: 0,
         }}
       >
-        <ModalClose />
+        <ModalClose variant="plain" sx={{ m: 1.5, zIndex: 2 }} />
 
         <DialogTitle sx={{ px: 3, pt: 3, pb: 1 }}>
           <Typography.Header size="sm" component="div">

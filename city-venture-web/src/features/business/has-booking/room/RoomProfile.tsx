@@ -1,6 +1,6 @@
 import PageContainer from "@/src/components/PageContainer";
 import { colors } from "@/src/utils/Colors";
-import { AspectRatio, Box, Chip, Grid, Divider } from "@mui/joy";
+import { AspectRatio, Box, Grid, Divider } from "@mui/joy";
 import { useRoom } from "@/src/context/RoomContext";
 import { useBusiness } from "@/src/context/BusinessContext";
 import DynamicTab from "@/src/components/ui/DynamicTab";
@@ -37,9 +37,6 @@ import { useNavigate } from "react-router-dom";
 import Typography from "@/src/components/Typography";
 import Alert from "@/src/components/Alert";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import EventSeatIcon from "@mui/icons-material/EventSeat";
-import HotelIcon from "@mui/icons-material/Hotel";
-import BuildIcon from "@mui/icons-material/Build";
 import Calendar from "@/src/components/ui/Calendar";
 import type { Amenity } from "@/src/types/Amenity";
 import {
@@ -88,36 +85,6 @@ const RoomProfile = () => {
     title: "",
     message: "",
   });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Available":
-        return "success";
-      case "Reserved":
-        return "neutral";
-      case "Occupied":
-        return "warning";
-      case "Maintenance":
-        return "danger";
-      default:
-        return "neutral";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "Available":
-        return <CheckCircleIcon sx={{ fontSize: "1.25rem" }} />;
-      case "Reserved":
-        return <EventSeatIcon sx={{ fontSize: "1.25rem" }} />;
-      case "Occupied":
-        return <HotelIcon sx={{ fontSize: "1.25rem" }} />;
-      case "Maintenance":
-        return <BuildIcon sx={{ fontSize: "1.25rem" }} />;
-      default:
-        return null;
-    }
-  };
 
   useEffect(() => {
     if (roomDetails) {
@@ -414,16 +381,6 @@ const RoomProfile = () => {
             <Box
               sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}
             >
-              <Chip
-                size="md"
-                color={getStatusColor(roomDetails?.status || "Available")}
-                variant="solid"
-                sx={{
-                  display: { xs: "none", sm: "none", md: "flex", lg: "flex" },
-                }}
-              >
-                {roomDetails?.status || "Available"}
-              </Chip>
               <Typography.Body
                 size="sm"
                 sx={{

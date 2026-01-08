@@ -462,21 +462,16 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
           }}
         >
           <ModalClose
-            variant="plain"
-            sx={{
-              m: 1.5,
-              zIndex: 2,
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.2)",
-              },
-            }}
+            variant="soft"
+            color="danger"
+            sx={{ m: 1.5, zIndex: 2 }}
           />
 
           <Box sx={{ overflowY: "auto", maxHeight: "90vh" }}>
             {/* Header with Gradient */}
             <Box
               sx={{
-                background: `linear-gradient(135deg, #667eea 0%, ${colors.primary} 100%)`,
+                background: colors.primary,
                 color: "white",
                 p: 4,
                 pb: 5,

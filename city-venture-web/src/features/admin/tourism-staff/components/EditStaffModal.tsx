@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Modal, ModalDialog, DialogTitle, DialogContent, DialogActions, FormControl, FormLabel, Input, Select, Option, Stack, Checkbox } from "@mui/joy";
+import { Modal, ModalDialog, DialogTitle, DialogContent, DialogActions, FormControl, FormLabel, Input, Select, Option, Stack, Checkbox, Typography } from "@mui/joy";
 import Button from "@/src/components/Button";
 import type { TourismStaff } from "@/src/types/TourismStaff";
 
@@ -71,8 +71,13 @@ const EditStaffModal: React.FC<Props> = ({
   }, [open, staff, mode, roles]);
 
   const canSubmit = useMemo(() => {
-    return firstName.trim() && lastName.trim() && email.trim() && phone.trim() && Boolean(roleId);
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return firstName.trim() && lastName.trim() && email.trim() && emailValid && phone.trim() && Boolean(roleId);
   }, [firstName, lastName, email, phone, roleId]);
+
+  const isEmailInvalid = useMemo(() => {
+    return email.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }, [email]);
 
   const submit = async () => {
     if (!canSubmit) return;
@@ -116,9 +121,10 @@ const EditStaffModal: React.FC<Props> = ({
             </FormControl>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-              <FormControl sx={{ flex: 1 }}>
+              <FormControl sx={{ flex: 1 }} error={isEmailInvalid}>
                 <FormLabel>Email</FormLabel>
                 <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                {isEmailInvalid && <Typography level="body-xs" color="danger">Invalid email format</Typography>}
               </FormControl>
               <FormControl sx={{ flex: 1 }}>
                 <FormLabel>Phone</FormLabel>

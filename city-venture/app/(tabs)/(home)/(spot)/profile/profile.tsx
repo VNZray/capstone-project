@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Dimensions, FlatList, Image, StyleSheet, View } from 'react-native';
+import { Dimensions, FlatList, Image, StyleSheet, View, Alert, Platform } from 'react-native';
 // useNavigation is used for setOptions (header customization)
 // For navigation actions, use useRouter or usePreventDoubleNavigation hook
 import Container from '@/components/Container';
@@ -11,15 +11,25 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from 'expo-router';
 import Details from './details';
 import Ratings from './ratings';
+import FeedbackService, { createReview } from '@/services/FeedbackService';
+import Button from '@/components/Button';
+import { AddReview } from '@/components/reviews';
+import { useAuth } from '@/context/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 type TabType = 'details' | 'ratings';
 
 const TouristSpotProfile = () => {
   const navigation = useNavigation();
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const { selectedSpot, addressDetails } = useTouristSpot();
-  const averageRating = 0;
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
   const [activeTab, setActiveTab] = useState('details');
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
   const colors = Colors.light;
   const bg = '#fff';
 
@@ -29,8 +39,36 @@ const TouristSpotProfile = () => {
     }
   }, [navigation, selectedSpot?.name, selectedSpot?.id]);
 
+  useEffect(() => {
+    const fetchRating = async () => {
+      if (selectedSpot?.id) {
+        try {
+          const avg = await FeedbackService.getAverageRating('tourist_spot', selectedSpot.id);
+          const total = await FeedbackService.getTotalReviews('tourist_spot', selectedSpot.id);
+          setAverageRating(avg);
+          setTotalReviews(total);
+        } catch (error) {
+          console.error('Error fetching rating:', error);
+        }
+      }
+    };
+    fetchRating();
+  }, [selectedSpot?.id]);
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab as TabType);
+  };
+
+  const handleReviewSubmit = async (payload: any) => {
+    try {
+      await createReview(payload);
+      setReviewModalVisible(false);
+      setRatingsRefreshKey((prev) => prev + 1);
+      Alert.alert('Thank You!', 'Your review has been submitted successfully.');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      Alert.alert('Error', 'Failed to submit review. Please try again.');
+    }
   };
 
   if (!selectedSpot) {
@@ -95,7 +133,7 @@ const TouristSpotProfile = () => {
                       size={20}
                       color={colors.accent}
                     />
-                    {averageRating.toFixed(1)}
+                    {averageRating.toFixed(1)} ({totalReviews})
                   </ThemedText>
                 </View>
               </Container>
@@ -110,10 +148,56 @@ const TouristSpotProfile = () => {
             </TabContainer>
             <View style={styles.tabContent}>
               {activeTab === 'details' && <Details />}
-              {activeTab === 'reviews' && <Ratings />}
+              {activeTab === 'ratings' && (
+                <Ratings
+                  refreshKey={ratingsRefreshKey}
+                  onRefreshRequested={() => {
+                    if (selectedSpot?.id) {
+                      FeedbackService.getAverageRating(
+                        'tourist_spot',
+                        selectedSpot.id
+                      ).then(setAverageRating);
+                      FeedbackService.getTotalReviews(
+                        'tourist_spot',
+                        selectedSpot.id
+                      ).then(setTotalReviews);
+                    }
+                  }}
+                />
+              )}
             </View>
           </>
         }
+      />
+
+      {activeTab === 'ratings' && (
+        <View
+          style={[
+            styles.fabBar,
+            {
+              paddingBottom: (Platform.OS === 'ios' ? 60 : 80) + insets.bottom,
+            },
+          ]}
+        >
+          <Button
+            label="Leave a Review"
+            fullWidth
+            color="primary"
+            variant="solid"
+            onPress={() => setReviewModalVisible(true)}
+            elevation={3}
+            style={{ flex: 1 }}
+          />
+        </View>
+      )}
+
+      <AddReview
+        visible={reviewModalVisible}
+        onClose={() => setReviewModalVisible(false)}
+        onSubmit={handleReviewSubmit}
+        touristId={user?.id || ''}
+        reviewType="tourist_spot"
+        reviewTypeId={selectedSpot?.id || ''}
       />
     </View>
   );
@@ -127,6 +211,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  fabBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
 });
 

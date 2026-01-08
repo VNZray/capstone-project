@@ -485,6 +485,9 @@ export default {
   updateReview,
   deleteReview,
   checkIfTouristHasReviewed,
+  // ratings
+  getAverageRating,
+  getTotalReviews,
   // replies
   getAllReplies,
   getReplyById,

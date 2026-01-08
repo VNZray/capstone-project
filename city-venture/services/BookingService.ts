@@ -115,12 +115,12 @@ export function filterAvailableRooms(
  * Generate date markers from bookings for calendar display
  * Reserved bookings show as warning (yellow), Checked-In as error (red/occupied)
  */
-export function generateBookingDateMarkers(bookings: Booking[]): Array<{
+export function generateBookingDateMarkers(bookings: Booking[]): {
   date: Date;
   status: 'warning' | 'error';
   label: string;
-}> {
-  const markers: Array<{ date: Date; status: 'warning' | 'error'; label: string }> = [];
+}[] {
+  const markers: { date: Date; status: 'warning' | 'error'; label: string }[] = [];
 
   // Filter for active bookings
   const activeBookings = bookings.filter(
@@ -132,8 +132,18 @@ export function generateBookingDateMarkers(bookings: Booking[]): Array<{
   );
 
   activeBookings.forEach((booking) => {
-    const start = new Date(booking.check_in_date!);
-    const end = new Date(booking.check_out_date!);
+    const start = new Date(
+      typeof booking.check_in_date === 'string' ||
+        booking.check_in_date instanceof String
+        ? booking.check_in_date.toString()
+        : booking.check_in_date!
+    );
+    const end = new Date(
+      typeof booking.check_out_date === 'string' ||
+        booking.check_out_date instanceof String
+        ? booking.check_out_date.toString()
+        : booking.check_out_date!
+    );
 
     // Determine status based on booking status
     const status: 'warning' | 'error' =

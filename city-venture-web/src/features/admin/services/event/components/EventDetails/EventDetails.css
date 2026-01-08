@@ -1,0 +1,133 @@
+/* Event Details - modern hero and subtle edit buttons */
+
+.event-details-page {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #374151;
+  background: #fafafa;
+}
+
+/* Ensure all Typography uses Poppins */
+.event-details-page .MuiTypography-root {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Typography alignment */
+.event-details-page .MuiTypography-root[level="title-lg"] {
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+  font-size: 18px;
+}
+
+.event-details-page .MuiTypography-root[level="body-md"] {
+  color: #6b7280;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+.event-details-page .MuiTypography-root[level="body-sm"] {
+  color: #6b7280;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+/* Card look */
+.event-card {
+  background: #ffffff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Hero Banner */
+.event-hero {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  height: clamp(180px, 28vw, 320px);
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.event-hero__bg {
+  position: absolute;
+  inset: 0;
+  background: #0f172a;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.02);
+  filter: saturate(1.05);
+}
+
+.event-hero__gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(80% 60% at 50% 40%, rgba(0,0,0,0.20) 0%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.55) 100%),
+              linear-gradient(to top, rgba(0,0,0,0.35), rgba(0,0,0,0.15));
+}
+
+.event-hero__content {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+}
+
+.event-hero__panel {
+  width: min(760px, 100%);
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 14px;
+  padding: clamp(8px, 1.6vw, 12px) clamp(10px, 1.6vw, 16px);
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+.event-hero__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hero title typography */
+.event-hero .MuiTypography-root[level="h1"] {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.event-hero__edit-inline {
+  --IconButton-size: 32px;
+  border-radius: 8px !important;
+  color: #0f172a !important;
+  background: rgba(255,255,255,0.9) !important;
+}
+
+.event-hero__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.event-hero__icon {
+  color: #e5e7eb !important;
+  font-size: 18px !important;
+}
+
+/* Chip font styling */
+.event-details-page .MuiChip-root {
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 13px;
+}

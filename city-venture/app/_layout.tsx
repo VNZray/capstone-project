@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import 'react-native-reanimated';
 
 import { AuthProvider } from '@/context/AuthContext';
@@ -12,6 +13,16 @@ import { CartProvider } from '@/context/CartContext';
 import { NavigationProvider } from '@/context/NavigationContext';
 import { NavigationTheme } from '@/constants/color';
 import { useProtectedRoute } from '@/hooks/useProtectedRoute';
+
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 2,
+    },
+  },
+});
 
 /**
  * RootLayoutNav - Navigation structure with centralized auth protection
@@ -73,19 +84,21 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <NavigationProvider>
-              <CartProvider>
-                <ThemeProvider value={NavigationTheme}>
-                  <BottomSheetModalProvider>
-                    <RootLayoutNav />
-                  </BottomSheetModalProvider>
-                </ThemeProvider>
-              </CartProvider>
-            </NavigationProvider>
-          </NotificationProvider>
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <NotificationProvider>
+              <NavigationProvider>
+                <CartProvider>
+                  <ThemeProvider value={NavigationTheme}>
+                    <BottomSheetModalProvider>
+                      <RootLayoutNav />
+                    </BottomSheetModalProvider>
+                  </ThemeProvider>
+                </CartProvider>
+              </NavigationProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
