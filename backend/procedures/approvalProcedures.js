@@ -13,7 +13,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetPendingEditRequests()
     BEGIN
-      SELECT 
+      SELECT
         tse.*,
         p.province,
         m.municipality,
@@ -42,7 +42,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
       WHERE tse.approval_status = 'pending'
       ORDER BY tse.submitted_at DESC;
 
-      SELECT 
+      SELECT
         ec.entity_id AS tourist_spot_id,
         c.id,
         c.title AS category,
@@ -59,7 +59,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetPendingTouristSpots()
     BEGIN
-      SELECT 
+      SELECT
         ts.id, ts.name, ts.description, ts.barangay_id,
         ts.latitude, ts.longitude, ts.contact_phone, ts.contact_email, ts.website, ts.entry_fee,
         ts.spot_status, ts.is_featured,
@@ -75,7 +75,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
       WHERE ts.spot_status = 'pending'
       ORDER BY ts.created_at DESC;
 
-      SELECT 
+      SELECT
         ec.entity_id AS tourist_spot_id,
         c.id,
         c.title AS category,
@@ -88,7 +88,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
         )
       ORDER BY c.title ASC;
 
-      SELECT 
+      SELECT
         s.tourist_spot_id,
         s.day_of_week,
         s.open_time,
@@ -113,8 +113,8 @@ export async function createTouristSpotApprovalProcedures(knex) {
     BEGIN
       DECLARE v_status VARCHAR(32);
       SELECT spot_status AS current_status INTO v_status FROM tourist_spots WHERE id = p_id;
-      UPDATE tourist_spots 
-      SET spot_status = 'active', updated_at = CURRENT_TIMESTAMP 
+      UPDATE tourist_spots
+      SET spot_status = 'active', updated_at = CURRENT_TIMESTAMP
       WHERE id = p_id AND spot_status = 'pending';
       IF ROW_COUNT() > 0 THEN
         CALL LogApprovalRecord('new', 'tourist_spot', p_id, 'approved', NULL, NULL);
@@ -148,7 +148,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
             ts.is_featured = tse.is_featured,
             ts.updated_at = CURRENT_TIMESTAMP;
 
-        UPDATE tourist_spot_edits 
+        UPDATE tourist_spot_edits
         SET approval_status = 'approved', reviewed_at = CURRENT_TIMESTAMP
         WHERE id = p_edit_id;
 
@@ -185,7 +185,7 @@ export async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetPendingDeletionRequests()
     BEGIN
-      SELECT 
+      SELECT
         ts.id, ts.name, ts.description, ts.barangay_id,
         ts.spot_status, ts.deletion_requested_by,
         ts.created_at, ts.updated_at, p.province, m.municipality, b.barangay,
@@ -220,11 +220,11 @@ export async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetPendingBusinesses()
     BEGIN
-      SELECT 
+      SELECT
         b.*,
-        (SELECT c.title FROM entity_categories ec 
-         JOIN categories c ON ec.category_id = c.id 
-         WHERE ec.entity_id = b.id AND ec.entity_type = 'business' AND ec.is_primary = 1 
+        (SELECT c.title FROM entity_categories ec
+         JOIN categories c ON ec.category_id = c.id
+         WHERE ec.entity_id = b.id AND ec.entity_type = 'business' AND ec.is_primary = 1
          LIMIT 1) AS primary_category_name
       FROM business b
       WHERE b.status = 'Pending'
@@ -236,18 +236,18 @@ export async function createTouristSpotApprovalProcedures(knex) {
     CREATE PROCEDURE ApproveBusiness(IN p_id CHAR(64))
     BEGIN
       -- Set business Active only if currently Pending
-      UPDATE business 
+      UPDATE business
       SET status='Active'
       WHERE id = p_id AND status='Pending';
 
       IF ROW_COUNT() > 0 THEN
         -- Cascade approve related registration (if pending)
-        UPDATE registration 
+        UPDATE registration
         SET status = 'Approved', approved_at = CURRENT_TIMESTAMP
         WHERE business_id = p_id AND status = 'Pending';
 
         -- Cascade approve related permits (if pending)
-        UPDATE permit 
+        UPDATE permit
         SET status = 'approved', approved_at = CURRENT_TIMESTAMP
         WHERE business_id = p_id AND status = 'pending';
 
@@ -263,19 +263,19 @@ export async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE RejectBusiness(IN p_id CHAR(64))
     BEGIN
-      -- Set business Inactive only if currently Pending
-      UPDATE business 
-      SET status='Inactive'
+      -- Set business Rejected only if currently Pending
+      UPDATE business
+      SET status='Rejected'
       WHERE id = p_id AND status='Pending';
 
       IF ROW_COUNT() > 0 THEN
         -- Cascade reject related registration (if pending)
-        UPDATE registration 
+        UPDATE registration
         SET status = 'Rejected'
         WHERE business_id = p_id AND status = 'Pending';
 
         -- Cascade reject related permits (if pending)
-        UPDATE permit 
+        UPDATE permit
         SET status = 'rejected'
         WHERE business_id = p_id AND status = 'pending';
 

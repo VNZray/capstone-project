@@ -212,8 +212,8 @@ export const rejectBusiness = async (req, res) => {
       try {
         const [checkSets] = await db.query("CALL GetBusinessById(?)", [id]);
         const businessRow = checkSets?.[0]?.[0];
-        if (businessRow && String(businessRow.status).toLowerCase() === 'inactive') {
-          return res.json({ success: true, message: 'Business already inactive' });
+        if (businessRow && String(businessRow.status).toLowerCase() === 'rejected') {
+          return res.json({ success: true, message: 'Business already rejected' });
         }
       } catch (e) {
       }

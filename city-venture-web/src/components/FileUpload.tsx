@@ -11,9 +11,10 @@ import { useFileUpload } from "@/src/hooks/useFileUpload";
 import type { UploadOptions } from "@/src/services/upload/FileUploadService";
 import Container from "@/src/components/Container";
 
+// Supabase File Upload Props
 export interface FileUploadProps {
-  folderName: string;
-  uploadTo: string;
+  folderName: string; // subfolder in storage
+  uploadTo: string; // bucket
   onUploadComplete?: (
     publicUrl: string,
     fileName: string,

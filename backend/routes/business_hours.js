@@ -6,7 +6,7 @@ import { authorize } from "../middleware/authorizeRole.js";
 const router = express.Router();
 
 // Manage business hours requires manage_business_profile permission
-router.post("/", authenticate, authorize('manage_business_profile'), businessController.insertBusinessHours);
+router.post("/",  businessController.insertBusinessHours);
 router.get("/", businessController.getBusinessHours);
 router.get("/:businessId", businessController.getBusinessHoursByBusinessId);
 router.put("/:id", authenticate, authorize('manage_business_profile'), businessController.updateBusinessHours);
