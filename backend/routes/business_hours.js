@@ -1,5 +1,5 @@
 import express from "express";
-import * as businessController from "../controller/BusinessController.js"; // Add `.js` extension
+import * as businessController from "../controller/business/businessController.js"; // Add `.js` extension
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorizeRole.js";
 

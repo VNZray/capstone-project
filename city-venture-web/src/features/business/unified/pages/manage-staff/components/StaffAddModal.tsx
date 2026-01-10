@@ -15,6 +15,7 @@ import {
   type PermissionCategory,
 } from "@/src/services/manage-staff/StaffService";
 import PermissionSelector from "./PermissionSelector";
+import BaseModal from "@/src/components/BaseModal";
 
 export type StaffFormData = {
   first_name: string;
@@ -139,22 +140,25 @@ export default function StaffAddModal({
   };
 
   return (
-    <BaseEditModal
+    <BaseModal
       open={open}
       onClose={onClose}
       title="Add Staff Member"
-      maxWidth={520}
+      description="Create a new staff account and assign permissions"
+      maxWidth={580}
       actions={[
-        { label: "Cancel", onClick: onClose },
+        { label: "Cancel", onClick: onClose, variant: "soft" },
         {
           label: "Add Staff",
           onClick: handleSave,
-          variant: "primary",
+          variant: "solid",
           disabled: !canSubmit,
         },
       ]}
     >
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+      <Box
+        sx={{ display: "flex", flexDirection: "column", gap: 2.5, padding: 2 }}
+      >
         {/* Error Alert */}
         {error && (
           <Box
@@ -303,6 +307,6 @@ export default function StaffAddModal({
           )}
         </Box>
       </Box>
-    </BaseEditModal>
+    </BaseModal>
   );
 }

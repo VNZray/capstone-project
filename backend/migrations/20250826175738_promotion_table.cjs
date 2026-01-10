@@ -1,4 +1,4 @@
-const { createPromotionProcedures, dropPromotionProcedures } = require("../procedures/promotionProcedures.js");
+const { createPromotionProcedures, dropPromotionProcedures } = require("../procedures/promotion/promotion.procedures.cjs");
 
 exports.up = async function (knex) {
   // Create promo_type table

@@ -1,7 +1,7 @@
 const {
   createPaymentProcedures,
   dropPaymentProcedures,
-} = require("../procedures/paymentProcedures");
+} = require("../procedures/accommodation/payment.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("payment", function (table) {

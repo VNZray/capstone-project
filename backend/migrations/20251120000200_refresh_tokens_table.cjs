@@ -2,7 +2,7 @@ exports.up = async function(knex) {
   const {
     createRefreshTokenProcedures,
     dropRefreshTokenProcedures,
-  } = await import("../procedures/auth/refreshTokenProcedures.js");
+  } = require("../procedures/auth/refresh-token.procedures.cjs");
   await knex.schema.createTable('refresh_tokens', function(table) {
     table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     table.string('token_hash').notNullable();
@@ -19,7 +19,7 @@ exports.up = async function(knex) {
 exports.down = async function(knex) {
   const {
     dropRefreshTokenProcedures,
-  } = await import("../procedures/auth/refreshTokenProcedures.js");
+  } = require("../procedures/auth/refresh-token.procedures.cjs");
   await knex.schema.dropTable('refresh_tokens');
   await dropRefreshTokenProcedures(knex);
 };

@@ -1,7 +1,7 @@
 const {
   createAddressProcedures,
   dropAddressProcedures,
-} = require("../procedures/addressProcedures");
+} = require("../procedures/address/address.procedures.cjs");
 
 exports.up = async function (knex) {
   // Province

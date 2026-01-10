@@ -1,4 +1,4 @@
-const { createTourismCompositeProcedures, dropTourismCompositeProcedures } = require('../procedures/auth/tourismCompositeProcedures');
+const { createTourismCompositeProcedures, dropTourismCompositeProcedures } = require('../procedures/auth/tourism-composite.procedures.cjs');
 
 exports.up = async function(knex) {
   await createTourismCompositeProcedures(knex);

@@ -1,5 +1,5 @@
 import express from "express";
-import * as productReviewController from "../controller/productReviewController.js";
+import * as productReviewController from "../controller/product/productReviewController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorizeRole.js";
 
