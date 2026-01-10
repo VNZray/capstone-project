@@ -1,9 +1,9 @@
 const { v4: uuidv4 } = require('uuid');
-const { createProductProcedures, dropProductProcedures } = require("../procedures/productProcedures.js");
+const { createProductProcedures, dropProductProcedures } = require("../procedures/product/product.procedures.cjs");
 
 exports.up = async function (knex) {
   // Note: shop_category table should be created by migration 20250920000001_create_shop_category.cjs
-  
+
   // Create product table
   await knex.schema.createTable("product", (table) => {
     table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
@@ -22,7 +22,7 @@ exports.up = async function (knex) {
     table.enu("status", ["active", "inactive", "out_of_stock"]).defaultTo("active");
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
-    
+
     table.index("business_id", "idx_product_business");
     table.index("shop_category_id", "idx_product_shop_category");
     table.index("status", "idx_product_status");
@@ -41,7 +41,7 @@ exports.up = async function (knex) {
     table.enu("stock_unit", ["pieces", "kg", "liters", "grams", "portions"]).defaultTo("pieces");
     table.timestamp("last_restocked_at").nullable();
     table.timestamp("updated_at").defaultTo(knex.fn.now());
-    
+
     table.unique("product_id", "unique_product_stock");
   });
 
@@ -62,7 +62,7 @@ exports.up = async function (knex) {
       .inTable("user")  // Reference existing 'user' table, not 'users'
       .onDelete("SET NULL");
     table.timestamp("created_at").defaultTo(knex.fn.now());
-    
+
     table.index("product_id", "idx_stock_history_product");
     table.index("created_at", "idx_stock_history_date");
   });

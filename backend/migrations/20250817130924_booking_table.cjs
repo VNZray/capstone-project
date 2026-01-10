@@ -1,7 +1,7 @@
 const {
   createProcedures,
   dropProcedures,
-} = require("../procedures/accommodation/bookingProcedures");
+} = require("../procedures/accommodation/booking.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("booking", function (table) {
@@ -32,6 +32,17 @@ exports.up = async function (knex) {
       ])
       .notNullable()
       .defaultTo("Pending");
+
+    // Booking source tracking (online vs walk-in)
+    table
+      .enum("booking_source", ["online", "walk-in"])
+      .notNullable()
+      .defaultTo("online");
+
+    // Guest info for walk-in guests who may not have tourist account
+    table.string("guest_name", 100).nullable();
+    table.string("guest_phone", 20).nullable();
+    table.string("guest_email", 100).nullable();
 
     table
       .uuid("room_id")

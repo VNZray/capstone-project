@@ -1,4 +1,4 @@
-const { createOrderProcedures, dropOrderProcedures } = require("../procedures/orderProcedures.js");
+const { createOrderProcedures, dropOrderProcedures } = require("../procedures/shop/order.procedures.cjs");
 
 exports.up = async function (knex) {
   // Create order table
@@ -26,38 +26,42 @@ exports.up = async function (knex) {
     table.datetime("pickup_datetime").notNullable();
     table.text("special_instructions").nullable();
     table.enu("status", [
-      "pending", 
-      "accepted", 
-      "preparing", 
-      "ready_for_pickup", 
-      "picked_up", 
-      "cancelled_by_user", 
-      "cancelled_by_business", 
+      "pending",
+      "accepted",
+      "preparing",
+      "ready_for_pickup",
+      "picked_up",
+      "cancelled_by_user",
+      "cancelled_by_business",
       "failed_payment"
     ]).defaultTo("pending");
     // Payment info is in the payment table (single source of truth)
     // Query via: SELECT * FROM payment WHERE payment_for = 'order' AND payment_for_id = order.id
-    
+
     // Customer arrival tracking
     table.string("arrival_code", 10).notNullable().defaultTo("000000"); // 6-digit code for customer to show on arrival
     table.timestamp("customer_arrived_at").nullable();
-    
+
     // Order lifecycle tracking
     table.timestamp("confirmed_at").nullable();
     table.timestamp("preparation_started_at").nullable();
     table.timestamp("ready_at").nullable();
     table.timestamp("picked_up_at").nullable();
-    
+
     // Cancellation details
     table.timestamp("cancelled_at").nullable();
     table.text("cancellation_reason").nullable();
     table.enu("cancelled_by", ["user", "business", "system"]).nullable();
     table.decimal("refund_amount", 10, 2).nullable();
     table.boolean("no_show").defaultTo(false);
-    
+
+    // Refund tracking - column for refund_id (FK constraint added in refund migration)
+    table.uuid("refund_id").nullable();
+    table.timestamp("refund_requested_at").nullable();
+
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
-    
+
     table.index("business_id", "idx_order_business");
     table.index("arrival_code", "idx_order_arrival_code");
     table.index("user_id", "idx_order_user");
@@ -84,7 +88,7 @@ exports.up = async function (knex) {
     table.decimal("unit_price", 10, 2).notNullable(); // price at time of order
     table.decimal("total_price", 10, 2).notNullable();
     table.text("special_requests").nullable();
-    
+
     table.index("order_id", "idx_order_items_order");
     table.index("product_id", "idx_order_items_product");
   });

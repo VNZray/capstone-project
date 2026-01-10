@@ -1,5 +1,5 @@
 
-const { createRolePermissionProcedures, dropRolePermissionProcedures } = require("../procedures/auth/permissionProcedures.js").default;
+const { createRolePermissionProcedures, dropRolePermissionProcedures } = require("../procedures/auth/permission.procedures.cjs");
 
 exports.up = async function(knex) {
   await knex.schema.createTable('role_permissions', (table) => {

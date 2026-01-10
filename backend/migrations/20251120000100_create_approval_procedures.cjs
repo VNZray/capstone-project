@@ -1,4 +1,4 @@
-const { createTouristSpotApprovalProcedures, dropTouristSpotApprovalProcedures } = require('../procedures/approvalProcedures');
+const { createTouristSpotApprovalProcedures, dropTouristSpotApprovalProcedures } = require('../procedures/approval/approval.procedures.cjs');
 
 exports.up = async function(knex) {
   await createTouristSpotApprovalProcedures(knex);

@@ -1,6 +1,6 @@
 import express from 'express';
-import * as approvalController from '../controller/approvalController.js';
-import { getApprovalRecords } from '../controller/approvalRecordController.js';
+import * as approvalController from '../controller/approval/approvalController.js';
+import { getApprovalRecords } from '../controller/approval/approvalRecordController.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { authorizeRole, authorize, authorizeAny } from '../middleware/authorizeRole.js';
 

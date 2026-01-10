@@ -1,5 +1,5 @@
 import express from "express";
-import * as serviceInquiryController from "../controller/serviceInquiryController.js";
+import * as serviceInquiryController from "../controller/service/serviceInquiryController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeRole, authorize, authorizeBusinessAccess } from "../middleware/authorizeRole.js";
 

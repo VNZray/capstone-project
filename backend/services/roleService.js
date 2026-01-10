@@ -1,14 +1,14 @@
 /**
  * Role Service - Simplified RBAC
- * 
+ *
  * Simple role system with 5 fixed roles:
  * - Admin, Tourism Officer, Business Owner, Tourist, Staff
- * 
+ *
  * All roles are system roles. Staff permissions are managed at the USER level,
  * not role level. Business access is determined by staff.business_id.
- * 
+ *
  * See permissionService.js for user permission management.
- * 
+ *
  * @module services/roleService
  */
 
@@ -93,7 +93,7 @@ export async function getRoleById(roleId) {
 export async function getRoleWithPermissions(roleId) {
   const role = await getRoleById(roleId);
   if (!role) return null;
-  
+
   const [permissions] = await db.query(
     `SELECT p.id, p.name, p.description, p.scope, pc.name AS category_name
      FROM role_permissions rp
@@ -103,7 +103,7 @@ export async function getRoleWithPermissions(roleId) {
      ORDER BY pc.sort_order, p.name`,
     [roleId]
   );
-  
+
   return {
     ...role,
     permissions: permissions || []
@@ -116,38 +116,59 @@ export async function getRoleWithPermissions(roleId) {
 
 /**
  * Get all permission categories
+ * @param {string|null} portal - Filter by portal ('business', 'tourism', or null for shared/all)
  * @returns {Promise<Array>}
  */
-export async function getPermissionCategories() {
-  const [rows] = await db.query(
-    `SELECT * FROM permission_categories ORDER BY sort_order`
-  );
+export async function getPermissionCategories(portal = null) {
+  let query = `SELECT * FROM permission_categories`;
+  const params = [];
+
+  if (portal) {
+    query += ` WHERE portal = ? OR portal = 'shared'`;
+    params.push(portal);
+  }
+
+  query += ` ORDER BY sort_order`;
+
+  const [rows] = await db.query(query, params);
   return rows || [];
 }
 
 /**
  * Get permissions grouped by category
  * @param {string|null} scope - Filter by scope ('system', 'business', or null for all)
+ * @param {string|null} portal - Filter by portal ('business', 'tourism', or null for all)
  * @returns {Promise<Array>}
  */
-export async function getPermissionsGroupedByCategory(scope = null) {
+export async function getPermissionsGroupedByCategory(scope = null, portal = null) {
   let query = `
     SELECT p.id, p.name, p.description, p.scope,
-           pc.id AS category_id, pc.name AS category_name, pc.sort_order
+           pc.id AS category_id, pc.name AS category_name, pc.sort_order, pc.portal
     FROM permissions p
     LEFT JOIN permission_categories pc ON pc.id = p.category_id
   `;
-  
+
   const params = [];
+  const conditions = [];
+
   if (scope && scope !== 'all') {
-    query += ` WHERE p.scope = ? OR p.scope = 'all'`;
+    conditions.push(`(p.scope = ? OR p.scope = 'all')`);
     params.push(scope);
   }
-  
+
+  if (portal) {
+    conditions.push(`(pc.portal = ? OR pc.portal = 'shared')`);
+    params.push(portal);
+  }
+
+  if (conditions.length > 0) {
+    query += ` WHERE ` + conditions.join(' AND ');
+  }
+
   query += ` ORDER BY pc.sort_order, p.name`;
-  
+
   const [rows] = await db.query(query, params);
-  
+
   // Group by category
   const grouped = {};
   for (const row of rows) {
@@ -167,7 +188,7 @@ export async function getPermissionsGroupedByCategory(scope = null) {
       scope: row.scope
     });
   }
-  
+
   return Object.values(grouped).sort((a, b) => a.sort_order - b.sort_order);
 }
 
@@ -183,7 +204,7 @@ export async function getPermissionsGroupedByCategory(scope = null) {
  */
 export async function assignPermissionsToRole(roleId, permissionIds) {
   if (!permissionIds || permissionIds.length === 0) return;
-  
+
   const values = permissionIds.map(pid => [roleId, pid]);
   await db.query(
     `INSERT IGNORE INTO role_permissions (user_role_id, permission_id) VALUES ?`,
@@ -198,7 +219,7 @@ export async function assignPermissionsToRole(roleId, permissionIds) {
  */
 export async function removePermissionsFromRole(roleId, permissionIds) {
   if (!permissionIds || permissionIds.length === 0) return;
-  
+
   const placeholders = permissionIds.map(() => '?').join(',');
   await db.query(
     `DELETE FROM role_permissions WHERE user_role_id = ? AND permission_id IN (${placeholders})`,
@@ -213,7 +234,7 @@ export async function removePermissionsFromRole(roleId, permissionIds) {
  */
 export async function setRolePermissions(roleId, permissionIds) {
   await db.query(`DELETE FROM role_permissions WHERE user_role_id = ?`, [roleId]);
-  
+
   if (permissionIds && permissionIds.length > 0) {
     await assignPermissionsToRole(roleId, permissionIds);
   }
@@ -227,21 +248,21 @@ export default {
   // Constants
   STAFF_ROLE_ID,
   ROLE_NAMES,
-  
+
   // Role helpers
   isPlatformRole,
   isStaffRole,
   getStaffRoleId,
-  
+
   // Role retrieval
   getSystemRoles,
   getRoleById,
   getRoleWithPermissions,
-  
+
   // Permission categories
   getPermissionCategories,
   getPermissionsGroupedByCategory,
-  
+
   // Role permission management (system roles only - not Staff)
   assignPermissionsToRole,
   removePermissionsFromRole,
