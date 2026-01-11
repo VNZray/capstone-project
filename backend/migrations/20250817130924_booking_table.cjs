@@ -39,11 +39,7 @@ exports.up = async function (knex) {
       .notNullable()
       .defaultTo("online");
 
-    // Guest info for walk-in guests who may not have tourist account
-    table.string("guest_name", 100).nullable();
-    table.string("guest_phone", 20).nullable();
-    table.string("guest_email", 100).nullable();
-
+    // Foreign keys
     table
       .uuid("room_id")
       .notNullable()
@@ -58,10 +54,16 @@ exports.up = async function (knex) {
       .onDelete("CASCADE");
     table
       .uuid("tourist_id")
-      .notNullable()
+      .nullable()
       .references("id")
       .inTable("tourist")
       .onDelete("CASCADE");
+    table
+      .uuid("guest_id")
+      .nullable()
+      .references("id")
+      .inTable("guest")
+      .onDelete("SET NULL");
 
     // Timestamps
     table.timestamp("created_at").defaultTo(knex.fn.now());

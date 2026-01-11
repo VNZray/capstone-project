@@ -239,7 +239,7 @@ async function createUserProcedures(knex) {
 
       -- Loop through the JSON array and insert each permission
       WHILE v_idx < v_length DO
-        SET v_permission_id = JSON_VALUE(p_permission_ids, CONCAT('$[', v_idx, ']'));
+        SET v_permission_id = JSON_UNQUOTE(JSON_EXTRACT(p_permission_ids, CONCAT('$[', v_idx, ']')));
 
         INSERT IGNORE INTO user_permissions (user_id, permission_id, granted_by)
         VALUES (p_user_id, v_permission_id, p_granted_by);

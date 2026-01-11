@@ -8,7 +8,7 @@ const eventProcedures = require("../procedures/event/events-procedures.cjs");
 exports.up = async function(knex) {
   // Create event_categories table first
   await knex.schema.createTable('event_categories', function(table) {
-    table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
+    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     table.string('name', 100).notNullable().unique();
     table.text('description').nullable();
     table.string('icon', 50).nullable();
@@ -20,7 +20,7 @@ exports.up = async function(knex) {
 
   // Create events table
   await knex.schema.createTable('events', function(table) {
-    table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
+    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     table.string('name', 255).notNullable();
     table.text('description').nullable();
     table.uuid('category_id').nullable().references('id').inTable('event_categories').onDelete('SET NULL').onUpdate('CASCADE');
@@ -90,7 +90,7 @@ exports.up = async function(knex) {
 
   // Create event_images table for additional event images
   await knex.schema.createTable('event_images', function(table) {
-    table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
+    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     table.uuid('event_id').notNullable().references('id').inTable('events').onDelete('CASCADE').onUpdate('CASCADE');
     table.string('file_url', 500).notNullable();
     table.string('file_format', 20).nullable();

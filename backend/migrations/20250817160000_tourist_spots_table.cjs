@@ -1,6 +1,6 @@
 exports.up = async function(knex) {
   await knex.schema.createTable('tourist_spots', function(table) {
-    table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
+    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     table.string('name', 255).notNullable();
     table.text('description').notNullable();
     table.integer('barangay_id').unsigned().notNullable().references('id').inTable('barangay').onDelete('RESTRICT').onUpdate('CASCADE');

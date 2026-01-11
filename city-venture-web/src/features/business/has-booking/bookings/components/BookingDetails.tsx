@@ -155,6 +155,24 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
 
   useEffect(() => {
     const loadGuestInfo = async () => {
+      // First check if guest info is already in the booking (walk-in guest)
+      if (booking?.guest_first_name || booking?.guest_last_name) {
+        const nameParts = [
+          booking.guest_first_name,
+          booking.guest_middle_name,
+          booking.guest_last_name,
+        ].filter(Boolean);
+
+        setGuestInfo({
+          name: nameParts.join(" ") || "Guest",
+          email: booking.guest_email,
+          phone: booking.guest_phone_number,
+          user_profile: undefined, // Walk-in guests don't have profiles
+        });
+        return;
+      }
+
+      // Otherwise, load from tourist_id
       if (!booking?.tourist_id) return;
       try {
         const tourist = await fetchTourist(booking.tourist_id);
@@ -194,7 +212,14 @@ const BookingDetails: React.FC<BookingDetailsProps> = ({
       loadGuestInfo();
       loadRoomInfo();
     }
-  }, [booking?.tourist_id, booking?.room_id, open]);
+  }, [
+    booking?.tourist_id,
+    booking?.guest_id,
+    booking?.guest_first_name,
+    booking?.guest_last_name,
+    booking?.room_id,
+    open,
+  ]);
 
   const avatarSrc = useMemo(() => {
     const raw = (guestInfo?.user_profile ?? "").toString().trim();

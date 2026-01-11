@@ -20,6 +20,7 @@ interface TransactionRow {
   name: string; // guest name from booking
   firstName?: string; // extracted first name
   lastName?: string; // extracted last name
+  user_profile?: string; // tourist profile picture
   payment_type: string;
   payment_method: string;
   payment_for: string;
@@ -51,10 +52,10 @@ const Transactions = () => {
         label: "Guest Name",
         minWidth: 180,
         render: (row) => {
-          const nameParts = (row.name || "—").split(" ");
           const guest: GuestInfo = {
-            firstName: nameParts[0] || "",
-            lastName: nameParts[nameParts.length - 1] || "",
+            firstName: row.firstName || "",
+            lastName: row.lastName || "",
+            user_profile: row.user_profile,
           };
 
           return <GuestAvatar guest={guest} size={32} />;
@@ -116,6 +117,9 @@ const Transactions = () => {
           id: String(p.payment_id ?? p.id ?? ""),
           booking_id: String(p.booking_id ?? ""),
           name: [p.first_name, p.last_name].filter(Boolean).join(" ") || "—",
+          firstName: p.first_name || "",
+          lastName: p.last_name || "",
+          user_profile: p.user_profile || undefined,
           payment_type: p.payment_type || "—",
           payment_method: p.payment_method || "—",
           payment_for: p.payment_for || "—",
@@ -216,7 +220,7 @@ const Transactions = () => {
           justify="space-between"
           align="center"
           gap="16px"
-          style={{flexWrap: 'wrap'}}
+          style={{ flexWrap: "wrap" }}
         >
           <Input
             startDecorator={<Search />}

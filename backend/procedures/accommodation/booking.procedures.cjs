@@ -11,7 +11,16 @@ async function createProcedures(knex) {
   await knex.raw(`
         CREATE PROCEDURE GetBookingById(IN p_id CHAR(64))
         BEGIN
-            SELECT * FROM booking WHERE id = p_id;
+            SELECT
+              b.*,
+              g.first_name as guest_first_name,
+              g.middle_name as guest_middle_name,
+              g.last_name as guest_last_name,
+              g.email as guest_email,
+              g.phone_number as guest_phone_number
+            FROM booking b
+            LEFT JOIN guest g ON b.guest_id = g.id
+            WHERE b.id = p_id;
         END;
     `);
 
@@ -27,7 +36,16 @@ async function createProcedures(knex) {
   await knex.raw(`
         CREATE PROCEDURE GetBookingsByRoomId(IN p_room_id CHAR(64))
         BEGIN
-            SELECT * FROM booking WHERE room_id = p_room_id;
+            SELECT
+              b.*,
+              g.first_name as guest_first_name,
+              g.middle_name as guest_middle_name,
+              g.last_name as guest_last_name,
+              g.email as guest_email,
+              g.phone_number as guest_phone_number
+            FROM booking b
+            LEFT JOIN guest g ON b.guest_id = g.id
+            WHERE b.room_id = p_room_id;
         END;
     `);
 
@@ -64,22 +82,29 @@ async function createProcedures(knex) {
             IN p_tourist_id CHAR(64),
             IN p_business_id CHAR(64),
             IN p_booking_source ENUM('online','walk-in'),
-            IN p_guest_name VARCHAR(100),
-            IN p_guest_phone VARCHAR(20),
-            IN p_guest_email VARCHAR(100)
+            IN p_guest_id CHAR(64)
         )
         BEGIN
             INSERT INTO booking (
                 id, pax, num_children, num_adults, num_infants, foreign_counts, domestic_counts, overseas_counts, local_counts,
                 trip_purpose, booking_type, check_in_date, check_out_date, check_in_time, check_out_time, total_price, balance,
-                booking_status, room_id, tourist_id, business_id, booking_source, guest_name, guest_phone, guest_email
+                booking_status, room_id, tourist_id, business_id, booking_source, guest_id
             ) VALUES (
                 p_id, p_pax, p_num_children, p_num_adults, p_num_infants, p_foreign_counts, p_domestic_counts, p_overseas_counts, p_local_counts,
                 p_trip_purpose, p_booking_type, p_check_in_date, p_check_out_date, p_check_in_time, p_check_out_time, p_total_price, p_balance,
                 p_booking_status, p_room_id, p_tourist_id, p_business_id,
-                IFNULL(p_booking_source, 'online'), p_guest_name, p_guest_phone, p_guest_email
+                IFNULL(p_booking_source, 'online'), p_guest_id
             );
-            SELECT * FROM booking WHERE id = p_id;
+            SELECT
+              b.*,
+              g.first_name as guest_first_name,
+              g.middle_name as guest_middle_name,
+              g.last_name as guest_last_name,
+              g.email as guest_email,
+              g.phone_number as guest_phone_number
+            FROM booking b
+            LEFT JOIN guest g ON b.guest_id = g.id
+            WHERE b.id = p_id;
         END;
     `);
 
@@ -108,9 +133,7 @@ async function createProcedures(knex) {
             IN p_tourist_id CHAR(64),
             IN p_business_id CHAR(64),
             IN p_booking_source ENUM('online','walk-in'),
-            IN p_guest_name VARCHAR(100),
-            IN p_guest_phone VARCHAR(20),
-            IN p_guest_email VARCHAR(100)
+            IN p_guest_id CHAR(64)
         )
         BEGIN
             UPDATE booking
@@ -136,9 +159,7 @@ async function createProcedures(knex) {
                 tourist_id = IFNULL(p_tourist_id, tourist_id),
                 business_id = IFNULL(p_business_id, business_id),
                 booking_source = IFNULL(p_booking_source, booking_source),
-                guest_name = IFNULL(p_guest_name, guest_name),
-                guest_phone = IFNULL(p_guest_phone, guest_phone),
-                guest_email = IFNULL(p_guest_email, guest_email)
+                guest_id = IFNULL(p_guest_id, guest_id)
             WHERE id = p_id;
             SELECT * FROM booking WHERE id = p_id;
         END;
