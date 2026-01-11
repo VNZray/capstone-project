@@ -256,3 +256,17 @@ export const rejectDeletionRequest = async (req, res) => {
     return handleDbError(error, res);
   }
 };
+
+// ===== EVENTS APPROVAL =====
+
+// Get all pending events
+export const getPendingEvents = async (req, res) => {
+};
+
+// Approve event
+export const approveEvent = async (req, res) => {
+};
+
+// Reject event
+export const rejectEvent = async (req, res) => {
+};
