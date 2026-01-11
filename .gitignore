@@ -29,3 +29,5 @@ city-venture/components/ui/TYPESCRIPT_NOTES.md
 .paymongo-md/
 .copilot-tracking/
 .gemini/
+DEPLOYMENT.md
+city-venture-web/.env.production
