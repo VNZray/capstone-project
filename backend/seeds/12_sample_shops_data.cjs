@@ -65,7 +65,8 @@ exports.seed = async function (knex) {
     business_image: 'https://example.com/grocery-store.jpg', // Placeholder image
     latitude: '13.6219',
     longitude: '123.1950',
-    hasBooking: false
+    hasBooking: false,
+    hasStore: true,
   };
 
   await knex('business').insert(shopBusiness);
