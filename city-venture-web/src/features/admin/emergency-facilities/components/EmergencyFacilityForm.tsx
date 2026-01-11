@@ -5,9 +5,6 @@
 
 import { useState, useEffect } from "react";
 import {
-  Modal,
-  ModalDialog,
-  ModalClose,
   FormControl,
   FormLabel,
   Input,
@@ -19,7 +16,7 @@ import {
   FormHelperText,
 } from "@mui/joy";
 import Typography from "@/src/components/Typography";
-import Button from "@/src/components/Button";
+import BaseModal from "@/src/components/BaseModal";
 import MapInput from "@/src/components/MapInput";
 import { AddressService } from "@/src/services/AddressService";
 import type {
@@ -255,21 +252,29 @@ export default function EmergencyFacilityForm({
   };
 
   return (
-    <Modal open={isOpen} onClose={onClose}>
-      <ModalDialog
-        sx={{
-          width: "100%",
-          maxWidth: 700,
-          maxHeight: "90vh",
-          overflow: "auto",
-        }}
-      >
-        <ModalClose />
-        <Typography.CardTitle>
-          {initialData ? "Edit Emergency Facility" : "Add Emergency Facility"}
-        </Typography.CardTitle>
-
-        <Stack spacing={2} sx={{ mt: 2 }}>
+    <BaseModal
+      open={isOpen}
+      onClose={onClose}
+      title={initialData ? "Edit Emergency Facility" : "Add Emergency Facility"}
+      maxWidth={580}
+      size="md"
+      actions={[
+        {
+          label: "Cancel",
+          onClick: onClose,
+          variant: "outlined",
+          disabled: isLoading,
+        },
+        {
+          label: initialData ? "Update Facility" : "Create Facility",
+          onClick: handleSubmit,
+          disabled: isLoading,
+          colorScheme: "primary",
+        },
+      ]}
+    >
+      <Box sx={{ padding: 3 }}>
+        <Stack spacing={2}>
           {/* Basic Information */}
           <Box>
             <Typography.Label sx={{ mb: 1 }}>
@@ -521,23 +526,8 @@ export default function EmergencyFacilityForm({
               </FormControl>
             </Stack>
           </Box>
-
-          {/* Actions */}
-          <Stack
-            direction="row"
-            spacing={2}
-            justifyContent="flex-end"
-            sx={{ mt: 2 }}
-          >
-            <Button variant="outlined" onClick={onClose} disabled={isLoading}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} loading={isLoading}>
-              {initialData ? "Update" : "Create"} Facility
-            </Button>
-          </Stack>
         </Stack>
-      </ModalDialog>
-    </Modal>
+      </Box>
+    </BaseModal>
   );
 }
