@@ -16,7 +16,6 @@ import {
   Users,
   BriefcaseBusiness,
   Settings,
-  Shield,
   AlertCircle,
 } from "lucide-react";
 import "@/src/components/Admin/Sidebar.css";
@@ -141,7 +140,7 @@ export default function Sidebar({
             icon={<Users size={24} color="white" />}
             onClick={onClose}
           />
-          {/* Dropdown for Staff 
+          {/* Dropdown for Staff
           {canAny("manage_users", "manage_tourism_staff") && (
             <DropdownNavItem
               label="Staffs"

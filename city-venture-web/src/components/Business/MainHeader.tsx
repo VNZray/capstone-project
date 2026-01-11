@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Box } from "@mui/material";
-import { Bell, Repeat, ArrowLeft, Menu } from "lucide-react";
+import { Bell, Repeat, Menu } from "lucide-react";
 import { useAuth } from "@/src/context/AuthContext";
 import Button from "@/src/components/Button";
 import IconButton from "@/src/components/IconButton";
@@ -9,21 +9,6 @@ import Typography from "@/src/components/Typography";
 import Container from "@/src/components/Container";
 import NotificationPopup from "./NotificationPopup";
 import type { Notification } from "./NotificationPopup";
-// const pageTitles: Record<string, string> = {
-//   "/business/dashboard": "Dashboard",
-//   "/business/transactions": "Transactions",
-//   "/business/business-profile": "Business Profile",
-//   "/business/manage-promotion": "Manage Promotion",
-//   "/business/reports": "Reports",
-//   "/business/profile": "Profile",
-//   "/business": "Business Profile",
-//   "/business/reviews": "Reviews & Ratings",
-//   "/business/bookings": "Bookings",
-//   "/business/rooms": "Manage Rooms",
-//   "/business/offers": "Manage Offers",
-//   "/business/room-profile": "Manage Room",
-//   "/business/owner-profile": "Owner Profile",
-// };
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import { Link } from "@mui/joy";
 interface MainHeaderProps {
