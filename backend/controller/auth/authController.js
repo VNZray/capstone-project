@@ -14,7 +14,7 @@ const cookieOptions = {
 export async function login(req, res) {
   try {
     const { email, password, client } = req.body || {};
-    
+
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
@@ -34,9 +34,9 @@ export async function login(req, res) {
     if (client === 'web') {
       res.cookie(COOKIE_NAME, refreshToken, cookieOptions);
       // Do NOT return refreshToken in body for web
-      return res.json({ 
+      return res.json({
         message: 'Login successful',
-        accessToken, 
+        accessToken,
         user: userResponse,
       });
     }
@@ -51,22 +51,22 @@ export async function login(req, res) {
 
   } catch (error) {
     console.error('Login error:', error);
-    
+
     // Handle specific error codes
     if (error.code === 'ACCOUNT_NOT_VERIFIED') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: error.message,
         code: 'ACCOUNT_NOT_VERIFIED'
       });
     }
-    
+
     if (error.code === 'ACCOUNT_DISABLED') {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: error.message,
         code: 'ACCOUNT_DISABLED'
       });
     }
-    
+
     // SECURITY: Always return 401 for auth failures with generic message
     // Do not reveal whether email exists or password was wrong
     const isAuthError = error.message === 'Invalid email or password';
@@ -113,9 +113,9 @@ export async function refresh(req, res) {
 export async function logout(req, res) {
   try {
     const refreshToken = req.cookies?.[COOKIE_NAME] || req.body?.refreshToken;
-    
+
     await authService.logout(refreshToken);
-    
+
     res.clearCookie(COOKIE_NAME);
     return res.json({ message: 'Logged out successfully' });
   } catch (error) {

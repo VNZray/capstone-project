@@ -18,6 +18,7 @@ import { useEffect } from "react";
 import ImageUpload from "@/src/components/ImageUpload";
 import Alert from "@/src/components/Alert";
 import BaseEditModal from "@/src/components/BaseEditModal";
+import BaseModal from "@/src/components/BaseModal";
 interface AddRoomModalProps {
   business_name?: string;
   open: boolean;
@@ -218,16 +219,18 @@ export default function AddRoomModal({
 
   return (
     <>
-      <BaseEditModal
+      <BaseModal
         open={open}
         onClose={onClose}
         title="Add New Room"
+        description="Fill in the details below to add a new room to your business."
+        maxWidth={580}
         actions={[
-          { label: "Cancel", onClick: onClose },
+          { label: "Cancel", onClick: onClose, variant: "soft" },
           {
             label: "Save",
             onClick: handleSave,
-            variant: "primary",
+            variant: "solid",
           },
         ]}
       >
@@ -236,6 +239,7 @@ export default function AddRoomModal({
             e.preventDefault();
             handleSave();
           }}
+          style={{ padding: 20 }}
         >
           <Stack spacing={2}>
             {error && (
@@ -486,7 +490,7 @@ export default function AddRoomModal({
             </FormControl>
           </Stack>
         </form>
-      </BaseEditModal>
+      </BaseModal>
 
       {/* Alert Dialog */}
       <Alert

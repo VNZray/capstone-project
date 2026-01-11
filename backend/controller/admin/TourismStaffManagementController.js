@@ -48,6 +48,7 @@ export async function createTourismStaff(req, res) {
     is_verified = true,
     is_active = true,
     barangay_id = null,
+    permission_ids = [],
   } = req.body || {};
 
   if (!email || !phone_number || !first_name || !last_name) {
@@ -106,6 +107,16 @@ export async function createTourismStaff(req, res) {
       const insertedTourism = tRows?.[0]?.[0];
       if (!insertedTourism) throw new Error("Failed to insert tourism profile");
 
+      // Insert permissions if provided
+      if (Array.isArray(permission_ids) && permission_ids.length > 0) {
+        for (const permissionId of permission_ids) {
+          await conn.query(
+            "INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE user_id=user_id",
+            [userId, permissionId]
+          );
+        }
+      }
+
       await conn.commit();
 
       return res.status(201).json({
@@ -152,6 +163,7 @@ export async function updateTourismStaff(req, res) {
     is_verified,
     is_active,
     barangay_id,
+    permission_ids,
   } = req.body || {};
 
   try {
@@ -207,6 +219,22 @@ export async function updateTourismStaff(req, res) {
       const [tRows] = await conn.query("CALL UpdateTourism(?,?,?,?,?,?)", tourismParams);
       const updatedTourism = tRows?.[0]?.[0];
       if (!updatedTourism) throw new Error("Failed to update tourism profile");
+
+      // Update permissions if provided
+      if (Array.isArray(permission_ids)) {
+        // Delete existing permissions
+        await conn.query("DELETE FROM user_permissions WHERE user_id = ?", [userId]);
+
+        // Insert new permissions
+        if (permission_ids.length > 0) {
+          for (const permissionId of permission_ids) {
+            await conn.query(
+              "INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?)",
+              [userId, permissionId]
+            );
+          }
+        }
+      }
 
       await conn.commit();
       return res.json({ message: "Tourism staff updated", user: updatedUser, tourism: updatedTourism });
@@ -295,3 +323,69 @@ export async function deleteTourismStaff(req, res) {
     return handleDbError(error, res);
   }
 }
+
+// Get permissions for a tourism staff member
+export async function getTourismStaffPermissions(req, res) {
+  const { userId } = req.params;
+  try {
+    const [rows] = await db.query(
+      `SELECT p.id, p.name, p.description, p.scope
+       FROM user_permissions up
+       JOIN permissions p ON up.permission_id = p.id
+       WHERE up.user_id = ?
+       ORDER BY p.name`,
+      [userId]
+    );
+    return res.json(rows || []);
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+
+// Get available permissions for tourism staff (system-scoped)
+export async function getAvailableTourismPermissions(req, res) {
+  try {
+    const [rows] = await db.query(
+      `SELECT
+        pc.id as category_id,
+        pc.name as category_name,
+        pc.description as category_description,
+        pc.portal,
+        pc.sort_order,
+        p.id as permission_id,
+        p.name as permission_name,
+        p.description as permission_description,
+        p.scope
+       FROM permission_categories pc
+       LEFT JOIN permissions p ON p.category_id = pc.id AND p.scope = 'system'
+       WHERE p.id IS NOT NULL
+         AND (pc.portal = 'tourism' OR pc.portal = 'shared')
+       ORDER BY pc.sort_order, pc.name, p.name`
+    );
+
+    // Group permissions by category
+    const categories = {};
+    for (const row of rows) {
+      if (!categories[row.category_id]) {
+        categories[row.category_id] = {
+          category_id: row.category_id,
+          category_name: row.category_name,
+          sort_order: row.sort_order,
+          permissions: [],
+        };
+      }
+      categories[row.category_id].permissions.push({
+        id: row.permission_id,
+        name: row.permission_name,
+        description: row.permission_description,
+        scope: row.scope,
+        category_name: row.category_name,
+      });
+    }
+
+    return res.json(Object.values(categories));
+  } catch (error) {
+    return handleDbError(error, res);
+  }
+}
+

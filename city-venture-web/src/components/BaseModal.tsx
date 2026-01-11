@@ -136,6 +136,7 @@ export default function BaseModal({
               alignItems: "center",
               justifyContent: "space-between",
               gap: 2,
+              backgroundColor: colors.primary,
             }}
           >
             {headerContent || (

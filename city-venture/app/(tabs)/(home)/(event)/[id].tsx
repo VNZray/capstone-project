@@ -1,591 +1,250 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Image,
+  Pressable,
+  Linking,
+  Platform,
+} from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import EventProfileSkeleton from '@/components/skeleton/EventProfileSkeleton';
+import { useEvent, useEventImages, useEventLocations } from '@/query/eventQuery';
+import Container from '@/components/Container';
+import Chip from '@/components/Chip';
+import { MapView, Marker } from '@/components/map/MapWrapper';
+import PageContainer from '@/components/PageContainer';
+import { Tab, TabContainer } from '@/components/ui/Tabs';
+import FeedbackService from '@/services/FeedbackService';
+import EventRatings from './components/EventRatings';
 
 type TabType = 'details' | 'ratings';
 
+const formatTime = (t?: string | null) => {
+  if (!t) return '';
+  const [hStr, mStr] = t.split(':');
+  const h24 = parseInt(hStr || '0', 10);
+  const m = (mStr || '00').padStart(2, '0');
+  const suffix = h24 >= 12 ? 'PM' : 'AM';
+  let h12 = h24 % 12;
+  if (h12 === 0) h12 = 12;
+  return `${h12}:${m} ${suffix}`;
+};
+
+const formatDate = (dateStr?: string | null): string => {
+  if (!dateStr) return 'Date TBD';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const formatDateRange = (startDate?: string, endDate?: string): string => {
+  if (!startDate) return 'Date TBD';
+  const start = formatDate(startDate);
+  if (endDate && endDate !== startDate) return `${start} - ${formatDate(endDate)}`;
+  return start;
+};
+
 const EventProfileScreen = () => {
   const params = useLocalSearchParams();
+  const eventId = params.id as string;
+  const navigation = useNavigation();
   const colors = Colors.light;
 
-  const [loading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('details');
+  const [averageRating, setAverageRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
+  const [ratingsRefreshKey, setRatingsRefreshKey] = useState(0);
 
-  // Mock event data - replace with actual API call using params.id
-  const eventData = {
-    id: params.id as string,
-    name: 'City Lights Music Fest',
-    image:
-      'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=700&q=80',
-    date: 'Nov 24, 2024',
-    time: '7:00 PM',
-    location: 'Plaza Quezon, Naga City',
-    category: 'Music Festival',
-    organizer: 'Naga City Tourism Office',
-    description:
-      'Join us for an unforgettable evening of live music featuring local and international artists. Experience the best of city nightlife under the stars with food, drinks, and amazing performances.',
-    price: 'Free Entry',
-    capacity: '5,000 people',
-    contact: '+63 123 456 7890',
-    email: 'events@nagacity.gov.ph',
+  const { data: event, isLoading } = useEvent(eventId);
+  const { data: images = [] } = useEventImages(eventId);
+  const { data: locations = [] } = useEventLocations(eventId);
+
+  useEffect(() => {
+    if (event?.name) navigation.setOptions({ headerTitle: event.name });
+  }, [navigation, event?.name]);
+
+  useEffect(() => {
+    const fetchRating = async () => {
+      if (eventId) {
+        try {
+          const avg = await FeedbackService.getAverageRating('event', eventId);
+          const total = await FeedbackService.getTotalReviews('event', eventId);
+          setAverageRating(avg);
+          setTotalReviews(total);
+        } catch (error) {
+          console.error('Error fetching rating:', error);
+        }
+      }
+    };
+    fetchRating();
+  }, [eventId, ratingsRefreshKey]);
+
+  const primaryImage = useMemo(() => {
+    if (images.length > 0) return images.find((img) => img.is_primary) || images[0];
+    if (event?.images?.length) return event.images.find((img) => img.is_primary) || event.images[0];
+    return null;
+  }, [images, event?.images]);
+
+  const otherImages = useMemo(() => {
+    if (images.length > 0) return images.filter((img) => img.id !== primaryImage?.id);
+    return [];
+  }, [images, primaryImage?.id]);
+
+  const primaryLocation = useMemo(() => {
+    if (locations.length > 0) return locations.find((loc) => loc.is_primary) || locations[0];
+    if (event?.latitude && event?.longitude) {
+      return { venue_name: event.venue_name, latitude: event.latitude, longitude: event.longitude, municipality_name: event.municipality_name, province_name: event.province_name };
+    }
+    return null;
+  }, [locations, event]);
+
+  const latitude = primaryLocation?.latitude ? (typeof primaryLocation.latitude === 'string' ? parseFloat(primaryLocation.latitude) : primaryLocation.latitude) : undefined;
+  const longitude = primaryLocation?.longitude ? (typeof primaryLocation.longitude === 'string' ? parseFloat(primaryLocation.longitude) : primaryLocation.longitude) : undefined;
+  const hasCoords = latitude != null && !isNaN(latitude) && longitude != null && !isNaN(longitude);
+
+  const handleTabChange = (tab: string) => setActiveTab(tab as TabType);
+  const handleRatingsRefresh = () => {
+    setRatingsRefreshKey((prev) => prev + 1);
+    // Refresh rating stats
+    if (eventId) {
+      FeedbackService.getAverageRating('event', eventId).then(setAverageRating);
+      FeedbackService.getTotalReviews('event', eventId).then(setTotalReviews);
+    }
   };
+  const handleDirections = () => latitude && longitude && Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
+  const handleCall = () => event?.contact_phone && Linking.openURL(`tel:${event.contact_phone}`);
+  const handleEmail = () => event?.contact_email && Linking.openURL(`mailto:${event.contact_email}`);
+  const handleWebsite = () => event?.website && Linking.openURL(event.website.startsWith('http') ? event.website : `https://${event.website}`);
+  const handleRegistration = () => event?.registration_url && Linking.openURL(event.registration_url.startsWith('http') ? event.registration_url : `https://${event.registration_url}`);
 
-  const handleShare = () => {
-    console.log('Share event');
-  };
+  if (isLoading) return <EventProfileSkeleton />;
+  if (!event) return (
+    <View style={styles.notFoundContainer}>
+      <ThemedText type="title-large">Event not found.</ThemedText>
+      <ThemedText type="sub-title-large" style={{ textAlign: 'center' }}>Please go back and select a valid event.</ThemedText>
+    </View>
+  );
 
-  const handleDirections = () => {
-    console.log('Get directions');
-  };
-
-  const handleCalendar = () => {
-    console.log('Add to calendar');
-  };
-
-  const handleCall = () => {
-    console.log('Call organizer');
-  };
-
-  if (loading) {
-    return <EventProfileSkeleton />;
-  }
+  const imageUrl = primaryImage?.file_url || event.cover_image_url || 'https://via.placeholder.com/400x300?text=Event';
+  const locationDisplay = [primaryLocation?.venue_name || event.venue_name, primaryLocation?.municipality_name || event.municipality_name, primaryLocation?.province_name || event.province_name].filter(Boolean).join(', ');
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Hero Image */}
-      <View style={styles.heroContainer}>
-        <Image
-          source={{ uri: eventData.image }}
-          style={styles.heroImage}
-          resizeMode="cover"
-        />
-        <View
-          style={[styles.overlay, { backgroundColor: 'rgba(0,0,0,0.3)' }]}
-        />
-      </View>
-
-      {/* Event Info Card */}
-      <View style={[styles.infoCard, { backgroundColor: colors.surface }]}>
-        <ThemedText
-          type="title-large"
-          weight="bold"
-          style={[styles.eventName, { color: colors.text }]}
-        >
-          {eventData.name}
-        </ThemedText>
-
-        <View style={styles.categoryBadge}>
-          <MaterialCommunityIcons
-            name="music"
-            size={14}
-            color={colors.accent}
-          />
-          <ThemedText
-            type="label-small"
-            style={[styles.categoryText, { color: colors.accent }]}
-          >
-            {eventData.category}
-          </ThemedText>
-        </View>
-
-        {/* Date & Time Info */}
-        <View style={styles.dateTimeContainer}>
-          <View
-            style={[styles.dateTimeCard, { backgroundColor: colors.surface }]}
-          >
-            <MaterialCommunityIcons
-              name="calendar"
-              size={20}
-              color={colors.tint}
-            />
-            <View>
-              <ThemedText
-                type="label-small"
-                style={{ color: colors.textSecondary }}
-              >
-                Date
-              </ThemedText>
-              <ThemedText
-                type="card-sub-title-small"
-                weight="medium"
-                style={{ color: colors.text }}
-              >
-                {eventData.date}
+    <View style={{ flex: 1 }}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
+        <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+        <Container padding={16} backgroundColor="#fff">
+          <Container padding={0} backgroundColor="transparent" direction="row" justify="space-between">
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <ThemedText type="card-title-medium" weight="bold">{event.name}</ThemedText>
+              <ThemedText type="body-small">{locationDisplay || 'Location TBD'}</ThemedText>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <ThemedText type="body-small">
+                <MaterialCommunityIcons name="star" size={20} color={colors.accent} />
+                {averageRating.toFixed(1)} ({totalReviews})
               </ThemedText>
             </View>
-          </View>
-
-          <View
-            style={[styles.dateTimeCard, { backgroundColor: colors.surface }]}
-          >
-            <MaterialCommunityIcons
-              name="clock-outline"
-              size={20}
-              color={colors.tint}
-            />
-            <View>
-              <ThemedText
-                type="label-small"
-                style={{ color: colors.textSecondary }}
-              >
-                Time
-              </ThemedText>
-              <ThemedText
-                type="card-sub-title-small"
-                weight="medium"
-                style={{ color: colors.text }}
-              >
-                {eventData.time}
-              </ThemedText>
-            </View>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <Pressable
-            style={[styles.actionButton, { backgroundColor: colors.accent }]}
-            onPress={handleCalendar}
-          >
-            <MaterialCommunityIcons
-              name="calendar-plus"
-              size={20}
-              color="#FFF"
-            />
-            <ThemedText type="label-small" style={{ color: '#FFF' }}>
-              Add to Calendar
-            </ThemedText>
-          </Pressable>
-
-          <Pressable
-            style={[
-              styles.iconButton,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-            onPress={handleShare}
-          >
-            <MaterialCommunityIcons
-              name="share-variant"
-              size={20}
-              color={colors.tint}
-            />
-          </Pressable>
-
-          <Pressable
-            style={[
-              styles.iconButton,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-            onPress={handleDirections}
-          >
-            <MaterialCommunityIcons
-              name="directions"
-              size={20}
-              color={colors.tint}
-            />
-          </Pressable>
-
-          <Pressable
-            style={[
-              styles.iconButton,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-            ]}
-            onPress={handleCall}
-          >
-            <MaterialCommunityIcons
-              name="phone"
-              size={20}
-              color={colors.tint}
-            />
-          </Pressable>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          <Pressable
-            style={[
-              styles.tab,
-              activeTab === 'details' && [
-                styles.activeTab,
-                { borderBottomColor: colors.accent },
-              ],
-            ]}
-            onPress={() => setActiveTab('details')}
-          >
-            <ThemedText
-              type="card-sub-title-small"
-              weight={activeTab === 'details' ? 'bold' : 'normal'}
-              style={[
-                styles.tabText,
-                {
-                  color:
-                    activeTab === 'details'
-                      ? colors.accent
-                      : colors.textSecondary,
-                },
-              ]}
-            >
-              Details
-            </ThemedText>
-          </Pressable>
-
-          <Pressable
-            style={[
-              styles.tab,
-              activeTab === 'ratings' && [
-                styles.activeTab,
-                { borderBottomColor: colors.accent },
-              ],
-            ]}
-            onPress={() => setActiveTab('ratings')}
-          >
-            <ThemedText
-              type="card-sub-title-small"
-              weight={activeTab === 'ratings' ? 'bold' : 'normal'}
-              style={[
-                styles.tabText,
-                {
-                  color:
-                    activeTab === 'ratings'
-                      ? colors.accent
-                      : colors.textSecondary,
-                },
-              ]}
-            >
-              Reviews
-            </ThemedText>
-          </Pressable>
-        </View>
-
-        {/* Tab Content */}
-        {activeTab === 'details' ? (
-          <View style={styles.tabContent}>
-            {/* Description */}
-            <View style={styles.section}>
-              <ThemedText
-                type="card-title-small"
-                weight="bold"
-                style={{ color: colors.text }}
-              >
-                About This Event
-              </ThemedText>
-              <ThemedText
-                type="label-medium"
-                style={[styles.description, { color: colors.textSecondary }]}
-              >
-                {eventData.description}
-              </ThemedText>
-            </View>
-
-            {/* Location */}
-            <View style={styles.section}>
-              <ThemedText
-                type="card-title-small"
-                weight="bold"
-                style={{ color: colors.text }}
-              >
-                Location
-              </ThemedText>
-              <View style={styles.infoRow}>
-                <MaterialCommunityIcons
-                  name="map-marker"
-                  size={18}
-                  color={colors.tint}
-                />
-                <ThemedText
-                  type="label-medium"
-                  style={{ color: colors.textSecondary, flex: 1 }}
-                >
-                  {eventData.location}
-                </ThemedText>
-              </View>
-            </View>
-
-            {/* Organizer */}
-            <View style={styles.section}>
-              <ThemedText
-                type="card-title-small"
-                weight="bold"
-                style={{ color: colors.text }}
-              >
-                Organizer
-              </ThemedText>
-              <View style={styles.infoRow}>
-                <MaterialCommunityIcons
-                  name="account-group"
-                  size={18}
-                  color={colors.tint}
-                />
-                <ThemedText
-                  type="label-medium"
-                  style={{ color: colors.textSecondary, flex: 1 }}
-                >
-                  {eventData.organizer}
-                </ThemedText>
-              </View>
-            </View>
-
-            {/* Event Details */}
-            <View style={styles.section}>
-              <ThemedText
-                type="card-title-small"
-                weight="bold"
-                style={{ color: colors.text }}
-              >
-                Event Details
-              </ThemedText>
-              <View style={styles.detailsGrid}>
-                <View style={styles.detailItem}>
-                  <MaterialCommunityIcons
-                    name="ticket"
-                    size={18}
-                    color={colors.tint}
-                  />
-                  <View>
-                    <ThemedText
-                      type="label-small"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      Price
-                    </ThemedText>
-                    <ThemedText
-                      type="label-medium"
-                      weight="medium"
-                      style={{ color: colors.text }}
-                    >
-                      {eventData.price}
-                    </ThemedText>
-                  </View>
+          </Container>
+        </Container>
+        <TabContainer backgroundColor="#fff" initialTab="details" onTabChange={handleTabChange}>
+          <Tab tab="details" label="Details" />
+          <Tab tab="ratings" label="Ratings" />
+        </TabContainer>
+        <View style={styles.tabContent}>
+          {activeTab === 'details' ? (
+            <PageContainer style={{ paddingTop: 0 }}>
+              <Container elevation={2} style={styles.section}>
+                <ThemedText type="card-title-small" weight="medium">Date & Time</ThemedText>
+                <View style={styles.infoRow}>
+                  <MaterialCommunityIcons name="calendar" size={18} color={colors.tint} />
+                  <ThemedText type="body-small" style={{ flex: 1 }}>{formatDateRange(event.start_date, event.end_date)}</ThemedText>
                 </View>
-
-                <View style={styles.detailItem}>
-                  <MaterialCommunityIcons
-                    name="account-multiple"
-                    size={18}
-                    color={colors.tint}
-                  />
-                  <View>
-                    <ThemedText
-                      type="label-small"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      Capacity
-                    </ThemedText>
-                    <ThemedText
-                      type="label-medium"
-                      weight="medium"
-                      style={{ color: colors.text }}
-                    >
-                      {eventData.capacity}
-                    </ThemedText>
+                {(event.start_time || event.end_time) && !event.is_all_day && (
+                  <View style={styles.infoRow}>
+                    <MaterialCommunityIcons name="clock-outline" size={18} color={colors.tint} />
+                    <ThemedText type="body-small" style={{ flex: 1 }}>{formatTime(event.start_time)}{event.end_time ? ` - ${formatTime(event.end_time)}` : ''}</ThemedText>
                   </View>
+                )}
+                {event.is_all_day && <View style={styles.infoRow}><MaterialCommunityIcons name="clock-outline" size={18} color={colors.tint} /><ThemedText type="body-small" style={{ flex: 1 }}>All Day Event</ThemedText></View>}
+              </Container>
+              <Container elevation={2} style={styles.section}>
+                <ThemedText type="card-title-small" weight="medium">Description</ThemedText>
+                <ThemedText type="body-small" style={{ marginTop: 4 }}>{event.description || 'No description provided.'}</ThemedText>
+              </Container>
+              <Container elevation={2} style={styles.section}>
+                <ThemedText type="card-title-small" weight="medium">Category</ThemedText>
+                {event.category_name ? <View style={styles.chipRow}><Chip label={event.category_name} variant="solid" size="medium" /></View> : <ThemedText type="body-small" style={{ color: '#6A768E', marginTop: 4 }}>No category.</ThemedText>}
+              </Container>
+              <Container elevation={2} style={styles.section}>
+                <ThemedText type="card-title-small" weight="medium">Event Details</ThemedText>
+                <View style={{ marginTop: 4, gap: 8 }}>
+                  <View style={styles.infoRow}><MaterialCommunityIcons name="ticket" size={18} color={colors.tint} /><ThemedText type="body-small" style={{ flex: 1 }}>{event.is_free ? 'Free Entry' : event.ticket_price ? `₱${event.ticket_price}` : 'Contact for pricing'}</ThemedText></View>
+                  {event.max_capacity && <View style={styles.infoRow}><MaterialCommunityIcons name="account-group" size={18} color={colors.tint} /><ThemedText type="body-small" style={{ flex: 1 }}>Capacity: {event.max_capacity} people</ThemedText></View>}
+                  {event.registration_url && <Pressable onPress={handleRegistration}><View style={styles.infoRow}><MaterialCommunityIcons name="link" size={18} color={colors.accent} /><ThemedText type="body-small" style={{ flex: 1, color: colors.accent }}>Register Now</ThemedText></View></Pressable>}
                 </View>
-              </View>
-            </View>
-
-            {/* Contact */}
-            <View style={styles.section}>
-              <ThemedText
-                type="card-title-small"
-                weight="bold"
-                style={{ color: colors.text }}
-              >
-                Contact Information
-              </ThemedText>
-              <View style={styles.infoRow}>
-                <MaterialCommunityIcons
-                  name="phone"
-                  size={18}
-                  color={colors.tint}
-                />
-                <ThemedText
-                  type="label-medium"
-                  style={{ color: colors.textSecondary, flex: 1 }}
-                >
-                  {eventData.contact}
-                </ThemedText>
-              </View>
-              <View style={styles.infoRow}>
-                <MaterialCommunityIcons
-                  name="email"
-                  size={18}
-                  color={colors.tint}
-                />
-                <ThemedText
-                  type="label-medium"
-                  style={{ color: colors.textSecondary, flex: 1 }}
-                >
-                  {eventData.email}
-                </ThemedText>
-              </View>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.tabContent}>
-            <View style={styles.emptyState}>
-              <MaterialCommunityIcons
-                name="star-outline"
-                size={48}
-                color={colors.textSecondary}
-              />
-              <ThemedText
-                type="label-medium"
-                style={{ color: colors.textSecondary, marginTop: 12 }}
-              >
-                No reviews yet for this event
-              </ThemedText>
-            </View>
-          </View>
-        )}
-      </View>
-    </ScrollView>
+              </Container>
+              <Container elevation={2} style={styles.section}>
+                <ThemedText type="card-title-small" weight="medium">Contact</ThemedText>
+                <View style={{ marginTop: 4, gap: 10 }}>
+                  {event.organizer_name && <View style={styles.infoRow}><FontAwesome5 name="user" size={14} color={colors.tint} /><ThemedText type="body-small">{event.organizer_name}</ThemedText></View>}
+                  {event.contact_phone && <Pressable style={styles.infoRow} onPress={handleCall}><FontAwesome5 name="phone" size={14} color={colors.tint} /><ThemedText type="body-small">{event.contact_phone}</ThemedText></Pressable>}
+                  {event.contact_email && <Pressable style={styles.infoRow} onPress={handleEmail}><FontAwesome5 name="envelope" size={14} color={colors.tint} /><ThemedText type="body-small">{event.contact_email}</ThemedText></Pressable>}
+                  {event.website && <Pressable style={styles.infoRow} onPress={handleWebsite}><FontAwesome5 name="globe" size={14} color={colors.tint} /><ThemedText type="body-small" style={{ color: '#2563EB' }}>{event.website}</ThemedText></Pressable>}
+                  {!event.contact_phone && !event.contact_email && !event.website && !event.organizer_name && <ThemedText type="body-small" style={{ color: '#6A768E' }}>No contact information available.</ThemedText>}
+                </View>
+              </Container>
+              <Container elevation={2} style={styles.section}>
+                <ThemedText type="card-title-small" weight="medium">Images</ThemedText>
+                {otherImages.length > 0 ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }} contentContainerStyle={{ paddingRight: 8, gap: 12 }}>
+                    {otherImages.map((img) => <Image key={img.id} source={{ uri: img.file_url }} style={{ width: 140, height: 100, borderRadius: 12 }} />)}
+                  </ScrollView>
+                ) : <ThemedText type="body-small" style={{ color: '#6A768E', marginTop: 4 }}>No additional images.</ThemedText>}
+              </Container>
+              <Container elevation={2} style={styles.section}>
+                <ThemedText type="card-title-small" weight="medium">Location</ThemedText>
+                {hasCoords ? (
+                  <View style={{ marginTop: 8, borderRadius: 12, overflow: 'hidden' }}>
+                    <MapView style={{ width: '100%', height: 220 }} initialRegion={{ latitude: latitude!, longitude: longitude!, latitudeDelta: 0.01, longitudeDelta: 0.01 }}>
+                      <Marker coordinate={{ latitude: latitude!, longitude: longitude! }} title={event.name} />
+                    </MapView>
+                  </View>
+                ) : <ThemedText type="body-small" style={{ color: '#6A768E', marginTop: 4 }}>No location coordinates available.</ThemedText>}
+                {locationDisplay && <ThemedText type="body-small" style={{ marginTop: 8 }}>{locationDisplay}</ThemedText>}
+                {hasCoords && (
+                  <Pressable onPress={handleDirections} style={({ pressed }) => [styles.directionsButton, Platform.OS === 'android' && pressed && { opacity: 0.8 }]} android_ripple={{ color: 'rgba(255, 255, 255, 0.2)' }}>
+                    <FontAwesome5 name="directions" size={14} color="#fff" />
+                    <ThemedText type="label-medium" style={{ color: '#fff' }}>Get Directions</ThemedText>
+                  </Pressable>
+                )}
+              </Container>
+            </PageContainer>
+          ) : (
+            <EventRatings 
+              eventId={eventId} 
+              refreshKey={ratingsRefreshKey}
+              onRefreshRequested={handleRatingsRefresh}
+            />
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  heroContainer: {
-    width: '100%',
-    height: 280,
-    position: 'relative',
-  },
-  heroImage: {
-    width: '100%',
-    height: '100%',
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  infoCard: {
-    marginTop: -30,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingTop: 24,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  eventName: {
-    fontSize: 24,
-    marginBottom: 12,
-  },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: 'rgba(197, 160, 89, 0.1)',
-    gap: 6,
-    marginBottom: 20,
-  },
-  categoryText: {
-    fontSize: 12,
-  },
-  dateTimeContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
-  },
-  dateTimeCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    gap: 10,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 24,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 8,
-    gap: 6,
-  },
-  iconButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-    marginBottom: 20,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-  },
-  tabText: {
-    fontSize: 14,
-  },
-  tabContent: {
-    gap: 20,
-  },
-  section: {
-    gap: 12,
-  },
-  description: {
-    lineHeight: 22,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 4,
-  },
-  detailsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  detailItem: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'flex-start',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
+  container: { flex: 1 },
+  image: { width: '100%', height: 280 },
+  notFoundContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  tabContent: { flex: 1 },
+  section: { marginBottom: 2 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  directionsButton: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, backgroundColor: '#2563EB', alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12, ...Platform.select({ android: { paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, elevation: 2 } }) },
 });
 
 export default EventProfileScreen;

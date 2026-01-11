@@ -16,46 +16,46 @@ exports.up = async function (knex) {
       .references("id")
       .inTable("business")
       .onDelete("CASCADE");
-    
+
     // Support logged-in users (guest_id removed - guest table doesn't exist)
     table.uuid("user_id").nullable()
       .references("id")
       .inTable("user")
       .onDelete("CASCADE");
-    
+
     // Inquiry details
     table.string("inquiry_number", 50).unique().notNullable(); // Generated inquiry reference
     table.text("message").nullable(); // Optional message from tourist
     table.integer("number_of_people").defaultTo(1); // How many people
     table.date("preferred_date").nullable(); // When they want the service
-    
+
     // Contact method used
     table.enu("contact_method", [
       "phone",
-      "email", 
+      "email",
       "facebook",
       "viber",
       "whatsapp",
       "external_booking",
       "view_only"
     ]).nullable(); // Which contact method they clicked
-    
+
     // Tracking
     table.enu("status", ["new", "contacted", "converted", "archived"]).defaultTo("new");
     table.boolean("merchant_viewed").defaultTo(false);
     table.timestamp("merchant_viewed_at").nullable();
     table.text("merchant_notes").nullable(); // Merchant can add notes
-    
+
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
-    
+
     // Indexes
     table.index("service_id", "idx_service_inquiry_service");
     table.index("business_id", "idx_service_inquiry_business");
     table.index("user_id", "idx_service_inquiry_user");
     table.index("status", "idx_service_inquiry_status");
     table.index("created_at", "idx_service_inquiry_created");
-    
+
     // Note: user_id is nullable to allow anonymous inquiries
   });
 
@@ -64,7 +64,7 @@ exports.up = async function (knex) {
   // Create stored procedures
   console.log("Creating service inquiry stored procedures...");
   try {
-    const { createServiceInquiryProcedures } = await import("../procedures/serviceInquiryProcedures.js");
+    const { createServiceInquiryProcedures } = require("../procedures/service/service-inquiry.procedures.cjs");
     await createServiceInquiryProcedures(knex);
     console.log("✅ Service inquiry stored procedures created successfully");
   } catch (error) {
@@ -81,7 +81,7 @@ exports.down = async function (knex) {
   // Drop stored procedures first
   console.log("Dropping service inquiry stored procedures...");
   try {
-    const { dropServiceInquiryProcedures } = await import("../procedures/serviceInquiryProcedures.js");
+    const { dropServiceInquiryProcedures } = require("../procedures/service/service-inquiry.procedures.cjs");
     await dropServiceInquiryProcedures(knex);
     console.log("✅ Service inquiry stored procedures dropped successfully");
   } catch (error) {

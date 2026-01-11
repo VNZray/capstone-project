@@ -20,6 +20,7 @@ import {
   type PermissionCategory,
 } from "@/src/services/manage-staff/StaffService";
 import PermissionSelector from "./PermissionSelector";
+import BaseModal from "@/src/components/BaseModal";
 
 export type StaffEditData = {
   first_name: string;
@@ -161,22 +162,23 @@ export default function StaffEditModal({
   };
 
   return (
-    <BaseEditModal
+    <BaseModal
       open={open}
       onClose={onClose}
       title="Edit Staff Member"
       description="Update staff member details and permissions"
+      maxWidth={580}
       actions={[
-        { label: "Cancel", onClick: onClose },
+        { label: "Cancel", onClick: onClose, variant: "soft" },
         {
           label: "Save Changes",
           onClick: handleSave,
-          variant: "primary",
+          variant: "solid",
           disabled: !canSubmit,
         },
       ]}
     >
-      <Container padding="0">
+      <Container>
         <FormControl>
           <FormLabel>First Name *</FormLabel>
           <Input
@@ -289,6 +291,6 @@ export default function StaffEditModal({
           {error}
         </FormHelperText>
       ) : null}
-    </BaseEditModal>
+    </BaseModal>
   );
 }

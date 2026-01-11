@@ -1,13 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { apiService } from "@/src/utils/api";
 import type { Event } from "@/src/types/Event";
-import {
-  Modal,
-  ModalDialog,
-  Typography,
-  Sheet,
-  IconButton,
-} from "@mui/joy";
+import { Modal, ModalDialog, Typography, Sheet, IconButton } from "@mui/joy";
 import Button from "@/src/components/Button";
 import Autocomplete from "@mui/joy/Autocomplete";
 import { IoClose } from "react-icons/io5";
@@ -29,7 +23,9 @@ const FeaturedEventsModal: React.FC<FeaturedEventsModalProps> = ({
   const [selectedOption, setSelectedOption] = useState<Event | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingUnfeatureId, setPendingUnfeatureId] = useState<string | null>(null);
+  const [pendingUnfeatureId, setPendingUnfeatureId] = useState<string | null>(
+    null
+  );
 
   const loadData = async () => {
     setLoading(true);
@@ -139,7 +135,9 @@ const FeaturedEventsModal: React.FC<FeaturedEventsModalProps> = ({
                   setSelectedOption(v);
                   setSelectedToAddId(v?.id || "");
                 }}
-                slotProps={{ listbox: { sx: { zIndex: 2200, maxHeight: 260 } } }}
+                slotProps={{
+                  listbox: { sx: { zIndex: 2200, maxHeight: 260 } },
+                }}
                 noOptionsText={loading ? "Loading…" : "No matches"}
                 sx={{ minWidth: 320, maxWidth: 480, flex: 1 }}
               />
@@ -182,7 +180,12 @@ const FeaturedEventsModal: React.FC<FeaturedEventsModalProps> = ({
             </Typography>
             <Typography
               level="title-md"
-              sx={{ flex: 1, fontWeight: 700, color: "#fff", textAlign: "right" }}
+              sx={{
+                flex: 1,
+                fontWeight: 700,
+                color: "#fff",
+                textAlign: "right",
+              }}
             >
               Action
             </Typography>
@@ -204,14 +207,20 @@ const FeaturedEventsModal: React.FC<FeaturedEventsModalProps> = ({
               <Typography level="body-md" color="neutral" sx={{ flex: 4 }}>
                 {event.name}
               </Typography>
-              <Typography level="body-sm" color="neutral" sx={{ flex: 2, opacity: 0.7 }}>
+              <Typography
+                level="body-sm"
+                color="neutral"
+                sx={{ flex: 2, opacity: 0.7 }}
+              >
                 {new Date(event.start_date).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
                 })}
               </Typography>
-              <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+              <div
+                style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}
+              >
                 <IconButton
                   color="danger"
                   variant="soft"
@@ -242,8 +251,20 @@ const FeaturedEventsModal: React.FC<FeaturedEventsModalProps> = ({
           )}
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16, gap: 8 }}>
-          <Button variant="solid" colorScheme="primary" size="sm" onClick={handleClose}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginTop: 16,
+            gap: 8,
+          }}
+        >
+          <Button
+            variant="solid"
+            colorScheme="primary"
+            size="sm"
+            onClick={handleClose}
+          >
             Close
           </Button>
         </div>
@@ -265,7 +286,9 @@ const FeaturedEventsModal: React.FC<FeaturedEventsModalProps> = ({
               <Typography sx={{ mb: 2 }}>
                 Are you sure you want to remove this event from featured?
               </Typography>
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <div
+                style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+              >
                 <Button
                   variant="soft"
                   colorScheme="gray"

@@ -10,7 +10,7 @@ import Table, { type TableColumn } from "@/src/components/ui/Table";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import NoDataFound from "@/src/components/NoDataFound";
 import IconButton from "@/src/components/IconButton";
-import ConfirmDialog from "@/src/components/modals/ConfirmDialog";
+import Alert from "@/src/components/Alert";
 import Card from "@/src/components/Card";
 import { Input, Chip, Stack, Select, Option } from "@mui/joy";
 import { apiService } from "@/src/utils/api";
@@ -190,8 +190,22 @@ const Event = () => {
     return filtered;
   }, [events, searchQuery, categoryTab, statusFilter]);
 
-  // Get event cover image
+  // Get event cover image - prioritize primary image from images array
   const getEventImageUrl = (event: EventType): string => {
+    // First, try to get primary image from images array
+    if (event.images && event.images.length > 0) {
+      const primaryImage = event.images.find(
+        (img) => img.is_primary === true || (img as any).is_primary === 1
+      );
+      if (primaryImage?.file_url) {
+        return primaryImage.file_url;
+      }
+      // Fallback to first image if no primary
+      if (event.images[0]?.file_url) {
+        return event.images[0].file_url;
+      }
+    }
+    // Fallback to cover_image_url
     return event.cover_image_url || placeholderImage;
   };
 
@@ -640,11 +654,12 @@ const Event = () => {
         onSuccess={fetchEventsAndCategories}
       />
 
-      <ConfirmDialog
+      <Alert
         open={showDelete}
+        type="warning"
         title="Delete Event"
-        description={`Are you sure you want to delete "${selectedEventForEdit?.name}"? This action cannot be undone.`}
-        confirmLabel="Delete"
+        message={`Are you sure you want to delete "${selectedEventForEdit?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
         loading={deleteLoading}
         onClose={() => setShowDelete(false)}
         onConfirm={doDeleteEvent}

@@ -1,7 +1,7 @@
 import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../../utils/errorHandler.js";
-import { incrementPromotionUsage } from "../promotionController.js";
+import { incrementPromotionUsage } from "../promotion/promotionController.js";
 import {
   sendNotification,
   notifyBookingCancelled,
@@ -33,9 +33,7 @@ const BOOKING_FIELDS = [
   "tourist_id",
   "business_id",
   "booking_source",
-  "guest_name",
-  "guest_phone",
-  "guest_email",
+  "guest_id",
 ];
 
 const makePlaceholders = (n) => Array(n).fill("?").join(", ");
@@ -535,9 +533,7 @@ export async function createWalkInBooking(req, res) {
       room_id,
       business_id,
       // Walk-in specific fields
-      guest_name,
-      guest_phone,
-      guest_email,
+      guest_id, // Reference to guest table
       tourist_id = null, // Optional - if guest has an existing account
       immediate_checkin = true, // Default to immediate check-in for walk-ins
     } = req.body;
@@ -550,25 +546,46 @@ export async function createWalkInBooking(req, res) {
     if (!room_id) missing.push("room_id");
     if (!business_id) missing.push("business_id");
     if (total_price === undefined) missing.push("total_price");
-    // For walk-ins without tourist_id, require guest_name
-    if (!tourist_id && !guest_name) missing.push("guest_name (required for walk-in without tourist account)");
+    // For walk-ins without tourist_id, require guest_id
+    if (!tourist_id && !guest_id) missing.push("guest_id (required for walk-in without tourist account)");
 
     if (missing.length) {
       return res.status(400).json({ error: "Missing required fields", fields: missing });
     }
 
     // Check room availability
-    const [availCheck] = await db.query("CALL CheckRoomAvailability(?, ?, ?)", [
-      room_id,
-      check_in_date,
-      check_out_date,
-    ]);
-    const availStatus = availCheck[0]?.[0]?.availability_status;
-    if (availStatus !== "AVAILABLE") {
-      return res.status(409).json({
-        error: "Room is not available for the selected dates",
-        status: availStatus,
-      });
+    // For walk-in bookings, we need a more lenient check
+    // Skip availability check if immediate_checkin is true and check-in is today
+    const isImmediateCheckIn = immediate_checkin && new Date(check_in_date).toDateString() === new Date().toDateString();
+
+    if (!isImmediateCheckIn) {
+      const [availCheck] = await db.query("CALL CheckRoomAvailability(?, ?, ?)", [
+        room_id,
+        check_in_date,
+        check_out_date,
+      ]);
+      const availStatus = availCheck[0]?.[0]?.availability_status;
+      if (availStatus !== "AVAILABLE") {
+        return res.status(409).json({
+          error: "Room is not available for the selected dates",
+          status: availStatus,
+        });
+      }
+    } else {
+      // For immediate check-in, just verify the room exists and is not currently occupied by another active booking
+      const [activeBookings] = await db.query(`
+        SELECT COUNT(*) as count FROM booking
+        WHERE room_id = ?
+        AND booking_status IN ('Checked-In')
+        AND check_out_date >= CURDATE()
+      `, [room_id]);
+
+      if (activeBookings[0].count > 0) {
+        return res.status(409).json({
+          error: "Room is currently occupied by another guest",
+          status: "OCCUPIED",
+        });
+      }
     }
 
     // Set booking status based on immediate_checkin flag
@@ -597,9 +614,7 @@ export async function createWalkInBooking(req, res) {
       tourist_id,
       business_id,
       booking_source,
-      guest_name,
-      guest_phone,
-      guest_email,
+      guest_id,
     };
 
     const params = buildBookingParams(id, bodyWithDefaults);
@@ -607,11 +622,6 @@ export async function createWalkInBooking(req, res) {
     const [rows] = await db.query(`CALL InsertBooking(${placeholders})`, params);
 
     const createdBooking = rows[0][0];
-
-    // Update room status to Occupied if immediate check-in
-    if (immediate_checkin && createdBooking) {
-      await db.query("UPDATE room SET status = 'Occupied' WHERE id = ?", [room_id]);
-    }
 
     // Send notification to tourist if they have an account
     if (createdBooking && tourist_id) {
@@ -677,7 +687,7 @@ export async function searchGuests(req, res) {
 
     const searchTerm = `%${query}%`;
 
-    // Search in tourist and users tables
+    // Search in tourist and user tables
     const [rows] = await db.query(`
       SELECT
         t.id as tourist_id,
@@ -689,7 +699,7 @@ export async function searchGuests(req, res) {
         u.phone_number,
         u.user_profile
       FROM tourist t
-      JOIN users u ON t.user_id = u.id
+      JOIN user u ON t.user_id = u.id
       WHERE
         CONCAT(t.first_name, ' ', t.last_name) LIKE ?
         OR t.first_name LIKE ?

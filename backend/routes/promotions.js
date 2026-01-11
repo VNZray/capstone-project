@@ -1,5 +1,5 @@
 import express from "express";
-import * as promotionController from "../controller/promotionController.js";
+import * as promotionController from "../controller/promotion/promotionController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorizeRole.js";
 

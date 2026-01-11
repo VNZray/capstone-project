@@ -6,11 +6,11 @@
 const {
   createEmergencyFacilityProcedures,
   dropEmergencyFacilityProcedures,
-} = require("../procedures/emergencyFacilityProcedures.js");
+} = require("../procedures/emergency/emergency-facility.procedures.cjs");
 
 exports.up = async function(knex) {
   await knex.schema.createTable('emergency_facilities', function(table) {
-    table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
+    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     table.string('name', 255).notNullable();
     table.text('description').nullable();
     table.enu('facility_type', ['police_station', 'hospital', 'fire_station', 'evacuation_center'])

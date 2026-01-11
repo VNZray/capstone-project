@@ -203,9 +203,25 @@ const Bookings = () => {
     try {
       // Get booking info before update for notification
       const bookingToUpdate = bookings.find((b) => b.id === id);
-      const guestName = bookingToUpdate?.tourist_id
-        ? guestInfoById[bookingToUpdate.tourist_id]?.name || "Guest"
-        : "Guest";
+
+      // Get guest name from walk-in guest or tourist
+      let guestName = "Guest";
+      if (bookingToUpdate) {
+        if (
+          bookingToUpdate.guest_first_name ||
+          bookingToUpdate.guest_last_name
+        ) {
+          const nameParts = [
+            bookingToUpdate.guest_first_name,
+            bookingToUpdate.guest_middle_name,
+            bookingToUpdate.guest_last_name,
+          ].filter(Boolean);
+          guestName = nameParts.join(" ") || "Guest";
+        } else if (bookingToUpdate.tourist_id) {
+          guestName =
+            guestInfoById[bookingToUpdate.tourist_id]?.name || "Guest";
+        }
+      }
 
       // Optimistic update
       setBookings((prev) =>
@@ -346,6 +362,24 @@ const Bookings = () => {
         label: "Guest",
         minWidth: 180,
         render: (row) => {
+          // Check if guest info is already in the booking (walk-in guest)
+          if (row.guest_first_name || row.guest_last_name) {
+            const nameParts = [
+              row.guest_first_name,
+              row.guest_middle_name,
+              row.guest_last_name,
+            ].filter(Boolean);
+
+            const guest: GuestInfo = {
+              firstName: row.guest_first_name || "",
+              lastName: row.guest_last_name || "",
+              userProfile: undefined, // Walk-in guests don't have profiles
+            };
+
+            return <GuestAvatar guest={guest} size={32} />;
+          }
+
+          // Otherwise, use tourist info
           const info = guestInfoById[row.tourist_id as string];
           if (!info) return "—";
 

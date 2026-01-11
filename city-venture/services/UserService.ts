@@ -1,9 +1,10 @@
-import api from './api';
+import apiClient from './apiClient';
 import { User } from '../types/User';
 
 /**
  * User Service
  * Handles user-related API operations
+ * Uses apiClient for automatic Authorization header injection
  */
 
 /**
@@ -17,23 +18,11 @@ export const updateUser = async (
     userData: Partial<User>
 ): Promise<User> => {
     try {
-        const response = await fetch(`${api}/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to update user');
-        }
-
-        return await response.json();
-    } catch (error) {
+        const response = await apiClient.put<User>(`/users/${userId}`, userData);
+        return response.data;
+    } catch (error: any) {
         console.error('Error updating user:', error);
-        throw error;
+        throw new Error(error.response?.data?.message || error.message || 'Failed to update user');
     }
 };
 
@@ -50,27 +39,15 @@ export const updateUserEmail = async (
     otp: number
 ): Promise<User> => {
     try {
-        const response = await fetch(`${api}/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email,
-                otp,
-                is_verified: true, // Reset verification status when email changes
-            }),
+        const response = await apiClient.put<User>(`/users/${userId}`, {
+            email,
+            otp,
+            is_verified: true, // Reset verification status when email changes
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to update user email');
-        }
-
-        return await response.json();
-    } catch (error) {
+        return response.data;
+    } catch (error: any) {
         console.error('Error updating user email:', error);
-        throw error;
+        throw new Error(error.response?.data?.message || error.message || 'Failed to update user email');
     }
 };
 
@@ -87,26 +64,14 @@ export const updateUserPassword = async (
     otp: number
 ): Promise<User> => {
     try {
-        const response = await fetch(`${api}/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                password,
-                otp,
-            }),
+        const response = await apiClient.put<User>(`/users/${userId}`, {
+            password,
+            otp,
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to update user password');
-        }
-
-        return await response.json();
-    } catch (error) {
+        return response.data;
+    } catch (error: any) {
         console.error('Error updating user password:', error);
-        throw error;
+        throw new Error(error.response?.data?.message || error.message || 'Failed to update user password');
     }
 };
 
@@ -121,25 +86,13 @@ export const storeUserOtp = async (
     otp: number
 ): Promise<User> => {
     try {
-        const response = await fetch(`${api}/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                otp,
-            }),
+        const response = await apiClient.put<User>(`/users/${userId}`, {
+            otp,
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to store OTP');
-        }
-
-        return await response.json();
-    } catch (error) {
+        return response.data;
+    } catch (error: any) {
         console.error('Error storing OTP:', error);
-        throw error;
+        throw new Error(error.response?.data?.message || error.message || 'Failed to store OTP');
     }
 };
 
@@ -150,25 +103,13 @@ export const storeUserOtp = async (
  */
 export const clearUserOtp = async (userId: string): Promise<User> => {
     try {
-        const response = await fetch(`${api}/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                otp: null,
-            }),
+        const response = await apiClient.put<User>(`/users/${userId}`, {
+            otp: null,
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to clear OTP');
-        }
-
-        return await response.json();
-    } catch (error) {
+        return response.data;
+    } catch (error: any) {
         console.error('Error clearing OTP:', error);
-        throw error;
+        throw new Error(error.response?.data?.message || error.message || 'Failed to clear OTP');
     }
 };
 
@@ -179,26 +120,14 @@ export const clearUserOtp = async (userId: string): Promise<User> => {
  */
 export const verifyUser = async (userId: string): Promise<User> => {
     try {
-        const response = await fetch(`${api}/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                is_verified: true,
-                otp: null, // Clear OTP after verification
-            }),
+        const response = await apiClient.put<User>(`/users/${userId}`, {
+            is_verified: true,
+            otp: null, // Clear OTP after verification
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to verify user');
-        }
-
-        return await response.json();
-    } catch (error) {
+        return response.data;
+    } catch (error: any) {
         console.error('Error verifying user:', error);
-        throw error;
+        throw new Error(error.response?.data?.message || error.message || 'Failed to verify user');
     }
 };
 
@@ -209,21 +138,10 @@ export const verifyUser = async (userId: string): Promise<User> => {
  */
 export const getUserById = async (userId: string): Promise<User> => {
     try {
-        const response = await fetch(`${api}/users/${userId}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to fetch user');
-        }
-
-        return await response.json();
-    } catch (error) {
+        const response = await apiClient.get<User>(`/users/${userId}`);
+        return response.data;
+    } catch (error: any) {
         console.error('Error fetching user:', error);
-        throw error;
+        throw new Error(error.response?.data?.message || error.message || 'Failed to fetch user');
     }
 };

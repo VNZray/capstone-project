@@ -28,7 +28,7 @@ import IconButton from "@/src/components/IconButton";
 import EmergencyFacilityCard from "./components/EmergencyFacilityCard";
 import EmergencyFacilityForm from "./components/EmergencyFacilityForm";
 import EmergencyFacilityDetails from "./components/EmergencyFacilityDetails";
-import DeleteConfirmationModal from "./components/DeleteConfirmationModal";
+import Alert from "@/src/components/Alert";
 
 import * as EmergencyFacilityService from "@/src/services/EmergencyFacilityService";
 import type {
@@ -507,15 +507,18 @@ export default function EmergencyFacilities() {
         onEdit={handleEdit}
       />
 
-      <DeleteConfirmationModal
-        isOpen={isDeleteOpen}
+      <Alert
+        open={isDeleteOpen}
+        type="warning"
+        title="Delete Facility"
+        message={`Are you sure you want to delete "${selectedFacility?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        loading={isSubmitting}
         onClose={() => {
           setDeleteOpen(false);
           setSelectedFacility(null);
         }}
         onConfirm={handleDeleteConfirm}
-        facility={selectedFacility}
-        isLoading={isSubmitting}
       />
     </PageContainer>
   );

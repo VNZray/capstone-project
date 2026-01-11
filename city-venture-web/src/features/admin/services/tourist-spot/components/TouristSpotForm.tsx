@@ -194,11 +194,12 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   );
 
   const categoryOptions = useMemo<FormOption[]>(
-    () => categories.map((c) => ({ 
-      id: c.id, 
-      label: c.title,
-      group: c.parent_title || "Main Categories"
-    })),
+    () =>
+      categories.map((c) => ({
+        id: c.id,
+        label: c.title,
+        group: c.parent_title || "Main Categories",
+      })),
     [categories]
   );
 
@@ -376,8 +377,11 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           apiService.getLocationData(),
         ]);
         const allCategories = [
-          ...(categoriesTypes.types || []).map((t: any) => ({ ...t, parent_title: "Main Categories" })),
-          ...(categoriesTypes.categories || [])
+          ...(categoriesTypes.types || []).map((t: any) => ({
+            ...t,
+            parent_title: "Main Categories",
+          })),
+          ...(categoriesTypes.categories || []),
         ];
         setCategories(allCategories);
         setProvinces(locationData.provinces);
@@ -416,7 +420,11 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     e.preventDefault();
 
     if (formData.category_ids.length === 0) {
-      alert("Please select at least one category.");
+      showAlert(
+        "warning",
+        "Required Field",
+        "Please select at least one category."
+      );
       return;
     }
 
@@ -473,17 +481,29 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
               formData.name,
               spotFolderName
             );
-            alert("Spot was submitted successfully for approval");
+            showAlert(
+              "success",
+              "Success",
+              "Spot was submitted successfully for approval",
+              () => onSpotAdded?.()
+            );
           } catch (imageError) {
             console.error("Error uploading images:", imageError);
-            alert(
-              "Spot was submitted successfully, but some images failed to upload. You can add them by editing the spot upon approval."
+            showAlert(
+              "warning",
+              "Partial Success",
+              "Spot was submitted successfully, but some images failed to upload. You can add them by editing the spot upon approval.",
+              () => onSpotAdded?.()
             );
           }
         } else {
-          alert("Spot was submitted successfully for approval");
+          showAlert(
+            "success",
+            "Success",
+            "Spot was submitted successfully for approval",
+            () => onSpotAdded?.()
+          );
         }
-        onSpotAdded?.();
       } else {
         if (!initialData?.id) throw new Error("No ID provided for update");
 
@@ -559,20 +579,33 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
                 initialData.name,
                 spotFolderName
               );
-              alert("Images uploaded successfully!");
-              setPendingImages([]);
-              onSpotUpdated?.();
+              showAlert(
+                "success",
+                "Success",
+                "Images uploaded successfully!",
+                () => {
+                  setPendingImages([]);
+                  onSpotUpdated?.();
+                  handleClose();
+                }
+              );
             } catch (imageError) {
               console.error("Error uploading images:", imageError);
-              alert(
-                "Some images failed to upload. You can try again by editing the spot."
+              showAlert(
+                "warning",
+                "Partial Success",
+                "Some images failed to upload. You can try again by editing the spot.",
+                () => handleClose()
               );
             }
-            handleClose();
             return;
           } else {
-            alert("No changes detected. Nothing to update.");
-            handleClose();
+            showAlert(
+              "info",
+              "No Changes",
+              "No changes detected. Nothing to update.",
+              () => handleClose()
+            );
             return;
           }
         }
@@ -590,9 +623,15 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
               ? { spot_status: formData.spot_status as "active" | "inactive" }
               : {}),
           });
-          alert(resp?.data?.message || "Fields updated successfully!");
-          onSpotUpdated?.();
-          handleClose();
+          showAlert(
+            "success",
+            "Success",
+            resp?.data?.message || "Fields updated successfully!",
+            () => {
+              onSpotUpdated?.();
+              handleClose();
+            }
+          );
           return;
         }
         if (anyApproval) {
@@ -602,12 +641,16 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
               ? { spot_status: formData.spot_status as "active" | "inactive" }
               : {}),
           });
-          alert(
+          showAlert(
+            "success",
+            "Submitted",
             resp?.data?.message ||
-              "Core information changes submitted for approval!"
+              "Core information changes submitted for approval!",
+            () => {
+              onSpotUpdated?.();
+              handleClose();
+            }
           );
-          onSpotUpdated?.();
-          handleClose();
           return;
         }
         if (
@@ -619,9 +662,15 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           const resp: any = await apiService.submitEditRequest(initialData.id, {
             ...spotData,
           });
-          alert(resp?.data?.message || "Categories updated successfully!");
-          onSpotUpdated?.();
-          handleClose();
+          showAlert(
+            "success",
+            "Success",
+            resp?.data?.message || "Categories updated successfully!",
+            () => {
+              onSpotUpdated?.();
+              handleClose();
+            }
+          );
           return;
         }
         if (
@@ -634,9 +683,15 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
             initialData.id,
             mappedSchedules
           );
-          alert("Schedule updated successfully!");
-          onSpotUpdated?.();
-          handleClose();
+          showAlert(
+            "success",
+            "Success",
+            "Schedule updated successfully!",
+            () => {
+              onSpotUpdated?.();
+              handleClose();
+            }
+          );
           return;
         }
 
@@ -662,7 +717,9 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       handleClose();
     } catch (error) {
       console.error("Error:", error);
-      alert(
+      showAlert(
+        "error",
+        "Error",
         `Error ${
           mode === "add" ? "adding" : "updating"
         } spot. Please try again.`
@@ -854,6 +911,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         onClose={handleClose}
         size="md"
         title={mode === "edit" ? "Edit Tourist Spot" : "Add New Tourist Spot"}
+        maxWidth={580}
         description={stepTitles[currentStep]}
         headerRight={
           <Box

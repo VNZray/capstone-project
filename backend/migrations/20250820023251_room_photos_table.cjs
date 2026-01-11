@@ -1,7 +1,7 @@
 const {
   createRoomPhotosProcedures,
   dropRoomPhotosProcedures,
-} = require("../procedures/accommodation/roomPhotosProcedures").default;
+} = require("../procedures/accommodation/room-photos.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("room_photos", (table) => {

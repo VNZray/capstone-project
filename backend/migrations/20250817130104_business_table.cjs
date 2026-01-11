@@ -1,7 +1,7 @@
 const {
   createBusinessProcedures,
   dropBusinessProcedures,
-} = require("../procedures/businessProcedures");
+} = require("../procedures/business/business.procedures.cjs");
 
 exports.up = async function (knex) {
   // Create business table
@@ -13,13 +13,11 @@ exports.up = async function (knex) {
     table.float("max_price").nullable();
     table.string("email", 40).notNullable().unique();
     table.string("phone_number", 14).notNullable().unique();
-    // Note: business_type_id and business_category_id removed - using entity_categories table instead
-
 
     table.text("address").notNullable();
     table.uuid("owner_id").notNullable().references("id").inTable("owner");
     table
-      .enu("status", ["Pending", "Active", "Inactive", "Maintenance"])
+      .enu("status", ["Pending", "Active", "Inactive", "Maintenance", "Rejected"])
       .notNullable()
       .defaultTo("Pending");
     table.text("business_image").nullable();
@@ -29,6 +27,7 @@ exports.up = async function (knex) {
     table.text("facebook_url").nullable();
     table.text("instagram_url").nullable();
     table.boolean("hasBooking").nullable().defaultTo(false);
+    table.boolean("hasStore").nullable().defaultTo(false);
     table.timestamp("created_at").defaultTo(knex.fn.now());
 
         // Foreign keys

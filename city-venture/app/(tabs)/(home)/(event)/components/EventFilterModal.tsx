@@ -1,11 +1,11 @@
-import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/color';
 import Chip from '@/components/Chip';
 import BottomSheet from '@/components/ui/BottomSheetModal';
 import Button from '@/components/Button';
-import Container from '@/components/Container';
+import { useEventCategories } from '@/query/eventQuery';
 
 type EventFilterModalProps = {
   visible: boolean;
@@ -16,17 +16,6 @@ type EventFilterModalProps = {
   onApply: () => void;
 };
 
-const categories = [
-  { id: 'all', label: 'All Events', icon: 'star-outline' },
-  { id: 'music', label: 'Music', icon: 'music' },
-  { id: 'food', label: 'Food & Dining', icon: 'food' },
-  { id: 'festival', label: 'Festival', icon: 'party-popper' },
-  { id: 'sports', label: 'Sports', icon: 'trophy' },
-  { id: 'arts', label: 'Arts & Culture', icon: 'palette' },
-  { id: 'business', label: 'Business', icon: 'briefcase' },
-  { id: 'education', label: 'Education', icon: 'school' },
-];
-
 const EventFilterModal: React.FC<EventFilterModalProps> = ({
   visible,
   onClose,
@@ -36,6 +25,15 @@ const EventFilterModal: React.FC<EventFilterModalProps> = ({
   onApply,
 }) => {
   const colors = Colors.light;
+  
+  // Fetch real categories from API
+  const { data: apiCategories = [], isLoading } = useEventCategories();
+  
+  // Build categories list with "All Events" as first option
+  const categories = useMemo(() => {
+    const allOption = { id: 'all', name: 'All Events' };
+    return [allOption, ...apiCategories.map(cat => ({ id: String(cat.id), name: cat.name }))];
+  }, [apiCategories]);
 
   const filterContent = (
     <View style={styles.contentContainer}>
@@ -55,21 +53,30 @@ const EventFilterModal: React.FC<EventFilterModalProps> = ({
           </Pressable>
         </View>
 
-        <View style={styles.chipGrid}>
-          {categories.map((category) => (
-            <Chip
-              key={category.id}
-              label={category.label}
-              variant={
-                selectedCategories.includes(category.id) ? 'solid' : 'outlined'
-              }
-              onPress={() => onCategoryToggle(category.id)}
-              color={
-                selectedCategories.includes(category.id) ? 'primary' : 'neutral'
-              }
-            />
-          ))}
-        </View>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={colors.accent} />
+            <ThemedText type="label-small" style={{ color: colors.textSecondary, marginLeft: 8 }}>
+              Loading categories...
+            </ThemedText>
+          </View>
+        ) : (
+          <View style={styles.chipGrid}>
+            {categories.map((category) => (
+              <Chip
+                key={category.id}
+                label={category.name}
+                variant={
+                  selectedCategories.includes(category.id) ? 'solid' : 'outlined'
+                }
+                onPress={() => onCategoryToggle(category.id)}
+                color={
+                  selectedCategories.includes(category.id) ? 'primary' : 'neutral'
+                }
+              />
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -118,6 +125,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
   },
 });
 

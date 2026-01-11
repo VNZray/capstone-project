@@ -4,7 +4,7 @@
  */
 
 import express from "express";
-import * as emergencyFacilityController from "../controller/emergencyFacilityController.js";
+import * as emergencyFacilityController from "../controller/emergency/emergencyFacilityController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeRole, authorize, authorizeAny } from "../middleware/authorizeRole.js";
 

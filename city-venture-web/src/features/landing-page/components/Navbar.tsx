@@ -87,7 +87,7 @@ const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const navStyle = { 
+  const navStyle = {
     "--nav-bg": seamless ? "0" : solid ? "1" : String(bgOpacity),
     "--nav-seamless": seamless ? "1" : "0",
   } as React.CSSProperties & {
@@ -96,7 +96,9 @@ const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <nav
-      className={`navbar navbar-dark ${scrolled ? "scrolled" : ""} ${seamless ? "seamless" : ""}`}
+      className={`navbar navbar-dark ${scrolled ? "scrolled" : ""} ${
+        seamless ? "seamless" : ""
+      }`}
       style={navStyle}
     >
       <div className="nav-inner">
@@ -183,10 +185,16 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => {
                   const appSection = document.getElementById("app-download");
                   if (appSection) {
-                    appSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                    appSection.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
                   } else {
                     // Fallback: scroll to bottom where app download section is
-                    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                    window.scrollTo({
+                      top: document.body.scrollHeight,
+                      behavior: "smooth",
+                    });
                   }
                 }}
                 startDecorator={<Download size={18} />}
@@ -208,47 +216,48 @@ const Navbar: React.FC<NavbarProps> = ({
                 Download App
               </Button>
             ) : (
-            <>
-              <Button
-                variant="plain"
-                color="neutral"
-                onClick={() => navigate("/login")}
-                sx={{
-                  color: "#374151",
-                  fontWeight: 500,
-                  textTransform: "none",
-                  px: 0,
-                  backgroundColor: "transparent",
-                  padding: "6px 12px",
-                  "&:hover": {
+              <>
+                <Button
+                  variant="plain"
+                  color="neutral"
+                  onClick={() => navigate("/login")}
+                  sx={{
+                    color: "#374151",
+                    fontWeight: 500,
+                    textTransform: "none",
+                    px: 0,
                     backgroundColor: "transparent",
-                    textDecoration: "none",
-                  },
-                }}
-              >
-                Login
-              </Button>
-              <Button
-                variant="solid"
-                onClick={() => navigate("/business-registration")}
-                sx={{
-                  backgroundColor: colors.primary,
-                  color: "#ffffff",
-                  fontWeight: 600,
-                  textTransform: "none",
-                  borderRadius: 8,
-                  padding: "8px 16px",
-                  boxShadow: "0 2px 8px rgba(10,27,71,0.2)",
-                  "&:hover": {
-                    backgroundColor: "#0a1a3d",
-                    transform: "translateY(-1px)",
-                    boxShadow: "0 4px 16px rgba(10,27,71,0.3)",
-                  },
-                }}
-              >
-                Sign Up
-              </Button>
-            </>)
+                    padding: "6px 12px",
+                    "&:hover": {
+                      backgroundColor: "transparent",
+                      textDecoration: "none",
+                    },
+                  }}
+                >
+                  Login
+                </Button>
+                <Button
+                  variant="solid"
+                  onClick={() => navigate("/business-registration")}
+                  sx={{
+                    backgroundColor: colors.primary,
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    textTransform: "none",
+                    borderRadius: 8,
+                    padding: "8px 16px",
+                    boxShadow: "0 2px 8px rgba(10,27,71,0.2)",
+                    "&:hover": {
+                      backgroundColor: "#0a1a3d",
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 4px 16px rgba(10,27,71,0.3)",
+                    },
+                  }}
+                >
+                  Register Business
+                </Button>
+              </>
+            )
           ) : (
             <Dropdown>
               <MenuButton
@@ -467,11 +476,18 @@ const Navbar: React.FC<NavbarProps> = ({
                     startDecorator={<Download size={18} />}
                     onClick={() => {
                       setOpen(false);
-                      const appSection = document.getElementById("app-download");
+                      const appSection =
+                        document.getElementById("app-download");
                       if (appSection) {
-                        appSection.scrollIntoView({ behavior: "smooth", block: "center" });
+                        appSection.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
                       } else {
-                        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                        window.scrollTo({
+                          top: document.body.scrollHeight,
+                          behavior: "smooth",
+                        });
                       }
                     }}
                     sx={{
@@ -492,54 +508,54 @@ const Navbar: React.FC<NavbarProps> = ({
                     Download App
                   </Button>
                 ) : (
-                <>
-                  <Button
-                    variant="outlined"
-                    color="neutral"
-                    onClick={() => {
-                      setOpen(false);
-                      navigate("/login");
-                    }}
-                    sx={{
-                      color: colors.primary,
-                      borderColor: colors.primary,
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderRadius: 10,
-                      padding: "12px 20px",
-                      fontSize: "16px",
-                      "&:hover": {
-                        backgroundColor: "rgba(10,27,71,0.05)",
+                  <>
+                    <Button
+                      variant="outlined"
+                      color="neutral"
+                      onClick={() => {
+                        setOpen(false);
+                        navigate("/login");
+                      }}
+                      sx={{
+                        color: colors.primary,
                         borderColor: colors.primary,
-                      },
-                    }}
-                  >
-                    Login
-                  </Button>
-                  <Button
-                    variant="solid"
-                    onClick={() => {
-                      setOpen(false);
-                      navigate("/business-registration");
-                    }}
-                    sx={{
-                      backgroundColor: colors.primary,
-                      color: "#ffffff",
-                      fontWeight: 600,
-                      textTransform: "none",
-                      borderRadius: 10,
-                      padding: "12px 20px",
-                      fontSize: "16px",
-                      boxShadow: "0 2px 8px rgba(10,27,71,0.2)",
-                      "&:hover": {
-                        backgroundColor: "#0a1a3d",
-                        boxShadow: "0 4px 16px rgba(10,27,71,0.3)",
-                      },
-                    }}
-                  >
-                    Sign Up
-                  </Button>
-                </>
+                        textTransform: "none",
+                        fontWeight: 600,
+                        borderRadius: 10,
+                        padding: "12px 20px",
+                        fontSize: "16px",
+                        "&:hover": {
+                          backgroundColor: "rgba(10,27,71,0.05)",
+                          borderColor: colors.primary,
+                        },
+                      }}
+                    >
+                      Login
+                    </Button>
+                    <Button
+                      variant="solid"
+                      onClick={() => {
+                        setOpen(false);
+                        navigate("/business-registration");
+                      }}
+                      sx={{
+                        backgroundColor: colors.primary,
+                        color: "#ffffff",
+                        fontWeight: 600,
+                        textTransform: "none",
+                        borderRadius: 10,
+                        padding: "12px 20px",
+                        fontSize: "16px",
+                        boxShadow: "0 2px 8px rgba(10,27,71,0.2)",
+                        "&:hover": {
+                          backgroundColor: "#0a1a3d",
+                          boxShadow: "0 4px 16px rgba(10,27,71,0.3)",
+                        },
+                      }}
+                    >
+                      Sign Up
+                    </Button>
+                  </>
                 )
               ) : (
                 <>

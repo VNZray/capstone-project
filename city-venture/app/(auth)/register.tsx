@@ -139,7 +139,7 @@ const RegistrationPage = () => {
         email: formData.email,
         phone_number: formData.phoneNumber,
         password: formData.password,
-        user_role_id: 9,
+        user_role_id: 5, // Tourist role ID
         is_active: true,
         is_verified: true,
         created_at: new Date().toISOString(),
@@ -164,8 +164,8 @@ const RegistrationPage = () => {
 
       console.log('[Register] Creating user', newUser);
 
-      // 1) Create base user
-      const userRes = await insertData(newUser, 'users');
+      // 1) Create base user via public registration endpoint
+      const userRes = await insertData(newUser, 'users/register');
       const userId = userRes?.id || userRes?.data?.id || userRes?.insertId;
 
       console.debug('[Register] User created:', userId);

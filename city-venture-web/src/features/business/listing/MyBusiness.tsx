@@ -389,10 +389,6 @@ const MyBusiness = () => {
                       title={business.business_name}
                       subtitle={business.hasBooking ? "Accommodation" : "Shop"}
                       elevation={2}
-                      onClick={() => {
-                        setBusinessId(business.id!);
-                        navigate(`/business/dashboard`);
-                      }}
                     >
                       <Chip
                         size="sm"

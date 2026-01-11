@@ -1,7 +1,7 @@
 const {
   createAppLegalPoliciesProcedures,
   dropAppLegalPoliciesProcedures,
-} = require("../procedures/appLegalPoliciesProcedures.cjs");
+} = require("../procedures/legal/app-legal-policies.procedures.cjs");
 
 exports.up = async function (knex) {
   // Create app_legal_policies table for platform-wide Terms & Conditions and Privacy Policy

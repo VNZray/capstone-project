@@ -2,6 +2,8 @@ import apiClient from "./apiClient";
 import type { Booking, Bookings } from "../types/Booking";
 import type { Room } from "@/src/types/Business";
 import type { User } from "@/src/types/User";
+import { findOrCreateGuest } from "./GuestService";
+import type { CreateGuestInput } from "../types/Guest";
 
 export const fetchBookingsByRoomId = async (
   room_id: string
@@ -97,6 +99,29 @@ export const fetchGuestInfoByIds = async (
 };
 
 /**
+ * Get guest name from booking
+ * Handles both tourist_id and guest_id (walk-in guests)
+ */
+export const getGuestNameFromBooking = (booking: Booking): string => {
+  // First, check if guest info is already in the booking (from stored procedure)
+  if (booking.guest_first_name || booking.guest_last_name) {
+    const parts = [
+      booking.guest_first_name,
+      booking.guest_middle_name,
+      booking.guest_last_name,
+    ].filter(Boolean);
+    return parts.join(' ') || '—';
+  }
+
+  // Fallback to deprecated fields
+  if (booking.guest_name) {
+    return booking.guest_name;
+  }
+
+  return '—';
+};
+
+/**
  * Fetch user data by user_id
  * Uses apiClient for proper authentication with new token system
  */
@@ -117,13 +142,34 @@ import type {
 
 /**
  * Create a walk-in booking (onsite check-in)
+ * Automatically creates or finds guest record before creating booking
  */
 export const createWalkInBooking = async (
-  request: WalkInBookingRequest
+  request: WalkInBookingRequest & { guestData?: CreateGuestInput }
 ): Promise<Booking & { message: string }> => {
+  let guestId = request.guest_id;
+
+  // If guest data is provided and no guest_id, create/find guest first
+  if (!guestId && request.guestData) {
+    console.log('Creating/finding guest with data:', request.guestData);
+    const guest = await findOrCreateGuest(request.guestData);
+    console.log('Guest created/found:', guest);
+    guestId = guest.id;
+  }
+
+  // Remove guestData from request as it's not part of booking API
+  const { guestData, ...bookingRequest } = request as any;
+
+  const finalRequest = {
+    ...bookingRequest,
+    guest_id: guestId,
+  };
+
+  console.log('Sending walk-in booking request:', finalRequest);
+
   const { data } = await apiClient.post<Booking & { message: string }>(
     "/booking/walk-in",
-    request
+    finalRequest
   );
   return data;
 };

@@ -1,7 +1,7 @@
 const {
   createProcedures,
   dropProcedures,
-} = require("../procedures/accommodation/bookingProcedures");
+} = require("../procedures/accommodation/booking.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("booking", function (table) {
@@ -33,6 +33,13 @@ exports.up = async function (knex) {
       .notNullable()
       .defaultTo("Pending");
 
+    // Booking source tracking (online vs walk-in)
+    table
+      .enum("booking_source", ["online", "walk-in"])
+      .notNullable()
+      .defaultTo("online");
+
+    // Foreign keys
     table
       .uuid("room_id")
       .notNullable()
@@ -47,10 +54,16 @@ exports.up = async function (knex) {
       .onDelete("CASCADE");
     table
       .uuid("tourist_id")
-      .notNullable()
+      .nullable()
       .references("id")
       .inTable("tourist")
       .onDelete("CASCADE");
+    table
+      .uuid("guest_id")
+      .nullable()
+      .references("id")
+      .inTable("guest")
+      .onDelete("SET NULL");
 
     // Timestamps
     table.timestamp("created_at").defaultTo(knex.fn.now());

@@ -378,61 +378,87 @@ const BookingsList: React.FC<BookingsListProps> = ({ bookings, title }) => {
                     justifyContent: "space-between",
                     alignItems: "center",
                     borderTop: "1px solid",
-                    borderColor: "divider", // Explicit divider color
-                    pt: 1.5, // Added top padding
-                    mt: 1, // Added margin top
+                    borderColor: "divider",
+                    pt: 1.5,
+                    mt: 1.5,
                   }}
                 >
+                  {/* Check-in and Check-out in one horizontal row */}
                   <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2.5,
+                      flex: 1,
+                    }}
                   >
                     {/* Check In */}
                     <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 0.75 }}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.75,
+                      }}
                     >
+                      <Calendar
+                        size={16}
+                        style={{ color: colors.successLabel }}
+                      />
                       <Typography
-                        level="body-xs"
-                        fontWeight="600"
-                        sx={{ color: "success.plainColor", width: 60 }}
-                      >
-                        Check-In:
-                      </Typography>
-                      <Calendar size={14} style={{ color: colors.gray }} />
-                      <Typography
-                        level="body-xs"
-                        sx={{ color: "text.secondary", fontWeight: 500 }}
+                        level="body-sm"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 600,
+                        }}
                       >
                         {formatDateTime(booking.checkIn, booking.checkInTime)}
                       </Typography>
                     </Box>
+
+                    {/* Separator */}
+                    <Box
+                      sx={{
+                        color: "text.tertiary",
+                        fontSize: "1rem",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      →
+                    </Box>
+
                     {/* Check Out */}
                     <Box
-                      sx={{ display: "flex", alignItems: "center", gap: 0.75 }}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.75,
+                      }}
                     >
+                      <Calendar
+                        size={16}
+                        style={{ color: colors.dangerLabel }}
+                      />
                       <Typography
-                        level="body-xs"
-                        fontWeight="600"
-                        sx={{ color: "danger.plainColor", width: 60 }}
-                      >
-                        Check-Out:
-                      </Typography>
-                      <Calendar size={14} style={{ color: colors.gray }} />
-                      <Typography
-                        level="body-xs"
-                        sx={{ color: "text.secondary", fontWeight: 500 }}
+                        level="body-sm"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 600,
+                        }}
                       >
                         {formatDateTime(booking.checkOut, booking.checkOutTime)}
                       </Typography>
                     </Box>
                   </Box>
 
+                  {/* Amount */}
                   <Typography
-                    level="title-sm"
+                    level="title-md"
                     fontWeight="700"
                     sx={{
                       color: "success.solidBg",
-                      fontSize: "0.9rem",
-                      alignSelf: "flex-end", // Align price to bottom
+                      fontSize: "1rem",
+                      whiteSpace: "nowrap",
+                      ml: 2,
                     }}
                   >
                     ₱{booking.amount.toLocaleString()}

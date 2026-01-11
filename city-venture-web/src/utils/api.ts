@@ -166,6 +166,14 @@ class ApiService {
           rejectEdit: (id: string) => `/approval/businesses/reject-edit/${id}`,
         } as const;
       case 'events':
+        return {
+          pendingNew: '/approval/pending-events',
+          pendingEdits: '/approval/events/pending-edits',
+          approveNew: (id: string) => `/approval/approve-event/${id}`,
+          approveEdit: (id: string) => `/approval/events/approve-edit/${id}`,
+          rejectNew: (id: string) => `/approval/reject-event/${id}`,
+          rejectEdit: (id: string) => `/approval/events/reject-edit/${id}`,
+        } as const;
       default:
         return {
           pendingNew: `/approval/${entity}/pending`,
@@ -660,11 +668,11 @@ class ApiService {
 
   async setEventPrimaryImage(eventId: string, imageId: string): Promise<ApiResponse<any>> {
     try {
-      console.debug('[apiService] PUT /events/:id/images/:imageId/primary', { eventId, imageId });
-      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${eventId}/images/${imageId}/primary`);
+      console.debug('[apiService] PUT /events/:id/images/:imageId/set-primary', { eventId, imageId });
+      const response: AxiosResponse<ApiResponse<any>> = await api.put(`/events/${eventId}/images/${imageId}/set-primary`);
       return response.data;
     } catch (err: any) {
-      console.error('[apiService] Failed PUT /events/:id/images/:imageId/primary', {
+      console.error('[apiService] Failed PUT /events/:id/images/:imageId/set-primary', {
         eventId,
         imageId,
         message: err?.message,

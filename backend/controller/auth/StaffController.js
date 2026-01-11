@@ -4,17 +4,18 @@ import crypto from "crypto";
 import { handleDbError } from "../../utils/errorHandler.js";
 import { v4 as uuidv4 } from "uuid";
 import { hasBusinessAccess } from "../../utils/authHelpers.js";
-import { 
-	setUserPermissions, 
-	getUserPermissionsList, 
+import {
+	setUserPermissions,
+	getUserPermissionsList,
 	getAvailablePermissions,
-	clearPermissionCache 
+	clearPermissionCache
 } from "../../services/permissionService.js";
 
 const STAFF_FIELDS = [
 	"first_name",
 	"middle_name",
 	"last_name",
+	"title",
 	"user_id",
 	"business_id",
 ];
@@ -231,7 +232,7 @@ export async function getStaffPermissions(req, res) {
 
 		// Get user permissions
 		const permissions = await getUserPermissionsList(staff.user_id);
-		
+
 		return res.json({
 			staff_id: id,
 			user_id: staff.user_id,
@@ -272,8 +273,8 @@ export async function updateStaffPermissions(req, res) {
 
 		// Set the permissions (replaces all existing)
 		const updatedPermissions = await setUserPermissions(
-			staff.user_id, 
-			permission_ids, 
+			staff.user_id,
+			permission_ids,
 			req.user.id
 		);
 
@@ -295,8 +296,8 @@ export async function updateStaffPermissions(req, res) {
  */
 export async function getAvailableStaffPermissions(req, res) {
 	try {
-		const permissions = await getAvailablePermissions('business');
-		
+		const permissions = await getAvailablePermissions('business', 'business');
+
 		// Group by category for UI
 		const grouped = {};
 		for (const perm of permissions) {
@@ -346,7 +347,7 @@ export async function getStaffWithPermissions(req, res) {
 			// Fallback to manual query if procedure doesn't exist
 			if (spError.code === 'ER_SP_DOES_NOT_EXIST') {
 				const [staffRows] = await db.query(
-					`SELECT 
+					`SELECT
 						s.id AS staff_id,
 						s.user_id,
 						s.first_name,

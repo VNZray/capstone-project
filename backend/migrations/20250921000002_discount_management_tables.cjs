@@ -1,4 +1,4 @@
-const { createDiscountProcedures, dropDiscountProcedures } = require("../procedures/discountProcedures.js");
+const { createDiscountProcedures, dropDiscountProcedures } = require("../procedures/discount/discount.procedures.cjs");
 
 exports.up = async function (knex) {
   // Create discount table (simplified MVP structure - fixed discount amounts only)
@@ -17,7 +17,7 @@ exports.up = async function (knex) {
     table.enu("status", ["active", "inactive", "expired", "paused"]).defaultTo("active");
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
-    
+
     table.index("business_id", "idx_discount_business");
     table.index(["start_datetime", "end_datetime"], "idx_discount_dates");
     table.index("status", "idx_discount_status");
@@ -39,7 +39,7 @@ exports.up = async function (knex) {
     table.integer("current_stock_used").defaultTo(0).comment("Current stock used for this product");
     table.integer("purchase_limit").nullable().comment("Max quantity per customer. NULL = unlimited");
     table.timestamp("created_at").defaultTo(knex.fn.now());
-    
+
     table.unique(["discount_id", "product_id"], "unique_discount_product");
   });
 
