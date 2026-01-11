@@ -294,7 +294,7 @@ async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE GetPendingEvents()
     BEGIN
-      SELECT 
+      SELECT
         e.*,
         ec.name as category_name,
         b.barangay as barangay_name,
@@ -309,8 +309,8 @@ async function createTouristSpotApprovalProcedures(knex) {
       ORDER BY e.created_at ASC;
 
       -- Return primary image for each pending event
-      SELECT event_id, file_url 
-      FROM event_images 
+      SELECT event_id, file_url
+      FROM event_images
       WHERE is_primary = 1 AND event_id IN (
          SELECT id FROM events WHERE status = 'pending'
       );
@@ -320,10 +320,10 @@ async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE ApproveEvent(IN p_id CHAR(64), IN p_approver_id CHAR(64))
     BEGIN
-      UPDATE events 
-      SET status = 'published', approved_by = p_approver_id, approved_at = NOW() 
+      UPDATE events
+      SET status = 'published', approved_by = p_approver_id, approved_at = NOW()
       WHERE id = p_id AND status = 'pending';
-      
+
       IF ROW_COUNT() > 0 THEN
          CALL LogApprovalRecord('new', 'event', p_id, 'approved', p_approver_id, NULL);
       END IF;
@@ -334,10 +334,10 @@ async function createTouristSpotApprovalProcedures(knex) {
   await knex.raw(`
     CREATE PROCEDURE RejectEvent(IN p_id CHAR(64), IN p_approver_id CHAR(64), IN p_reason VARCHAR(255))
     BEGIN
-      UPDATE events 
+      UPDATE events
       SET status = 'rejected', approved_by = p_approver_id, approved_at = NOW(), rejection_reason = p_reason
       WHERE id = p_id AND status = 'pending';
-      
+
       IF ROW_COUNT() > 0 THEN
          CALL LogApprovalRecord('new', 'event', p_id, 'rejected', p_approver_id, p_reason);
       END IF;

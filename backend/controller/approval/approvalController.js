@@ -270,7 +270,7 @@ export const getPendingEvents = async (req, res) => {
     for(const img of images) {
        imgMap.set(img.event_id, img.file_url);
     }
-       
+
     for(const row of rows) {
        row.primary_image = row.cover_image_url || imgMap.get(row.id) || null;
     }

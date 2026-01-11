@@ -40,11 +40,11 @@ export const createEventCategory = async (request, response) => {
       "CALL CreateEventCategory(?, ?, ?)",
       [name, description || null, icon || null]
     );
-    
-    response.status(201).json({ 
-      success: true, 
-      data: rows[0]?.[0], 
-      message: "Event category created successfully" 
+
+    response.status(201).json({
+      success: true,
+      data: rows[0]?.[0],
+      message: "Event category created successfully"
     });
   } catch (error) {
     return handleDbError(error, response);
@@ -61,7 +61,7 @@ export const updateEventCategory = async (request, response) => {
       "CALL UpdateEventCategory(?, ?, ?, ?, ?)",
       [id, name || null, description || null, icon || null, is_active !== undefined ? (is_active ? 1 : 0) : null]
     );
-    
+
     response.json({ success: true, data: rows[0]?.[0], message: "Event category updated successfully" });
   } catch (error) {
     return handleDbError(error, response);
@@ -86,7 +86,7 @@ export const getAllEvents = async (request, response) => {
   try {
     const [rows] = await db.query("CALL GetAllEvents()");
     const events = rows[0] || [];
-    
+
     // Fetch images for each event
     const eventsWithImages = await Promise.all(events.map(async (event) => {
       try {
@@ -98,7 +98,7 @@ export const getAllEvents = async (request, response) => {
         return { ...event, images: [] };
       }
     }));
-    
+
     response.json({ success: true, data: eventsWithImages, message: "Events retrieved successfully" });
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -138,8 +138,8 @@ export const getEventById = async (request, response) => {
       console.warn("Could not fetch event locations:", locError.message);
     }
 
-    const event = { 
-      ...rows[0][0], 
+    const event = {
+      ...rows[0][0],
       images,
       categories: categories.length > 0 ? categories : undefined,
       locations: locations.length > 0 ? locations : undefined,
@@ -333,7 +333,7 @@ export const getFeaturedEvents = async (request, response) => {
   try {
     const [rows] = await db.query("CALL GetFeaturedEvents()");
     const events = rows[0] || [];
-    
+
     // Fetch images for each event
     const eventsWithImages = await Promise.all(events.map(async (event) => {
       try {
@@ -345,7 +345,7 @@ export const getFeaturedEvents = async (request, response) => {
         return { ...event, images: [] };
       }
     }));
-    
+
     response.json({ success: true, data: eventsWithImages, message: "Featured events retrieved successfully" });
   } catch (error) {
     return handleDbError(error, response);
@@ -475,14 +475,14 @@ export const setPrimaryEventImage = async (request, response) => {
 export const getPublishedEvents = async (request, response) => {
   try {
     const { category_id, upcoming, search } = request.query;
-    
+
     const [rows] = await db.query(
       "CALL GetPublishedEvents(?, ?, ?)",
       [category_id || null, upcoming === 'true' ? 1 : 0, search || null]
     );
 
     const events = rows[0] || [];
-    
+
     // Fetch images for each event
     const eventsWithImages = await Promise.all(events.map(async (event) => {
       try {
@@ -506,7 +506,7 @@ export const getUpcomingEvents = async (request, response) => {
   try {
     const [rows] = await db.query("CALL GetUpcomingEvents()");
     const events = rows[0] || [];
-    
+
     // Fetch images for each event
     const eventsWithImages = await Promise.all(events.map(async (event) => {
       try {
@@ -518,7 +518,7 @@ export const getUpcomingEvents = async (request, response) => {
         return { ...event, images: [] };
       }
     }));
-    
+
     response.json({ success: true, data: eventsWithImages, message: "Upcoming events retrieved successfully" });
   } catch (error) {
     return handleDbError(error, response);
