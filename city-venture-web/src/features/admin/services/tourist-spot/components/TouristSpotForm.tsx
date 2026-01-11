@@ -194,11 +194,12 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
   );
 
   const categoryOptions = useMemo<FormOption[]>(
-    () => categories.map((c) => ({ 
-      id: c.id, 
-      label: c.title,
-      group: c.parent_title || "Main Categories"
-    })),
+    () =>
+      categories.map((c) => ({
+        id: c.id,
+        label: c.title,
+        group: c.parent_title || "Main Categories",
+      })),
     [categories]
   );
 
@@ -376,8 +377,11 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
           apiService.getLocationData(),
         ]);
         const allCategories = [
-          ...(categoriesTypes.types || []).map((t: any) => ({ ...t, parent_title: "Main Categories" })),
-          ...(categoriesTypes.categories || [])
+          ...(categoriesTypes.types || []).map((t: any) => ({
+            ...t,
+            parent_title: "Main Categories",
+          })),
+          ...(categoriesTypes.categories || []),
         ];
         setCategories(allCategories);
         setProvinces(locationData.provinces);
@@ -416,7 +420,11 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
     e.preventDefault();
 
     if (formData.category_ids.length === 0) {
-      showAlert("warning", "Required Field", "Please select at least one category.");
+      showAlert(
+        "warning",
+        "Required Field",
+        "Please select at least one category."
+      );
       return;
     }
 
@@ -712,7 +720,9 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
       showAlert(
         "error",
         "Error",
-        `Error ${mode === "add" ? "adding" : "updating"} spot. Please try again.`
+        `Error ${
+          mode === "add" ? "adding" : "updating"
+        } spot. Please try again.`
       );
     } finally {
       setLoading(false);
@@ -901,6 +911,7 @@ const TouristSpotForm: React.FC<TouristSpotFormProps> = ({
         onClose={handleClose}
         size="md"
         title={mode === "edit" ? "Edit Tourist Spot" : "Add New Tourist Spot"}
+        maxWidth={580}
         description={stepTitles[currentStep]}
         headerRight={
           <Box

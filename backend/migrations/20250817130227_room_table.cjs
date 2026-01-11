@@ -1,7 +1,7 @@
 const {
   createRoomProcedures,
   dropRoomProcedures,
-} = require("../procedures/accommodation/roomProcedures");
+} = require("../procedures/accommodation/room.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("room", function (table) {
@@ -16,6 +16,7 @@ exports.up = async function (knex) {
     table.string("room_type", 20).notNullable();
     table.text("description").nullable();
     table.float("room_price").notNullable();
+    table.float("per_hour_rate").notNullable();
     table.integer("room_size").notNullable();
     table.string("room_image", 255).nullable();
     table.integer("floor").notNullable();

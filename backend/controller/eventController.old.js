@@ -1,5 +1,5 @@
-import db from '../db.js';
-import { handleDbError } from "../utils/errorHandler.js";
+import db from '../../db.js';
+import { handleDbError } from "../../utils/errorHandler.js";
 
 // ===== EVENT CATEGORIES =====
 

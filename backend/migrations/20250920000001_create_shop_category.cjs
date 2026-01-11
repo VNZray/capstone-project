@@ -1,4 +1,4 @@
-const { createShopCategoryProcedures, dropShopCategoryProcedures } = require("../procedures/shopCategoryProcedures.js");
+const { createShopCategoryProcedures, dropShopCategoryProcedures } = require("../procedures/shop/shop-category.procedures.cjs");
 
 exports.up = async function (knex) {
   // Create unified shop_category table
@@ -15,7 +15,7 @@ exports.up = async function (knex) {
     table.enu("status", ["active", "inactive"]).defaultTo("active");
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
-    
+
     table.index("business_id", "idx_shop_category_business");
     table.index("category_type", "idx_shop_category_type");
     table.index("status", "idx_shop_category_status");

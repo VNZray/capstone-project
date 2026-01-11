@@ -1,5 +1,5 @@
 import express from "express";
-import * as reportController from "../controller/reportController.js";
+import * as reportController from "../controller/report/reportController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeRole, authorize, authorizeAny } from "../middleware/authorizeRole.js";
 

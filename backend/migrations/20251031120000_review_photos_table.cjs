@@ -3,7 +3,7 @@
 const {
   createProcedures,
   dropProcedures,
-} = require("../procedures/feedback/reviewPhotoProcedures.js");
+} = require("../procedures/feedback/review-photo.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("review_photo", (table) => {

@@ -30,6 +30,7 @@ export type CreateTourismStaffRequest = {
   is_verified?: boolean;
   is_active?: boolean;
   barangay_id?: number | null;
+  permission_ids?: number[];
 };
 
 export type UpdateTourismStaffRequest = Partial<CreateTourismStaffRequest>;

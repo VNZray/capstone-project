@@ -6,11 +6,11 @@ const TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Get user permissions using simplified RBAC system
- * 
+ *
  * Permission sources:
  * - System roles (Admin, Tourist, etc.): permissions from role_permissions table
  * - Business roles (Staff): permissions from user_permissions table (per-user)
- * 
+ *
  * @param {string} userId - User ID
  * @returns {Promise<Set<string>>} Set of permission names
  */
@@ -37,7 +37,7 @@ export async function getUserPermissions(userId) {
          WHERE u.id = ?`,
         [userId]
       );
-      
+
       if (!roleRows || roleRows.length === 0) {
         cache.set(userId, { perms: new Set(), expires: now + TTL_MS });
         return new Set();
@@ -130,7 +130,7 @@ export async function hasAnyPermission(userId, permissionNames) {
  */
 export async function grantUserPermission(userId, permissionId, grantedBy) {
   clearPermissionCache(userId);
-  
+
   try {
     const [rows] = await db.query('CALL GrantUserPermission(?, ?, ?)', [userId, permissionId, grantedBy]);
     return rows[0]?.[0] || null;
@@ -164,7 +164,7 @@ export async function grantUserPermission(userId, permissionId, grantedBy) {
  */
 export async function revokeUserPermission(userId, permissionId) {
   clearPermissionCache(userId);
-  
+
   try {
     const [rows] = await db.query('CALL RevokeUserPermission(?, ?)', [userId, permissionId]);
     return (rows[0]?.[0]?.revoked_count || 0) > 0;
@@ -189,11 +189,11 @@ export async function revokeUserPermission(userId, permissionId) {
  */
 export async function setUserPermissions(userId, permissionIds, grantedBy) {
   clearPermissionCache(userId);
-  
+
   try {
     const [rows] = await db.query('CALL SetUserPermissions(?, ?, ?)', [
-      userId, 
-      JSON.stringify(permissionIds), 
+      userId,
+      JSON.stringify(permissionIds),
       grantedBy
     ]);
     return rows[0] || [];
@@ -201,7 +201,7 @@ export async function setUserPermissions(userId, permissionIds, grantedBy) {
     if (error.code === 'ER_SP_DOES_NOT_EXIST') {
       // Fallback: delete all and insert new
       await db.query('DELETE FROM user_permissions WHERE user_id = ?', [userId]);
-      
+
       if (permissionIds.length > 0) {
         const values = permissionIds.map(pid => [userId, pid, grantedBy]);
         await db.query(
@@ -209,7 +209,7 @@ export async function setUserPermissions(userId, permissionIds, grantedBy) {
           [values]
         );
       }
-      
+
       const [rows] = await db.query(
         `SELECT up.*, p.name AS permission_name
          FROM user_permissions up
@@ -244,24 +244,36 @@ export async function getUserPermissionsList(userId) {
 /**
  * Get all available permissions (for UI selection)
  * @param {string} scope - Optional scope filter ('system', 'business', 'all')
+ * @param {string} portal - Optional portal filter ('business', 'tourism')
  * @returns {Promise<Object[]>} Array of permission objects grouped by category
  */
-export async function getAvailablePermissions(scope = null) {
+export async function getAvailablePermissions(scope = null, portal = null) {
   let query = `
-    SELECT p.id, p.name, p.description, p.scope, 
-           pc.id AS category_id, pc.name AS category_name, pc.sort_order
+    SELECT p.id, p.name, p.description, p.scope,
+           pc.id AS category_id, pc.name AS category_name, pc.sort_order, pc.portal
     FROM permissions p
     LEFT JOIN permission_categories pc ON pc.id = p.category_id
   `;
-  
+
   const params = [];
+  const conditions = [];
+
   if (scope && scope !== 'all') {
-    query += ` WHERE p.scope = ? OR p.scope = 'all'`;
+    conditions.push(`(p.scope = ? OR p.scope = 'all')`);
     params.push(scope);
   }
-  
+
+  if (portal) {
+    conditions.push(`(pc.portal = ? OR pc.portal = 'shared')`);
+    params.push(portal);
+  }
+
+  if (conditions.length > 0) {
+    query += ` WHERE ` + conditions.join(' AND ');
+  }
+
   query += ` ORDER BY pc.sort_order, p.name`;
-  
+
   const [rows] = await db.query(query, params);
   return rows;
 }

@@ -47,7 +47,7 @@ exports.up = async function (knex) {
   // Create stored procedures
   console.log("Creating notification stored procedures...");
   try {
-    const { createNotificationProcedures } = await import("../procedures/notificationProcedures.js");
+    const { createNotificationProcedures } = require("../procedures/notification/notification.procedures.cjs");
     await createNotificationProcedures(knex);
     console.log("✅ Notification stored procedures created successfully");
   } catch (error) {
@@ -60,7 +60,7 @@ exports.down = async function (knex) {
   // Drop stored procedures first
   console.log("Dropping notification stored procedures...");
   try {
-    const { dropNotificationProcedures } = await import("../procedures/notificationProcedures.js");
+    const { dropNotificationProcedures } = require("../procedures/notification/notification.procedures.cjs");
     await dropNotificationProcedures(knex);
     console.log("✅ Notification stored procedures dropped successfully");
   } catch (error) {

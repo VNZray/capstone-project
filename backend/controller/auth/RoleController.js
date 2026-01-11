@@ -1,13 +1,13 @@
 /**
  * Role Controller - Simplified RBAC HTTP Endpoints
- * 
+ *
  * After RBAC simplification, this controller only handles:
  * - System role retrieval (for admin UI)
  * - Permission category listing (for permission assignment UI)
- * 
+ *
  * Staff permission management is now in StaffController.js
  * using per-user permissions instead of role-based permissions.
- * 
+ *
  * @module controller/auth/RoleController
  */
 
@@ -37,7 +37,7 @@ export async function getSystemRoles(req, res) {
  */
 export async function getRolesByType(req, res) {
   const { type } = req.params;
-  
+
   try {
     const roles = await roleService.getRolesByType(type);
     return res.json(roles);
@@ -55,14 +55,14 @@ export async function getRolesByType(req, res) {
  */
 export async function getRoleById(req, res) {
   const { id } = req.params;
-  
+
   try {
     const role = await roleService.getRoleWithPermissions(parseInt(id, 10));
-    
+
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
-    
+
     return res.json(role);
   } catch (error) {
     return handleDbError(error, res);
@@ -74,12 +74,15 @@ export async function getRoleById(req, res) {
 // ============================================================
 
 /**
- * GET /api/roles/permission-categories
+ * GET /api/roles/permission-categories?portal=business|tourism
  * Get all permission categories
+ * @query {string} portal - Optional portal filter ('business', 'tourism')
  */
 export async function getPermissionCategories(req, res) {
+  const { portal } = req.query;
+
   try {
-    const categories = await roleService.getPermissionCategories();
+    const categories = await roleService.getPermissionCategories(portal || null);
     return res.json(categories);
   } catch (error) {
     return handleDbError(error, res);
@@ -87,14 +90,19 @@ export async function getPermissionCategories(req, res) {
 }
 
 /**
- * GET /api/roles/permissions/grouped
+ * GET /api/roles/permissions/grouped?scope=system|business&portal=business|tourism
  * Get permissions grouped by category
+ * @query {string} scope - Optional scope filter ('system', 'business', 'all')
+ * @query {string} portal - Optional portal filter ('business', 'tourism')
  */
 export async function getPermissionsGrouped(req, res) {
-  const { scope } = req.query;
-  
+  const { scope, portal } = req.query;
+
   try {
-    const grouped = await roleService.getPermissionsGroupedByCategory(scope || null);
+    const grouped = await roleService.getPermissionsGroupedByCategory(
+      scope || null,
+      portal || null
+    );
     return res.json(grouped);
   } catch (error) {
     return handleDbError(error, res);

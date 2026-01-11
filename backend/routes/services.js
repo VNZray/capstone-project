@@ -1,5 +1,5 @@
 import express from "express";
-import * as serviceController from "../controller/serviceController.js";
+import * as serviceController from "../controller/service/serviceController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorizeRole.js";
 

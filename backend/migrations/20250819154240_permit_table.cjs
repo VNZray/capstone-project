@@ -2,7 +2,7 @@
 const {
   createPermitProcedures,
   dropPermitProcedures,
-} = require("../procedures/permitProcedures");
+} = require("../procedures/permit/permit.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("permit", (table) => {

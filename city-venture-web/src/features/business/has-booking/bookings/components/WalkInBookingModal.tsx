@@ -7,9 +7,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  Modal,
-  ModalClose,
-  Sheet,
   Typography,
   Input,
   Select,
@@ -35,7 +32,7 @@ import {
   Clock,
   UserPlus,
 } from "lucide-react";
-import Button from "@/src/components/Button";
+import BaseModal from "@/src/components/BaseModal";
 import Alert from "@/src/components/Alert";
 import { colors } from "@/src/utils/Colors";
 import { useBusiness } from "@/src/context/BusinessContext";
@@ -348,550 +345,482 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
     onClose();
   };
 
+  // Dynamic title based on step
+  const getTitle = () => {
+    return "Walk-In Booking";
+  };
+
+  const getDescription = () => {
+    if (step === "guest") return "Step 1: Guest Information";
+    if (step === "booking") return "Step 2: Booking Details";
+    return "Step 3: Confirm Booking";
+  };
+
+  // Dynamic actions based on step
+  const getActions = () => {
+    const actions = [];
+
+    if (step !== "guest") {
+      actions.push({
+        label: "Back",
+        onClick: () => setStep(step === "confirm" ? "booking" : "guest"),
+        variant: "outlined" as const,
+        colorScheme: "secondary" as const,
+        disabled: loading,
+      });
+    }
+
+    if (step !== "confirm") {
+      actions.push({
+        label: "Next",
+        onClick: handleNextStep,
+        variant: "solid" as const,
+        colorScheme: "primary" as const,
+        disabled:
+          (step === "guest" && useExistingGuest && !selectedGuest) ||
+          (step === "guest" && !useExistingGuest && !guestName.trim()) ||
+          (step === "booking" && !selectedRoomId),
+      });
+    } else {
+      actions.push({
+        label: immediateCheckin ? "Check In Guest" : "Create Booking",
+        onClick: handleSubmit,
+        variant: "solid" as const,
+        colorScheme: "success" as const,
+        disabled: loading,
+      });
+    }
+
+    return actions;
+  };
+
   return (
     <>
-      <Modal
+      <BaseModal
         open={open}
         onClose={handleClose}
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          p: 2,
-        }}
+        title={getTitle()}
+        description={getDescription()}
+        actions={getActions()}
+        size="md"
+        maxWidth={580}
       >
-        <Sheet
-          variant="outlined"
-          sx={{
-            width: "100%",
-            maxWidth: 600,
-            maxHeight: "90vh",
-            borderRadius: "16px",
-            overflow: "hidden",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-          }}
-        >
-          <ModalClose
-            variant="soft"
-            color="danger"
-            sx={{ m: 1.5, zIndex: 2 }}
-          />
+        <Box sx={{ p: 3 }}>
+          {/* Step 1: Guest Information */}
+          {step === "guest" && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <FormControl>
+                <Checkbox
+                  checked={useExistingGuest}
+                  onChange={(e) => {
+                    setUseExistingGuest(e.target.checked);
+                    if (!e.target.checked) {
+                      setSelectedGuest(null);
+                    }
+                  }}
+                  label="Search for existing guest"
+                />
+              </FormControl>
 
-          {/* Header */}
-          <Box
-            sx={{
-              background: colors.primary,
-              color: "white",
-              p: 3,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              <UserPlus size={28} />
-              <Box>
-                <Typography level="h4" sx={{ fontWeight: 700, color: "white" }}>
-                  Walk-In Booking
-                </Typography>
-                <Typography
-                  level="body-sm"
-                  sx={{ color: "rgba(255,255,255,0.8)" }}
-                >
-                  {step === "guest" && "Step 1: Guest Information"}
-                  {step === "booking" && "Step 2: Booking Details"}
-                  {step === "confirm" && "Step 3: Confirm Booking"}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-
-          {/* Content */}
-          <Box
-            sx={{ p: 3, overflowY: "auto", maxHeight: "calc(90vh - 200px)" }}
-          >
-            {/* Step 1: Guest Information */}
-            {step === "guest" && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <FormControl>
-                  <Checkbox
-                    checked={useExistingGuest}
-                    onChange={(e) => {
-                      setUseExistingGuest(e.target.checked);
-                      if (!e.target.checked) {
-                        setSelectedGuest(null);
+              {useExistingGuest ? (
+                <>
+                  <FormControl>
+                    <FormLabel>Search Guest</FormLabel>
+                    <Input
+                      startDecorator={
+                        searching ? (
+                          <CircularProgress size="sm" />
+                        ) : (
+                          <Search size={18} />
+                        )
                       }
-                    }}
-                    label="Search for existing guest"
-                  />
-                </FormControl>
+                      placeholder="Search by name, phone, or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </FormControl>
 
-                {useExistingGuest ? (
-                  <>
-                    <FormControl>
-                      <FormLabel>Search Guest</FormLabel>
-                      <Input
-                        startDecorator={
-                          searching ? (
-                            <CircularProgress size="sm" />
-                          ) : (
-                            <Search size={18} />
-                          )
-                        }
-                        placeholder="Search by name, phone, or email..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </FormControl>
-
-                    {/* Search Results */}
-                    {searchResults.length > 0 && (
-                      <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
-                        {searchResults.map((guest) => (
-                          <Box
-                            key={guest.tourist_id}
-                            onClick={() => handleSelectGuest(guest)}
-                            sx={{
-                              p: 1.5,
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 2,
-                              bgcolor:
-                                selectedGuest?.tourist_id === guest.tourist_id
-                                  ? "primary.softBg"
-                                  : "transparent",
-                              border: "1px solid",
-                              borderColor:
-                                selectedGuest?.tourist_id === guest.tourist_id
-                                  ? "primary.500"
-                                  : "divider",
-                              mb: 1,
-                              "&:hover": {
-                                bgcolor: "background.level1",
-                              },
-                            }}
-                          >
-                            <Avatar size="sm">{guest.full_name[0]}</Avatar>
-                            <Box sx={{ flex: 1 }}>
-                              <Typography level="body-sm" fontWeight={600}>
-                                {guest.full_name}
-                              </Typography>
-                              <Typography
-                                level="body-xs"
-                                sx={{ color: "text.tertiary" }}
-                              >
-                                {guest.email ||
-                                  guest.phone_number ||
-                                  "No contact info"}
-                              </Typography>
-                            </Box>
-                            {guest.booking_history && (
-                              <Chip size="sm" variant="soft">
-                                {guest.booking_history.total_bookings} stays
-                              </Chip>
-                            )}
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
-
-                    {selectedGuest && (
-                      <Box
-                        sx={{
-                          p: 2,
-                          bgcolor: "success.softBg",
-                          borderRadius: "8px",
-                          border: "1px solid",
-                          borderColor: "success.500",
-                        }}
-                      >
-                        <Typography
-                          level="body-sm"
-                          fontWeight={600}
-                          sx={{ color: "success.700" }}
+                  {/* Search Results */}
+                  {searchResults.length > 0 && (
+                    <Box sx={{ maxHeight: 200, overflowY: "auto" }}>
+                      {searchResults.map((guest) => (
+                        <Box
+                          key={guest.tourist_id}
+                          onClick={() => handleSelectGuest(guest)}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                            bgcolor:
+                              selectedGuest?.tourist_id === guest.tourist_id
+                                ? "primary.softBg"
+                                : "transparent",
+                            border: "1px solid",
+                            borderColor:
+                              selectedGuest?.tourist_id === guest.tourist_id
+                                ? "primary.500"
+                                : "divider",
+                            mb: 1,
+                            "&:hover": {
+                              bgcolor: "background.level1",
+                            },
+                          }}
                         >
-                          Selected: {selectedGuest.full_name}
-                        </Typography>
-                      </Box>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <FormControl required>
-                      <FormLabel>Guest Name</FormLabel>
-                      <Input
-                        startDecorator={<User size={18} />}
-                        placeholder="Enter guest full name"
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                      />
-                    </FormControl>
+                          <Avatar size="sm">{guest.full_name[0]}</Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography level="body-sm" fontWeight={600}>
+                              {guest.full_name}
+                            </Typography>
+                            <Typography
+                              level="body-xs"
+                              sx={{ color: "text.tertiary" }}
+                            >
+                              {guest.email ||
+                                guest.phone_number ||
+                                "No contact info"}
+                            </Typography>
+                          </Box>
+                          {guest.booking_history && (
+                            <Chip size="sm" variant="soft">
+                              {guest.booking_history.total_bookings} stays
+                            </Chip>
+                          )}
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
 
-                    <FormControl>
-                      <FormLabel>Phone Number</FormLabel>
-                      <Input
-                        startDecorator={<Phone size={18} />}
-                        placeholder="Enter phone number"
-                        value={guestPhone}
-                        onChange={(e) => setGuestPhone(e.target.value)}
-                      />
-                    </FormControl>
-
-                    <FormControl>
-                      <FormLabel>Email</FormLabel>
-                      <Input
-                        startDecorator={<Mail size={18} />}
-                        placeholder="Enter email address"
-                        type="email"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                      />
-                    </FormControl>
-                  </>
-                )}
-              </Box>
-            )}
-
-            {/* Step 2: Booking Details */}
-            {step === "booking" && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <FormControl sx={{ flex: 1 }} required>
-                    <FormLabel>Check-in Date</FormLabel>
-                    <Input
-                      type="date"
-                      value={checkInDate}
-                      onChange={(e) => setCheckInDate(e.target.value)}
-                      slotProps={{
-                        input: { min: new Date().toISOString().split("T")[0] },
+                  {selectedGuest && (
+                    <Box
+                      sx={{
+                        p: 2,
+                        bgcolor: "success.softBg",
+                        borderRadius: "8px",
+                        border: "1px solid",
+                        borderColor: "success.500",
                       }}
-                    />
-                  </FormControl>
-                  <FormControl sx={{ flex: 1 }} required>
-                    <FormLabel>Check-out Date</FormLabel>
-                    <Input
-                      type="date"
-                      value={checkOutDate}
-                      onChange={(e) => setCheckOutDate(e.target.value)}
-                      slotProps={{ input: { min: checkInDate } }}
-                    />
-                  </FormControl>
-                </Box>
-
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Check-in Time</FormLabel>
-                    <Input
-                      type="time"
-                      value={checkInTime}
-                      onChange={(e) => setCheckInTime(e.target.value)}
-                    />
-                  </FormControl>
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Check-out Time</FormLabel>
-                    <Input
-                      type="time"
-                      value={checkOutTime}
-                      onChange={(e) => setCheckOutTime(e.target.value)}
-                    />
-                  </FormControl>
-                </Box>
-
-                <FormControl required>
-                  <FormLabel>Select Room</FormLabel>
-                  {loadingRooms ? (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CircularProgress size="sm" />
-                      <Typography level="body-sm">
-                        Loading available rooms...
+                    >
+                      <Typography
+                        level="body-sm"
+                        fontWeight={600}
+                        sx={{ color: "success.700" }}
+                      >
+                        Selected: {selectedGuest.full_name}
                       </Typography>
                     </Box>
-                  ) : availableRooms.length === 0 ? (
-                    <Typography level="body-sm" sx={{ color: "warning.500" }}>
-                      No rooms available for selected dates
-                    </Typography>
-                  ) : (
-                    <Select
-                      value={selectedRoomId}
-                      onChange={(_, value) =>
-                        setSelectedRoomId(value as string)
-                      }
-                      startDecorator={<Bed size={18} />}
-                    >
-                      {availableRooms.map((room) => (
-                        <Option key={room.id} value={room.id}>
-                          Room {room.room_number} - {room.room_type} (₱
-                          {room.room_price?.toLocaleString()}/night)
-                        </Option>
-                      ))}
-                    </Select>
                   )}
+                </>
+              ) : (
+                <>
+                  <FormControl required>
+                    <FormLabel>Guest Name</FormLabel>
+                    <Input
+                      startDecorator={<User size={18} />}
+                      placeholder="Enter guest full name"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Phone Number</FormLabel>
+                    <Input
+                      startDecorator={<Phone size={18} />}
+                      placeholder="Enter phone number"
+                      value={guestPhone}
+                      onChange={(e) => setGuestPhone(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Email</FormLabel>
+                    <Input
+                      startDecorator={<Mail size={18} />}
+                      placeholder="Enter email address"
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                    />
+                  </FormControl>
+                </>
+              )}
+            </Box>
+          )}
+
+          {/* Step 2: Booking Details */}
+          {step === "booking" && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <FormControl sx={{ flex: 1 }} required>
+                  <FormLabel>Check-in Date</FormLabel>
+                  <Input
+                    type="date"
+                    value={checkInDate}
+                    onChange={(e) => setCheckInDate(e.target.value)}
+                    slotProps={{
+                      input: { min: new Date().toISOString().split("T")[0] },
+                    }}
+                  />
                 </FormControl>
+                <FormControl sx={{ flex: 1 }} required>
+                  <FormLabel>Check-out Date</FormLabel>
+                  <Input
+                    type="date"
+                    value={checkOutDate}
+                    onChange={(e) => setCheckOutDate(e.target.value)}
+                    slotProps={{ input: { min: checkInDate } }}
+                  />
+                </FormControl>
+              </Box>
 
-                <Divider />
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>Check-in Time</FormLabel>
+                  <Input
+                    type="time"
+                    value={checkInTime}
+                    onChange={(e) => setCheckInTime(e.target.value)}
+                  />
+                </FormControl>
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>Check-out Time</FormLabel>
+                  <Input
+                    type="time"
+                    value={checkOutTime}
+                    onChange={(e) => setCheckOutTime(e.target.value)}
+                  />
+                </FormControl>
+              </Box>
 
-                <Box sx={{ display: "flex", gap: 2 }}>
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Adults</FormLabel>
-                    <Input
-                      type="number"
-                      value={numAdults}
-                      onChange={(e) =>
-                        setNumAdults(Math.max(1, parseInt(e.target.value) || 1))
-                      }
-                      slotProps={{ input: { min: 1 } }}
-                    />
-                  </FormControl>
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Children</FormLabel>
-                    <Input
-                      type="number"
-                      value={numChildren}
-                      onChange={(e) =>
-                        setNumChildren(
-                          Math.max(0, parseInt(e.target.value) || 0)
-                        )
-                      }
-                      slotProps={{ input: { min: 0 } }}
-                    />
-                  </FormControl>
-                  <FormControl sx={{ flex: 1 }}>
-                    <FormLabel>Infants</FormLabel>
-                    <Input
-                      type="number"
-                      value={numInfants}
-                      onChange={(e) =>
-                        setNumInfants(
-                          Math.max(0, parseInt(e.target.value) || 0)
-                        )
-                      }
-                      slotProps={{ input: { min: 0 } }}
-                    />
-                  </FormControl>
-                </Box>
-
-                <FormControl>
-                  <FormLabel>Trip Purpose</FormLabel>
+              <FormControl required>
+                <FormLabel>Select Room</FormLabel>
+                {loadingRooms ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <CircularProgress size="sm" />
+                    <Typography level="body-sm">
+                      Loading available rooms...
+                    </Typography>
+                  </Box>
+                ) : availableRooms.length === 0 ? (
+                  <Typography level="body-sm" sx={{ color: "warning.500" }}>
+                    No rooms available for selected dates
+                  </Typography>
+                ) : (
                   <Select
-                    value={tripPurpose}
-                    onChange={(_, value) => setTripPurpose(value as string)}
+                    value={selectedRoomId}
+                    onChange={(_, value) => setSelectedRoomId(value as string)}
+                    startDecorator={<Bed size={18} />}
                   >
-                    {tripPurposeOptions.map((purpose) => (
-                      <Option key={purpose} value={purpose}>
-                        {purpose}
+                    {availableRooms.map((room) => (
+                      <Option key={room.id} value={room.id}>
+                        Room {room.room_number} - {room.room_type} (₱
+                        {room.room_price?.toLocaleString()}/night)
                       </Option>
                     ))}
                   </Select>
-                </FormControl>
+                )}
+              </FormControl>
 
-                <FormControl>
-                  <Checkbox
-                    checked={immediateCheckin}
-                    onChange={(e) => setImmediateCheckin(e.target.checked)}
-                    label="Check in immediately"
+              <Divider />
+
+              <Box sx={{ display: "flex", gap: 2 }}>
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>Adults</FormLabel>
+                  <Input
+                    type="number"
+                    value={numAdults}
+                    onChange={(e) =>
+                      setNumAdults(Math.max(1, parseInt(e.target.value) || 1))
+                    }
+                    slotProps={{ input: { min: 1 } }}
+                  />
+                </FormControl>
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>Children</FormLabel>
+                  <Input
+                    type="number"
+                    value={numChildren}
+                    onChange={(e) =>
+                      setNumChildren(Math.max(0, parseInt(e.target.value) || 0))
+                    }
+                    slotProps={{ input: { min: 0 } }}
+                  />
+                </FormControl>
+                <FormControl sx={{ flex: 1 }}>
+                  <FormLabel>Infants</FormLabel>
+                  <Input
+                    type="number"
+                    value={numInfants}
+                    onChange={(e) =>
+                      setNumInfants(Math.max(0, parseInt(e.target.value) || 0))
+                    }
+                    slotProps={{ input: { min: 0 } }}
                   />
                 </FormControl>
               </Box>
-            )}
 
-            {/* Step 3: Confirmation */}
-            {step === "confirm" && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Box
-                  sx={{
-                    bgcolor: "background.level1",
-                    p: 2,
-                    borderRadius: "12px",
-                  }}
+              <FormControl>
+                <FormLabel>Trip Purpose</FormLabel>
+                <Select
+                  value={tripPurpose}
+                  onChange={(_, value) => setTripPurpose(value as string)}
                 >
-                  <Typography level="title-sm" sx={{ mb: 1.5 }}>
-                    Guest Information
-                  </Typography>
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
+                  {tripPurposeOptions.map((purpose) => (
+                    <Option key={purpose} value={purpose}>
+                      {purpose}
+                    </Option>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl>
+                <Checkbox
+                  checked={immediateCheckin}
+                  onChange={(e) => setImmediateCheckin(e.target.checked)}
+                  label="Check in immediately"
+                />
+              </FormControl>
+            </Box>
+          )}
+
+          {/* Step 3: Confirmation */}
+          {step === "confirm" && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box
+                sx={{
+                  bgcolor: "background.level1",
+                  p: 2,
+                  borderRadius: "12px",
+                }}
+              >
+                <Typography level="title-sm" sx={{ mb: 1.5 }}>
+                  Guest Information
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <User size={16} />
+                    <Typography level="body-sm">
+                      {useExistingGuest ? selectedGuest?.full_name : guestName}
+                    </Typography>
+                  </Box>
+                  {(useExistingGuest
+                    ? selectedGuest?.phone_number
+                    : guestPhone) && (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <User size={16} />
+                      <Phone size={16} />
                       <Typography level="body-sm">
                         {useExistingGuest
-                          ? selectedGuest?.full_name
-                          : guestName}
+                          ? selectedGuest?.phone_number
+                          : guestPhone}
                       </Typography>
                     </Box>
-                    {(useExistingGuest
-                      ? selectedGuest?.phone_number
-                      : guestPhone) && (
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Phone size={16} />
-                        <Typography level="body-sm">
-                          {useExistingGuest
-                            ? selectedGuest?.phone_number
-                            : guestPhone}
-                        </Typography>
-                      </Box>
-                    )}
-                    {(useExistingGuest ? selectedGuest?.email : guestEmail) && (
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Mail size={16} />
-                        <Typography level="body-sm">
-                          {useExistingGuest ? selectedGuest?.email : guestEmail}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
+                  )}
+                  {(useExistingGuest ? selectedGuest?.email : guestEmail) && (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Mail size={16} />
+                      <Typography level="body-sm">
+                        {useExistingGuest ? selectedGuest?.email : guestEmail}
+                      </Typography>
+                    </Box>
+                  )}
                 </Box>
+              </Box>
 
-                <Box
-                  sx={{
-                    bgcolor: "background.level1",
-                    p: 2,
-                    borderRadius: "12px",
-                  }}
-                >
-                  <Typography level="title-sm" sx={{ mb: 1.5 }}>
-                    Booking Details
-                  </Typography>
-                  <Box
-                    sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Bed size={16} />
-                      <Typography level="body-sm">
-                        Room {selectedRoom?.room_number} -{" "}
-                        {selectedRoom?.room_type}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Calendar size={16} />
-                      <Typography level="body-sm">
-                        {checkInDate} to {checkOutDate} ({nights} night
-                        {nights !== 1 ? "s" : ""})
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Clock size={16} />
-                      <Typography level="body-sm">
-                        {checkInTime} - {checkOutTime}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Users size={16} />
-                      <Typography level="body-sm">
-                        {pax} guest{pax !== 1 ? "s" : ""} ({numAdults} adult
-                        {numAdults !== 1 ? "s" : ""}
-                        {numChildren > 0 &&
-                          `, ${numChildren} child${
-                            numChildren !== 1 ? "ren" : ""
-                          }`}
-                        {numInfants > 0 &&
-                          `, ${numInfants} infant${
-                            numInfants !== 1 ? "s" : ""
-                          }`}
-                        )
-                      </Typography>
-                    </Box>
+              <Box
+                sx={{
+                  bgcolor: "background.level1",
+                  p: 2,
+                  borderRadius: "12px",
+                }}
+              >
+                <Typography level="title-sm" sx={{ mb: 1.5 }}>
+                  Booking Details
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Bed size={16} />
+                    <Typography level="body-sm">
+                      Room {selectedRoom?.room_number} -{" "}
+                      {selectedRoom?.room_type}
+                    </Typography>
                   </Box>
-                </Box>
-
-                <Box
-                  sx={{
-                    bgcolor: "primary.softBg",
-                    p: 2,
-                    borderRadius: "12px",
-                    border: "1px solid",
-                    borderColor: "primary.500",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <DollarSign size={20} />
-                      <Typography level="title-md">Total Amount</Typography>
-                    </Box>
-                    <Typography
-                      level="h4"
-                      fontWeight={700}
-                      sx={{ color: "primary.500" }}
-                    >
-                      ₱{totalPrice.toLocaleString()}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Calendar size={16} />
+                    <Typography level="body-sm">
+                      {checkInDate} to {checkOutDate} ({nights} night
+                      {nights !== 1 ? "s" : ""})
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Clock size={16} />
+                    <Typography level="body-sm">
+                      {checkInTime} - {checkOutTime}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Users size={16} />
+                    <Typography level="body-sm">
+                      {pax} guest{pax !== 1 ? "s" : ""} ({numAdults} adult
+                      {numAdults !== 1 ? "s" : ""}
+                      {numChildren > 0 &&
+                        `, ${numChildren} child${
+                          numChildren !== 1 ? "ren" : ""
+                        }`}
+                      {numInfants > 0 &&
+                        `, ${numInfants} infant${numInfants !== 1 ? "s" : ""}`}
+                      )
                     </Typography>
                   </Box>
                 </Box>
-
-                <Chip
-                  size="lg"
-                  variant="soft"
-                  color={immediateCheckin ? "success" : "warning"}
-                  sx={{ alignSelf: "center" }}
-                >
-                  {immediateCheckin
-                    ? "Will check in immediately"
-                    : "Will be marked as Reserved"}
-                </Chip>
               </Box>
-            )}
-          </Box>
 
-          {/* Footer Actions */}
-          <Box
-            sx={{
-              p: 2,
-              borderTop: "1px solid",
-              borderColor: "divider",
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 2,
-            }}
-          >
-            {step !== "guest" && (
-              <Button
-                variant="outlined"
-                colorScheme="secondary"
-                onClick={() =>
-                  setStep(step === "confirm" ? "booking" : "guest")
-                }
-                disabled={loading}
+              <Box
+                sx={{
+                  bgcolor: "primary.softBg",
+                  p: 2,
+                  borderRadius: "12px",
+                  border: "1px solid",
+                  borderColor: "primary.500",
+                }}
               >
-                Back
-              </Button>
-            )}
-            <Box sx={{ flex: 1 }} />
-            {step !== "confirm" ? (
-              <Button
-                variant="solid"
-                colorScheme="primary"
-                onClick={handleNextStep}
-                disabled={
-                  (step === "guest" && useExistingGuest && !selectedGuest) ||
-                  (step === "guest" &&
-                    !useExistingGuest &&
-                    !guestName.trim()) ||
-                  (step === "booking" && !selectedRoomId)
-                }
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <DollarSign size={20} />
+                    <Typography level="title-md">Total Amount</Typography>
+                  </Box>
+                  <Typography
+                    level="h4"
+                    fontWeight={700}
+                    sx={{ color: "primary.500" }}
+                  >
+                    ₱{totalPrice.toLocaleString()}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Chip
+                size="lg"
+                variant="soft"
+                color={immediateCheckin ? "success" : "warning"}
+                sx={{ alignSelf: "center" }}
               >
-                Next
-              </Button>
-            ) : (
-              <Button
-                variant="solid"
-                colorScheme="success"
-                onClick={handleSubmit}
-                loading={loading}
-              >
-                {immediateCheckin ? "Check In Guest" : "Create Booking"}
-              </Button>
-            )}
-          </Box>
-        </Sheet>
-      </Modal>
+                {immediateCheckin
+                  ? "Will check in immediately"
+                  : "Will be marked as Reserved"}
+              </Chip>
+            </Box>
+          )}
+        </Box>
+      </BaseModal>
 
       <Alert
         open={alertConfig.open}

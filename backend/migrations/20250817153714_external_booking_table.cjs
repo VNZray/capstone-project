@@ -1,7 +1,7 @@
 const {
   createExternalBookingProcedures,
   dropExternalBookingProcedures,
-} = require("../procedures/externalBookingProcedures");
+} = require("../procedures/accommodation/external-booking.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("external_booking", function (table) {

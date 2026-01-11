@@ -1,29 +1,28 @@
-# syntax=docker/dockerfile:1
-ARG NODE_VERSION=22.16.0
-FROM node:${NODE_VERSION}
+# Use Node.js LTS version
+FROM node:20-alpine
 
-ENV NODE_ENV=development
-WORKDIR /usr/src/app
+# Set working directory
+WORKDIR /app
 
-# Install MariaDB client so mysqladmin is available
-RUN apt-get update && apt-get install -y mariadb-client && rm -rf /var/lib/apt/lists/*
-
-# Copy dependency manifests first
+# Copy package files
 COPY package*.json ./
 
+# Install all dependencies (npm install will handle lock file sync)
 RUN npm install
 
-RUN npm install -g nodemon
-
-
-# Copy app source code
+# Copy application code
 COPY . .
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh .
-RUN chmod +x docker-entrypoint.sh
-
+# Expose port 3000
 EXPOSE 3000
 
-# Use entrypoint instead of CMD
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# Create a non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Default command (can be overridden by docker-compose)
+CMD ["npm", "start"]
