@@ -2,9 +2,9 @@
  * Sample seed: users with linked profiles, and businesses
  * Creates complete user ecosystem with proper profile linkage:
  * - Admin user (role_id: 1) → tourism profile
- * - Tourist user (role_id: 2) → tourist profile  
+ * - Tourist user (role_id: 2) → tourist profile
  * - Owner user (role_id: 3) → owner profile → businesses
- * 
+ *
  * Keep it simple and deterministic so it can be referenced in tests/dev.
  * Assumes earlier seeds inserted user_role, province/municipality/barangay, type/category.
  *
@@ -115,7 +115,8 @@ function randomPhone() {
       business_image: 'https://media.istockphoto.com/id/1314210006/photo/grocery-store-shop-in-vintage-style-with-fruit-and-vegetables-crates-on-the-street.jpg?s=612x612&w=0&k=20&c=UFL3bRQkWH7dt6EMLswvM4u8-1sPQU9T5IFHXuBbClU=',
       latitude: '13.6219',
       longitude: '123.1950',
-      hasBooking: false
+      hasBooking: false,
+
     }
   ];
 
