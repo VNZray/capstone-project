@@ -4,26 +4,13 @@ services:
     container_name: backend
     ports:
       - "3000:3000"
-    environment:
-      NODE_ENV: development
-      DB_HOST: db
-      DB_USER: user
-      DB_PASSWORD: userpass
-      DB_NAME: tourism_db
-      JWT_SECRET: dev-secret-key-change-in-production
-      JWT_ACCESS_SECRET: dev-access-secret-change-in-production
-      JWT_REFRESH_SECRET: dev-refresh-secret-change-in-production
+    env_file:
+      - ./backend/.env
     depends_on:
       - db
-    develop:
-      watch:
-        - action: sync
-          path: ./backend
-          target: /backend/
-          ignore:
-            - node_modules/
-        - action: rebuild
-          path: package.json
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
     command: npm run dev
 
   db:
