@@ -1,7 +1,7 @@
 const {
   createBusinessPoliciesProcedures,
   dropBusinessPoliciesProcedures,
-} = require("../procedures/businessPoliciesProcedures.cjs");
+} = require("../procedures/business/business-policies.procedures.cjs");
 
 exports.up = async function (knex) {
   // Create business_policies table for house rules and policies

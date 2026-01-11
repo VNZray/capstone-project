@@ -1,4 +1,4 @@
-const { createProcedures, dropProcedures } = require("../procedures/favoriteProcedure.js");
+const { createProcedures, dropProcedures } = require("../procedures/favorite/favorite.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("favorite", (table) => {

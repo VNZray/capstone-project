@@ -9,6 +9,8 @@ import {
   changeTourismStaffStatus,
   resetTourismStaffPassword,
   deleteTourismStaff,
+  getTourismStaffPermissions,
+  getAvailableTourismPermissions,
 } from "../controller/admin/TourismStaffManagementController.js";
 
 const router = express.Router();
@@ -17,7 +19,9 @@ const router = express.Router();
 router.use(authenticate, authorizeAny('manage_users', 'manage_tourism_staff'));
 
 router.get('/', listTourismStaff);
+router.get('/permissions/available', getAvailableTourismPermissions);
 router.get('/:id', getTourismStaffById);
+router.get('/staff/:userId/permissions', getTourismStaffPermissions);
 router.post('/', createTourismStaff);
 router.put('/:id', updateTourismStaff);
 router.patch('/:id/status', changeTourismStaffStatus);

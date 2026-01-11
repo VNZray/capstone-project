@@ -1,5 +1,5 @@
 import express from "express";
-import * as favoriteController from "../controller/FavoriteController.js";
+import * as favoriteController from "../controller/favorite/FavoriteController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeRole } from "../middleware/authorizeRole.js";
 

@@ -1,4 +1,4 @@
-const { createProductReviewProcedures, dropProductReviewProcedures } = require("../procedures/productReviewProcedures.js");
+const { createProductReviewProcedures, dropProductReviewProcedures } = require("../procedures/product/product-review.procedures.cjs");
 
 exports.up = async function (knex) {
   // Create product_review table (separate from existing review_and_rating table)
@@ -24,10 +24,10 @@ exports.up = async function (knex) {
     table.enu("status", ["active", "hidden", "flagged"]).defaultTo("active");
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("updated_at").defaultTo(knex.fn.now());
-    
+
     // Add check constraint for rating (MySQL/MariaDB syntax)
     table.check("rating >= 1 AND rating <= 5", [], "product_review_rating_check");
-    
+
     table.index("product_id", "idx_product_review_product");
     table.index("user_id", "idx_product_review_user");
     table.index("rating", "idx_product_review_rating");

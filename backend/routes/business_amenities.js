@@ -1,5 +1,5 @@
 import express from "express";
-import * as businessAmenityController from "../controller/businessAmenityController.js"; // Add `.js` extension
+import * as businessAmenityController from "../controller/amenity/businessAmenityController.js"; // Add `.js` extension
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorizeRole.js";
 

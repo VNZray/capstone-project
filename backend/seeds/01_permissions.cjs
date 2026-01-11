@@ -1,16 +1,16 @@
 /**
  * Unified Permissions Seed
- * 
+ *
  * This is the single source of truth for all permissions in the system.
  * Permissions are organized by scope:
  * - 'system': Platform-wide (Admin, Tourism Officer)
  * - 'business': Business-level (Owner, Staff)
- * 
+ *
  * Naming Convention:
  * - view_* : Read-only access
  * - manage_* : Full CRUD access (implies view)
  * - add_* : Create new records (legacy, prefer manage_*)
- * 
+ *
  * @param {import('knex').Knex} knex
  */
 exports.seed = async function (knex) {
@@ -28,10 +28,10 @@ exports.seed = async function (knex) {
   // ============================================================
   const permissions = [
     // --------------------------------------------------------
-    // DASHBOARD & REPORTING (scope: all)
+    // DASHBOARD & REPORTING
     // --------------------------------------------------------
-    { name: 'view_dashboard', description: 'Access dashboard overview', scope: 'all', category_id: 7 },
-    { name: 'view_reports', description: 'View analytics and reports', scope: 'all', category_id: 7 },
+    { name: 'view_dashboard', description: 'Access dashboard overview', scope: 'all', category_id: 17 },
+    { name: 'view_reports', description: 'View analytics and reports', scope: 'all', category_id: 17 },
     { name: 'view_analytics', description: 'View business analytics', scope: 'business', category_id: 7 },
 
     // --------------------------------------------------------
@@ -104,29 +104,43 @@ exports.seed = async function (knex) {
     // --------------------------------------------------------
     // EVENTS (scope: system - managed by Admin/Tourism Officer)
     // --------------------------------------------------------
-    { name: 'view_events', description: 'View event listings', scope: 'system', category_id: 10 },
-    { name: 'manage_events', description: 'Create, update, delete events', scope: 'system', category_id: 10 },
+    { name: 'view_events', description: 'View event listings', scope: 'system', category_id: 13 },
+    { name: 'manage_events', description: 'Create, update, delete events', scope: 'system', category_id: 13 },
 
     // --------------------------------------------------------
     // SYSTEM ADMINISTRATION (scope: system)
     // --------------------------------------------------------
-    { name: 'manage_users', description: 'Manage user accounts and roles', scope: 'system', category_id: 10 },
-    { name: 'view_all_profiles', description: 'View all business and user profiles', scope: 'system', category_id: 10 },
-    { name: 'approve_business', description: 'Approve or reject business registrations', scope: 'system', category_id: 10 },
-    { name: 'approve_event', description: 'Approve or reject submitted events', scope: 'system', category_id: 10 },
-    { name: 'approve_shop', description: 'Approve or reject shop listings', scope: 'system', category_id: 10 },
+    { name: 'manage_users', description: 'Manage user accounts and roles', scope: 'system', category_id: 16 },
+    { name: 'view_all_profiles', description: 'View all business and user profiles', scope: 'system', category_id: 16 },
+    { name: 'approve_business', description: 'Approve or reject business registrations', scope: 'system', category_id: 14 },
+    { name: 'approve_event', description: 'Approve or reject submitted events', scope: 'system', category_id: 14 },
+    { name: 'approve_shop', description: 'Approve or reject shop listings', scope: 'system', category_id: 14 },
 
     // --------------------------------------------------------
     // TOURIST SPOTS (scope: system)
     // --------------------------------------------------------
-    { name: 'view_tourist_spots', description: 'View tourist spot listings', scope: 'system', category_id: 10 },
-    { name: 'manage_tourist_spots', description: 'Add, edit, remove tourist spots', scope: 'system', category_id: 10 },
-    { name: 'approve_tourist_spot', description: 'Approve tourist spot submissions', scope: 'system', category_id: 10 },
+    { name: 'view_tourist_spots', description: 'View tourist spot listings', scope: 'system', category_id: 12 },
+    { name: 'manage_tourist_spots', description: 'Add, edit, remove tourist spots', scope: 'system', category_id: 12 },
+    { name: 'approve_tourist_spot', description: 'Approve tourist spot submissions', scope: 'system', category_id: 15 },
+
+    // --------------------------------------------------------
+    // TOURISM SERVICES (scope: system)
+    // --------------------------------------------------------
+    { name: 'view_accommodations', description: 'View accommodation businesses', scope: 'system', category_id: 17 },
+    { name: 'view_shops', description: 'View shop businesses', scope: 'system', category_id: 17 },
+    { name: 'manage_accommodations', description: 'Manage accommodation listings', scope: 'system', category_id: 10 },
+    { name: 'manage_shops', description: 'Manage shop listings', scope: 'system', category_id: 10 },
+
+    // --------------------------------------------------------
+    // EMERGENCY FACILITIES (scope: system)
+    // --------------------------------------------------------
+    { name: 'view_emergency_facilities', description: 'View emergency facilities', scope: 'system', category_id: 19 },
+    { name: 'manage_emergency_facilities', description: 'Add, edit, remove emergency facilities', scope: 'system', category_id: 19 },
 
     // --------------------------------------------------------
     // TOURISM STAFF (scope: system)
     // --------------------------------------------------------
-    { name: 'manage_tourism_staff', description: 'Manage tourism office staff', scope: 'system', category_id: 10 },
+    { name: 'manage_tourism_staff', description: 'Manage tourism office staff', scope: 'system', category_id: 11 },
 
     // --------------------------------------------------------
     // SUBSCRIPTION (scope: business)

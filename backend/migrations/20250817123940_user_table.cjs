@@ -1,15 +1,19 @@
 const {
   createUserProcedures,
   dropUserProcedures,
-} = require("../procedures/auth/userProcedures");
+} = require("../procedures/auth/user.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("user_role", (table) => {
     table.increments("id").primary();
     table.string("role_name", 20).notNullable();
     table.text("role_description").nullable();
-    table.string("role_for").nullable(); // id of business that created the role
+    table.enum("role_type", ["system", "preset", "business"]).notNullable().defaultTo("system");
+    table.boolean("is_immutable").defaultTo(false);
     table.timestamp("created_at").defaultTo(knex.fn.now());
+    table.timestamp("updated_at").defaultTo(knex.fn.now());
+
+    table.index(["role_type"], "idx_role_type");
   });
 
   await knex.schema.createTable("user", (table) => {
@@ -21,9 +25,13 @@ exports.up = async function (knex) {
     table.string("otp", 6).nullable();
     table.boolean("is_verified").defaultTo(false);
     table.boolean("is_active").defaultTo(false);
+    table.boolean("must_change_password").defaultTo(false);
+    table.boolean("profile_completed").defaultTo(true);
+    table.string("invitation_token", 64).nullable();
+    table.timestamp("invitation_expires_at").nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
     table.timestamp("last_login").nullable();
-    
+
     table
       .integer("user_role_id")
       .unsigned()
@@ -41,13 +49,44 @@ exports.up = async function (knex) {
         .inTable("barangay")
         .onDelete("CASCADE")
         .onUpdate("CASCADE");
+    table.index(["invitation_token"], "idx_user_invitation_token");
   });
+
+  // Create user_permissions table for per-user permissions (RBAC)
+  await knex.schema.createTable("user_permissions", (table) => {
+    table.increments("id").primary();
+
+    table.uuid("user_id")
+      .notNullable()
+      .references("id")
+      .inTable("user")
+      .onDelete("CASCADE");
+
+    table.integer("permission_id")
+      .unsigned()
+      .notNullable();
+    // Note: permission_id FK will be added after permissions table is created
+
+    // Who granted this permission (business owner or admin)
+    table.uuid("granted_by").nullable();
+
+    table.timestamp("created_at").defaultTo(knex.fn.now());
+
+    // Unique constraint: one permission per user
+    table.unique(["user_id", "permission_id"], "uq_user_permission");
+
+    // Indexes for fast lookups
+    table.index(["user_id"], "idx_user_permissions_user");
+  });
+
   await createUserProcedures(knex);
 
-  console.log("User tables and procedures created.");
+  console.log("User tables (user_role, user, user_permissions) and procedures created.");
 };
 
 exports.down = async function (knex) {
-  await knex.schema.dropTable("user");
+  await knex.schema.dropTableIfExists("user_permissions");
+  await knex.schema.dropTableIfExists("user");
+  await knex.schema.dropTableIfExists("user_role");
   await dropUserProcedures(knex);
 };

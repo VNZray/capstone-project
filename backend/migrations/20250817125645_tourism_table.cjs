@@ -1,7 +1,7 @@
 const {
   createTourismProcedures,
   dropTourismProcedures,
-} = require("../procedures/auth/tourismProcedures");
+} = require("../procedures/auth/tourism.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("tourism", (table) => {

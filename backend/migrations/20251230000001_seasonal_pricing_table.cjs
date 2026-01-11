@@ -6,7 +6,7 @@
 const {
   createSeasonalPricingProcedures,
   dropSeasonalPricingProcedures,
-} = require("../procedures/seasonalPricingProcedures.cjs");
+} = require("../procedures/accommodation/seasonal-pricing.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema.createTable("seasonal_pricing", (table) => {

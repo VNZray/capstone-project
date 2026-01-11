@@ -1,5 +1,5 @@
 import express from "express";
-import * as discountController from "../controller/discountController.js";
+import * as discountController from "../controller/discount/discountController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorizeRole, authorize } from "../middleware/authorizeRole.js";
 

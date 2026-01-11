@@ -1,5 +1,5 @@
 import express from "express";
-import * as appLegalPoliciesController from "../controller/appLegalPoliciesController.js";
+import * as appLegalPoliciesController from "../controller/legal/appLegalPoliciesController.js";
 
 const router = express.Router();
 

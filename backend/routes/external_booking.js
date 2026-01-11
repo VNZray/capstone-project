@@ -1,5 +1,5 @@
 import express from "express";
-import * as externalBookingController from "../controller/externalBookingController.js";
+import * as externalBookingController from "../controller/accommodation/externalBookingController.js";
 import { authenticate } from "../middleware/authenticate.js";
 import { authorize } from "../middleware/authorizeRole.js";
 

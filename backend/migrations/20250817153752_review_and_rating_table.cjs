@@ -3,12 +3,12 @@
 const {
   createReviewAndRatingTable,
   dropReviewAndRatingTable,
-} = require("../procedures/feedback/reviewAndRatingsProcedures");
+} = require("../procedures/feedback/review-and-ratings.procedures.cjs");
 
 const {
   createReplyProcedures,
   dropReplyProcedures,
-} = require("../procedures/feedback/replyProcedures"); 
+} = require("../procedures/feedback/reply.procedures.cjs");
 
 exports.up = async function (knex) {
   await knex.schema
@@ -31,7 +31,7 @@ exports.up = async function (knex) {
       table.uuid("tourist_id").notNullable();
       table.timestamp("created_at").defaultTo(knex.fn.now()).notNullable();
     })
-    
+
     .createTable("reply", (table) => {
       table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
       table

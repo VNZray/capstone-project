@@ -1,7 +1,7 @@
 const {
   createProcedures,
   dropProcedures,
-} = require("../procedures/accommodation/roomBlockedDatesProcedures.cjs");
+} = require("../procedures/accommodation/room-blocked-dates.procedures.cjs");
 
 /**
  * Migration: Room Blocked Dates Table

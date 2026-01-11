@@ -1,5 +1,5 @@
 import express from "express";
-import * as businessPoliciesController from "../controller/businessPoliciesController.js";
+import * as businessPoliciesController from "../controller/business/businessPoliciesController.js";
 
 const router = express.Router();
 

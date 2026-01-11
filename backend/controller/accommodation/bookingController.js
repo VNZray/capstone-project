@@ -1,7 +1,7 @@
 import db from "../../db.js";
 import { v4 as uuidv4 } from "uuid";
 import { handleDbError } from "../../utils/errorHandler.js";
-import { incrementPromotionUsage } from "../promotionController.js";
+import { incrementPromotionUsage } from "../promotion/promotionController.js";
 import {
   sendNotification,
   notifyBookingCancelled,

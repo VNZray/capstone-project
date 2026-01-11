@@ -6,7 +6,7 @@
 const {
   createEmergencyFacilityProcedures,
   dropEmergencyFacilityProcedures,
-} = require("../procedures/emergencyFacilityProcedures.js");
+} = require("../procedures/emergency/emergency-facility.procedures.cjs");
 
 exports.up = async function(knex) {
   await knex.schema.createTable('emergency_facilities', function(table) {
