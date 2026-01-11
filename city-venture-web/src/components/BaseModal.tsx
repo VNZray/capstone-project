@@ -4,11 +4,9 @@ import {
   ModalDialog,
   DialogTitle,
   DialogContent,
-  IconButton,
   Box,
   ModalClose,
 } from "@mui/joy";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import Button from "./Button";
 import Typography from "./Typography";
 import { colors } from "../utils/Colors";
