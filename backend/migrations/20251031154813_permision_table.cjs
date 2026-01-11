@@ -7,8 +7,14 @@ exports.up = async function(knex) {
     table.increments("id").primary();
     table.string("name", 50).notNullable().unique();
     table.string("description", 255).nullable();
+    table.enum('portal', ['business', 'tourism', 'shared'])
+      .notNullable()
+      .defaultTo('shared')
+      .comment('Which portal this category belongs to: business, tourism, or shared');
     table.integer("sort_order").defaultTo(0);
     table.timestamp("created_at").defaultTo(knex.fn.now());
+
+    table.index('portal', 'idx_permission_categories_portal');
   });
 
   // Create permissions table with category reference and scope

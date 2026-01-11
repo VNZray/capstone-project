@@ -17,15 +17,21 @@
  */
 import mysql from "mysql2/promise";
 
-const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
+const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT } = process.env;
 
 const db = mysql.createPool({
   host: DB_HOST,
+  port: DB_PORT || 3306,
   user: DB_USER,
   password: DB_PASSWORD,
   database: DB_NAME,
   timezone: "+08:00", // Match MariaDB server timezone (PHT/Asia/Manila)
   dateStrings: false, // Parse date strings to Date objects
+  connectTimeout: 60000, // 60 seconds for DigitalOcean managed databases
+  acquireTimeout: 60000, // 60 seconds to acquire connection from pool
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 console.log("✅ Connected to MariaDB (Promise Pool)");

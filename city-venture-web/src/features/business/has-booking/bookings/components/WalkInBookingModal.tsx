@@ -85,7 +85,11 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
   const [useExistingGuest, setUseExistingGuest] = useState(true);
 
   // New guest form
-  const [guestName, setGuestName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [gender, setGender] = useState<string>("Prefer not to say");
+  const [ethnicity, setEthnicity] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
 
@@ -103,6 +107,10 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
   const [numAdults, setNumAdults] = useState(1);
   const [numChildren, setNumChildren] = useState(0);
   const [numInfants, setNumInfants] = useState(0);
+  const [foreignCounts, setForeignCounts] = useState(0);
+  const [domesticCounts, setDomesticCounts] = useState(0);
+  const [overseasCounts, setOverseasCounts] = useState(0);
+  const [localCounts, setLocalCounts] = useState(0);
   const [tripPurpose, setTripPurpose] = useState("Leisure");
   const [immediateCheckin, setImmediateCheckin] = useState(true);
   const [bookingType, _setBookingType] = useState<"overnight" | "short-stay">(
@@ -218,19 +226,22 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
 
   const handleSelectGuest = (guest: GuestSearchResult) => {
     setSelectedGuest(guest);
-    setGuestName(guest.full_name);
+    const nameParts = guest.full_name.split(" ");
+    setFirstName(nameParts[0] || "");
+    setMiddleName(nameParts.length > 2 ? nameParts.slice(1, -1).join(" ") : "");
+    setLastName(nameParts.length > 1 ? nameParts[nameParts.length - 1] : "");
     setGuestPhone(guest.phone_number || "");
     setGuestEmail(guest.email || "");
   };
 
   const handleNextStep = () => {
     if (step === "guest") {
-      if (!useExistingGuest && !guestName.trim()) {
+      if (!useExistingGuest && (!firstName.trim() || !lastName.trim())) {
         setAlertConfig({
           open: true,
           type: "error",
           title: "Missing Information",
-          message: "Please enter guest name",
+          message: "Please enter at least first name and last name",
         });
         return;
       }
@@ -263,11 +274,29 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
 
     setLoading(true);
     try {
-      const request: WalkInBookingRequest = {
+      // Prepare guest data for non-existing guests
+      const guestData =
+        !useExistingGuest && firstName.trim() && lastName.trim()
+          ? {
+              first_name: firstName.trim(),
+              middle_name: middleName.trim() || undefined,
+              last_name: lastName.trim(),
+              gender: gender as any,
+              ethnicity: ethnicity.trim() || undefined,
+              phone_number: guestPhone || undefined,
+              email: guestEmail || undefined,
+            }
+          : undefined;
+
+      const request: WalkInBookingRequest & { guestData?: any } = {
         pax,
         num_adults: numAdults,
         num_children: numChildren,
         num_infants: numInfants,
+        foreign_counts: foreignCounts,
+        domestic_counts: domesticCounts,
+        overseas_counts: overseasCounts,
+        local_counts: localCounts,
         trip_purpose: tripPurpose,
         booking_type: bookingType,
         check_in_date: checkInDate,
@@ -279,12 +308,8 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
         room_id: selectedRoomId,
         business_id: businessDetails.id,
         immediate_checkin: immediateCheckin,
-        tourist_id: selectedGuest?.tourist_id,
-        guest_name: useExistingGuest ? selectedGuest?.full_name : guestName,
-        guest_phone: useExistingGuest
-          ? selectedGuest?.phone_number
-          : guestPhone,
-        guest_email: useExistingGuest ? selectedGuest?.email : guestEmail,
+        tourist_id: selectedGuest?.tourist_id, // Optional - if guest has account
+        guestData, // Will be used to create/find guest record
       };
 
       const result = await createWalkInBooking(request);
@@ -298,8 +323,12 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
 
       // Get guest name for callback
       const guestNameForCallback = useExistingGuest
-        ? selectedGuest?.full_name || guestName || "Guest"
-        : guestName || "Guest";
+        ? selectedGuest?.full_name ||
+          `${firstName} ${lastName}`.trim() ||
+          "Guest"
+        : `${firstName} ${
+            middleName ? middleName + " " : ""
+          }${lastName}`.trim() || "Guest";
 
       // Reset form and close after short delay
       setTimeout(() => {
@@ -329,7 +358,11 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
     setSearchResults([]);
     setSelectedGuest(null);
     setUseExistingGuest(true);
-    setGuestName("");
+    setFirstName("");
+    setMiddleName("");
+    setLastName("");
+    setGender("Prefer not to say");
+    setEthnicity("");
     setGuestPhone("");
     setGuestEmail("");
     setCheckInDate(new Date().toISOString().split("T")[0]);
@@ -340,6 +373,10 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
     setNumAdults(1);
     setNumChildren(0);
     setNumInfants(0);
+    setForeignCounts(0);
+    setDomesticCounts(0);
+    setOverseasCounts(0);
+    setLocalCounts(0);
     setTripPurpose("Leisure");
     setImmediateCheckin(true);
     onClose();
@@ -378,7 +415,9 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
         colorScheme: "primary" as const,
         disabled:
           (step === "guest" && useExistingGuest && !selectedGuest) ||
-          (step === "guest" && !useExistingGuest && !guestName.trim()) ||
+          (step === "guest" &&
+            !useExistingGuest &&
+            (!firstName.trim() || !lastName.trim())) ||
           (step === "booking" && !selectedRoomId),
       });
     } else {
@@ -402,7 +441,6 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
         title={getTitle()}
         description={getDescription()}
         actions={getActions()}
-        size="md"
         maxWidth={580}
       >
         <Box sx={{ p: 3 }}>
@@ -516,12 +554,56 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
               ) : (
                 <>
                   <FormControl required>
-                    <FormLabel>Guest Name</FormLabel>
+                    <FormLabel>First Name</FormLabel>
                     <Input
                       startDecorator={<User size={18} />}
-                      placeholder="Enter guest full name"
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="Enter first name"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Middle Name</FormLabel>
+                    <Input
+                      startDecorator={<User size={18} />}
+                      placeholder="Enter middle name (optional)"
+                      value={middleName}
+                      onChange={(e) => setMiddleName(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <FormControl required>
+                    <FormLabel>Last Name</FormLabel>
+                    <Input
+                      startDecorator={<User size={18} />}
+                      placeholder="Enter last name"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Gender</FormLabel>
+                    <Select
+                      value={gender}
+                      onChange={(_, value) => setGender(value as string)}
+                    >
+                      <Option value="Male">Male</Option>
+                      <Option value="Female">Female</Option>
+                      <Option value="Other">Other</Option>
+                      <Option value="Prefer not to say">
+                        Prefer not to say
+                      </Option>
+                    </Select>
+                  </FormControl>
+
+                  <FormControl>
+                    <FormLabel>Ethnicity (Optional)</FormLabel>
+                    <Input
+                      placeholder="Enter ethnicity"
+                      value={ethnicity}
+                      onChange={(e) => setEthnicity(e.target.value)}
                     />
                   </FormControl>
 
@@ -553,47 +635,87 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
           {/* Step 2: Booking Details */}
           {step === "booking" && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <FormControl sx={{ flex: 1 }} required>
-                  <FormLabel>Check-in Date</FormLabel>
-                  <Input
-                    type="date"
-                    value={checkInDate}
-                    onChange={(e) => setCheckInDate(e.target.value)}
-                    slotProps={{
-                      input: { min: new Date().toISOString().split("T")[0] },
-                    }}
-                  />
-                </FormControl>
-                <FormControl sx={{ flex: 1 }} required>
-                  <FormLabel>Check-out Date</FormLabel>
-                  <Input
-                    type="date"
-                    value={checkOutDate}
-                    onChange={(e) => setCheckOutDate(e.target.value)}
-                    slotProps={{ input: { min: checkInDate } }}
-                  />
-                </FormControl>
-              </Box>
+              {/* Display Selected Guest */}
+              {(selectedGuest ||
+                (!useExistingGuest && firstName && lastName)) && (
+                <Box
+                  sx={{
+                    p: 2,
+                    bgcolor: "primary.softBg",
+                    borderRadius: "12px",
+                    border: "1px solid",
+                    borderColor: "primary.300",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                  }}
+                >
+                  <Avatar size="md" src={selectedGuest?.user_profile}>
+                    {useExistingGuest
+                      ? selectedGuest?.full_name?.[0] || "G"
+                      : firstName?.[0] || "G"}
+                  </Avatar>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography level="title-sm" sx={{ fontWeight: 700 }}>
+                      {useExistingGuest
+                        ? selectedGuest?.full_name
+                        : `${firstName} ${
+                            middleName ? middleName + " " : ""
+                          }${lastName}`.trim()}
+                    </Typography>
+                    <Typography level="body-xs" sx={{ color: "text.tertiary" }}>
+                      {useExistingGuest
+                        ? selectedGuest?.email ||
+                          selectedGuest?.phone_number ||
+                          "Guest"
+                        : guestEmail || guestPhone || "New Guest"}
+                    </Typography>
+                  </Box>
+                  <Chip size="sm" color="primary" variant="soft">
+                    {useExistingGuest ? "Existing Guest" : "New Guest"}
+                  </Chip>
+                </Box>
+              )}
 
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>Check-in Time</FormLabel>
-                  <Input
-                    type="time"
-                    value={checkInTime}
-                    onChange={(e) => setCheckInTime(e.target.value)}
-                  />
-                </FormControl>
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>Check-out Time</FormLabel>
-                  <Input
-                    type="time"
-                    value={checkOutTime}
-                    onChange={(e) => setCheckOutTime(e.target.value)}
-                  />
-                </FormControl>
-              </Box>
+              <FormControl required>
+                <FormLabel>Check-in Date</FormLabel>
+                <Input
+                  type="date"
+                  value={checkInDate}
+                  onChange={(e) => setCheckInDate(e.target.value)}
+                  slotProps={{
+                    input: { min: new Date().toISOString().split("T")[0] },
+                  }}
+                />
+              </FormControl>
+
+              <FormControl required>
+                <FormLabel>Check-out Date</FormLabel>
+                <Input
+                  type="date"
+                  value={checkOutDate}
+                  onChange={(e) => setCheckOutDate(e.target.value)}
+                  slotProps={{ input: { min: checkInDate } }}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Check-in Time</FormLabel>
+                <Input
+                  type="time"
+                  value={checkInTime}
+                  onChange={(e) => setCheckInTime(e.target.value)}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Check-out Time</FormLabel>
+                <Input
+                  type="time"
+                  value={checkOutTime}
+                  onChange={(e) => setCheckOutTime(e.target.value)}
+                />
+              </FormControl>
 
               <FormControl required>
                 <FormLabel>Select Room</FormLabel>
@@ -626,41 +748,99 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
 
               <Divider />
 
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>Adults</FormLabel>
-                  <Input
-                    type="number"
-                    value={numAdults}
-                    onChange={(e) =>
-                      setNumAdults(Math.max(1, parseInt(e.target.value) || 1))
-                    }
-                    slotProps={{ input: { min: 1 } }}
-                  />
-                </FormControl>
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>Children</FormLabel>
-                  <Input
-                    type="number"
-                    value={numChildren}
-                    onChange={(e) =>
-                      setNumChildren(Math.max(0, parseInt(e.target.value) || 0))
-                    }
-                    slotProps={{ input: { min: 0 } }}
-                  />
-                </FormControl>
-                <FormControl sx={{ flex: 1 }}>
-                  <FormLabel>Infants</FormLabel>
-                  <Input
-                    type="number"
-                    value={numInfants}
-                    onChange={(e) =>
-                      setNumInfants(Math.max(0, parseInt(e.target.value) || 0))
-                    }
-                    slotProps={{ input: { min: 0 } }}
-                  />
-                </FormControl>
-              </Box>
+              <FormControl>
+                <FormLabel>Adults</FormLabel>
+                <Input
+                  type="number"
+                  value={numAdults}
+                  onChange={(e) =>
+                    setNumAdults(Math.max(1, parseInt(e.target.value) || 1))
+                  }
+                  slotProps={{ input: { min: 1 } }}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Children</FormLabel>
+                <Input
+                  type="number"
+                  value={numChildren}
+                  onChange={(e) =>
+                    setNumChildren(Math.max(0, parseInt(e.target.value) || 0))
+                  }
+                  slotProps={{ input: { min: 0 } }}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Infants</FormLabel>
+                <Input
+                  type="number"
+                  value={numInfants}
+                  onChange={(e) =>
+                    setNumInfants(Math.max(0, parseInt(e.target.value) || 0))
+                  }
+                  slotProps={{ input: { min: 0 } }}
+                />
+              </FormControl>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Typography level="title-sm" sx={{ mb: 2, fontWeight: 700 }}>
+                Tourist Demographics
+              </Typography>
+
+              <FormControl>
+                <FormLabel>Foreign Tourists</FormLabel>
+                <Input
+                  type="number"
+                  value={foreignCounts}
+                  onChange={(e) =>
+                    setForeignCounts(Math.max(0, parseInt(e.target.value) || 0))
+                  }
+                  slotProps={{ input: { min: 0 } }}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Domestic Tourists</FormLabel>
+                <Input
+                  type="number"
+                  value={domesticCounts}
+                  onChange={(e) =>
+                    setDomesticCounts(
+                      Math.max(0, parseInt(e.target.value) || 0)
+                    )
+                  }
+                  slotProps={{ input: { min: 0 } }}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Overseas Filipino</FormLabel>
+                <Input
+                  type="number"
+                  value={overseasCounts}
+                  onChange={(e) =>
+                    setOverseasCounts(
+                      Math.max(0, parseInt(e.target.value) || 0)
+                    )
+                  }
+                  slotProps={{ input: { min: 0 } }}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Local Tourists</FormLabel>
+                <Input
+                  type="number"
+                  value={localCounts}
+                  onChange={(e) =>
+                    setLocalCounts(Math.max(0, parseInt(e.target.value) || 0))
+                  }
+                  slotProps={{ input: { min: 0 } }}
+                />
+              </FormControl>
 
               <FormControl>
                 <FormLabel>Trip Purpose</FormLabel>
@@ -703,7 +883,11 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <User size={16} />
                     <Typography level="body-sm">
-                      {useExistingGuest ? selectedGuest?.full_name : guestName}
+                      {useExistingGuest
+                        ? selectedGuest?.full_name
+                        : `${firstName} ${
+                            middleName ? middleName + " " : ""
+                          }${lastName}`.trim()}
                     </Typography>
                   </Box>
                   {(useExistingGuest
@@ -774,6 +958,44 @@ const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
                       )
                     </Typography>
                   </Box>
+                  {(foreignCounts > 0 ||
+                    domesticCounts > 0 ||
+                    overseasCounts > 0 ||
+                    localCounts > 0) && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                        mt: 1,
+                        pl: 3,
+                      }}
+                    >
+                      <Typography level="body-xs" sx={{ fontWeight: 600 }}>
+                        Demographics:
+                      </Typography>
+                      {foreignCounts > 0 && (
+                        <Typography level="body-xs">
+                          • Foreign: {foreignCounts}
+                        </Typography>
+                      )}
+                      {domesticCounts > 0 && (
+                        <Typography level="body-xs">
+                          • Domestic: {domesticCounts}
+                        </Typography>
+                      )}
+                      {overseasCounts > 0 && (
+                        <Typography level="body-xs">
+                          • Overseas Filipino: {overseasCounts}
+                        </Typography>
+                      )}
+                      {localCounts > 0 && (
+                        <Typography level="body-xs">
+                          • Local: {localCounts}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
                 </Box>
               </Box>
 

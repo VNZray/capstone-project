@@ -5,7 +5,7 @@
 exports.up = async function(knex) {
   // Create event_category_mapping table for multiple categories
   await knex.schema.createTable('event_category_mapping', function(table) {
-    table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
+    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     table.uuid('event_id').notNullable().references('id').inTable('events').onDelete('CASCADE').onUpdate('CASCADE');
     table.uuid('category_id').notNullable().references('id').inTable('event_categories').onDelete('CASCADE').onUpdate('CASCADE');
     table.timestamp('created_at').defaultTo(knex.fn.now());
@@ -19,7 +19,7 @@ exports.up = async function(knex) {
 
   // Create event_locations table for multiple locations
   await knex.schema.createTable('event_locations', function(table) {
-    table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
+    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     table.uuid('event_id').notNullable().references('id').inTable('events').onDelete('CASCADE').onUpdate('CASCADE');
     table.string('venue_name', 255).notNullable();
     table.text('venue_address').nullable();

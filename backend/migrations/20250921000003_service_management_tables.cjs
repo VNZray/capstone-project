@@ -29,7 +29,7 @@ exports.up = async function (knex) {
 
     // Unified contact methods (consolidates phone, email, facebook, viber, whatsapp)
     // Format: [{ "type": "phone", "value": "+639123456789" }, { "type": "email", "value": "service@business.com" }]
-    table.json("contact_methods").defaultTo('[]');
+    table.json("contact_methods").nullable();
     table.text("contact_notes").nullable(); // Additional contact instructions (e.g., "Call between 9 AM - 5 PM")
 
     // Ordering and visibility

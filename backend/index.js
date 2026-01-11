@@ -66,6 +66,7 @@ import roomBlockedDatesRoutes from "./routes/room-blocked-dates.js";
 import seasonalPricingRoutes from "./routes/seasonal-pricing.js";
 import emergencyFacilitiesRoutes from "./routes/emergency-facilities.js";
 import eventRoutes from "./routes/event.js";
+import guestRoutes from "./routes/guest.js";
 
 const app = express();
 const PORT = 3000;
@@ -203,6 +204,7 @@ const routeSections = [
   {
     section: "Bookings & Stay",
     routes: [
+      { path: "/api/guest", handler: guestRoutes, label: "Guests" },
       { path: "/api/booking", handler: bookingRoutes, label: "Bookings" },
       {
         path: "/api/external-booking",

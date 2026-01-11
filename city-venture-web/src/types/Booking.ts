@@ -26,9 +26,15 @@ export type Booking = {
     business_id?: string;
     // Walk-in booking fields
     booking_source?: BookingSource;
+    guest_id?: string; // Reference to guest table for walk-in guests
+    guest_first_name?: string;
+    guest_middle_name?: string;
+    guest_last_name?: string;
+    guest_email?: string;
+    guest_phone_number?: string;
+    // Deprecated fields (kept for backward compatibility)
     guest_name?: string;
     guest_phone?: string;
-    guest_email?: string;
 }
 
 export type Bookings = Booking[];
@@ -53,10 +59,8 @@ export type WalkInBookingRequest = {
     balance?: number;
     room_id: string;
     business_id: string;
-    guest_name?: string;
-    guest_phone?: string;
-    guest_email?: string;
     tourist_id?: string;
+    guest_id?: string; // Reference to guest table for walk-in guests
     immediate_checkin?: boolean;
 }
 

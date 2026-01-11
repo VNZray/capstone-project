@@ -1,5 +1,10 @@
 import React, { useRef } from "react";
-import { motion, useScroll, useTransform, useReducedMotion } from "motion/react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useReducedMotion,
+} from "motion/react";
 import { ArrowDown, ChevronDown } from "lucide-react";
 import {
   heroTitleVariants,
@@ -12,12 +17,12 @@ import {
   scrollIndicatorTransition,
   EASE,
 } from "../utils/animationVariants";
-
+import image from "@/src/assets/images/rotunda.jpg";
 /**
  * Tourist Hero Section
  * A stunning, immersive hero section for the tourist landing page
  * featuring parallax scrolling effects and elegant typography.
- * 
+ *
  * Performance optimizations:
  * - Uses GPU-accelerated properties (transform, opacity)
  * - Respects user's reduced motion preferences
@@ -26,17 +31,29 @@ import {
 export const TouristHeroSection: React.FC = () => {
   const ref = useRef<HTMLElement>(null);
   const shouldReduceMotion = useReducedMotion();
-  
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
   });
 
   // Parallax transforms - disabled if user prefers reduced motion
-  const yText = useTransform(scrollYProgress, [0, 1], shouldReduceMotion ? ["0%", "0%"] : ["0%", "50%"]);
-  const yBg = useTransform(scrollYProgress, [0, 1], shouldReduceMotion ? ["0%", "0%"] : ["0%", "25%"]);
+  const yText = useTransform(
+    scrollYProgress,
+    [0, 1],
+    shouldReduceMotion ? ["0%", "0%"] : ["0%", "50%"]
+  );
+  const yBg = useTransform(
+    scrollYProgress,
+    [0, 1],
+    shouldReduceMotion ? ["0%", "0%"] : ["0%", "25%"]
+  );
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 1], shouldReduceMotion ? [1, 1] : [1, 1.1]);
+  const scale = useTransform(
+    scrollYProgress,
+    [0, 1],
+    shouldReduceMotion ? [1, 1] : [1, 1.1]
+  );
 
   const handleScrollToContent = () => {
     window.scrollTo({
@@ -126,7 +143,8 @@ export const TouristHeroSection: React.FC = () => {
                 fontSize: "12vw",
                 lineHeight: 0.85,
                 fontWeight: 900,
-                background: "linear-gradient(to bottom, white, rgba(255,255,255,0.7))",
+                background:
+                  "linear-gradient(to bottom, white, rgba(255,255,255,0.7))",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -207,8 +225,8 @@ export const TouristHeroSection: React.FC = () => {
             }}
           >
             Where Faith meets Adventure – Discover Naga City's rich culture,
-            historic landmarks, and vibrant festivals nestled in the scenic Bicol
-            region.
+            historic landmarks, and vibrant festivals nestled in the scenic
+            Bicol region.
           </motion.p>
 
           {/* CTA Button */}
@@ -217,7 +235,7 @@ export const TouristHeroSection: React.FC = () => {
             initial="hidden"
             animate="visible"
             onClick={handleScrollToContent}
-            whileHover={{ 
+            whileHover={{
               scale: 1.05,
               boxShadow: "0 20px 40px rgba(197, 160, 89, 0.3)",
             }}
@@ -295,7 +313,8 @@ export const TouristHeroSection: React.FC = () => {
           zIndex: 5,
           pointerEvents: "none",
           opacity: 0.03,
-          backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')",
+          backgroundImage:
+            "url('https://grainy-gradients.vercel.app/noise.svg')",
         }}
       />
     </section>
