@@ -12,6 +12,7 @@ export interface TabItem {
   label: string;
   icon?: React.ReactNode;
   disabled?: boolean;
+  count?: number;
 }
 
 interface DynamicTabProps {
@@ -91,6 +92,22 @@ const DynamicTab = ({
               : !onlyIconActive && tab.label
               ? tab.label
               : tab.label}
+            {tab.count !== undefined && (
+              <span
+                style={{
+                  marginLeft: "8px",
+                  backgroundColor: isActive
+                    ? "rgba(255,255,255,0.3)"
+                    : "rgba(0,0,0,0.1)",
+                  padding: "2px 8px",
+                  borderRadius: "10px",
+                  fontSize: "0.85em",
+                  fontWeight: 600,
+                }}
+              >
+                {tab.count}
+              </span>
+            )}
           </Button>
         );
       })}

@@ -114,6 +114,20 @@ export const refreshTokens = async (): Promise<string | null> => {
 // Request Interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Public endpoints that don't require authentication
+    const publicEndpoints = [
+      '/auth/login',
+      '/auth/refresh',
+      '/auth/register',
+      '/auth/forgot-password',
+      '/auth/reset-password',
+      '/auth/verify-email',
+    ];
+
+    const isPublicEndpoint = publicEndpoints.some(endpoint =>
+      config.url?.includes(endpoint)
+    );
+
     // Always read the current accessToken (may have changed since last request)
     const currentToken = accessToken;
     if (currentToken) {
@@ -122,7 +136,11 @@ apiClient.interceptors.request.use(
     } else {
       // Ensure no stale Authorization header exists
       delete config.headers.Authorization;
-      console.log('[apiClient] Request without auth token:', config.url);
+      if (!isPublicEndpoint) {
+        console.log('[apiClient] Request without auth token (protected endpoint):', config.url);
+      } else {
+        console.log('[apiClient] Request without auth token (public endpoint):', config.url);
+      }
     }
     return config;
   },
