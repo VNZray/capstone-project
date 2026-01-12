@@ -10,6 +10,16 @@ const apiClient = axios.create({
   withCredentials: true, // Important for HttpOnly cookies
 });
 
+// Separate axios instance for refresh to avoid interceptor loops
+// MUST have same config as apiClient for cookies to work
+const refreshClient = axios.create({
+  baseURL: api,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true, // Critical: must match apiClient
+});
+
 let accessToken: string | null = null;
 
 // Refresh lock to prevent concurrent refresh attempts (race condition)
@@ -36,9 +46,14 @@ export const refreshTokens = async (): Promise<string | null> => {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const response = await axios.post(`${api}/auth/refresh`, {}, {
-        withCredentials: true
+      console.debug('[refreshTokens] Attempting refresh. Current cookies:', document.cookie);
+
+      // Use refreshClient (configured with withCredentials) instead of raw axios
+      const response = await refreshClient.post('/auth/refresh', {
+        client: 'web'  // Identify as web client for proper cookie handling
       });
+
+      console.debug('[refreshTokens] Refresh successful');
 
       const { accessToken: newAccessToken } = response.data;
       setAccessToken(newAccessToken);

@@ -76,7 +76,7 @@ export const loginUser = async (
   // STEP 1: Authenticate User & Get Token
   // ============================================
   console.debug("[AuthService] POST /auth/login", { email });
-  const { data } = await apiClient
+  const response = await apiClient
     .post<LoginResponse>(`/auth/login`, {
       email,
       password,
@@ -90,6 +90,14 @@ export const loginUser = async (
       });
       throw err;
     });
+
+  const { data } = response;
+
+  // Log cookies to verify refresh_token cookie is set
+  console.debug("[AuthService] Login response headers:", {
+    setCookie: response.headers["set-cookie"],
+    allCookies: document.cookie,
+  });
 
   const { accessToken, user: loginUserSummary } = data;
   console.debug(
@@ -134,9 +142,9 @@ export const loginUser = async (
     .catch(() => {
       // Fallback to basic role info
       return {
-        data: { 
-          role_name: "Unknown", 
-          description: ""
+        data: {
+          role_name: "Unknown",
+          description: "",
         } as UserRoles,
       };
     });
@@ -153,24 +161,24 @@ export const loginUser = async (
   // ============================================
   // Simple role-based categorization using fixed role names
   // 5 roles: Admin, Tourism Officer, Business Owner, Tourist, Staff
-  
+
   let ownerData: Partial<Owner> | null = null;
   let touristData: Partial<Tourist> | null = null;
   let tourismData: Partial<Tourism> | null = null;
   let staffData: Partial<Staff> | null = null;
 
   // Fetch profile based on role name
-  if (roleName === 'Admin' || roleName === 'Tourism Officer') {
+  if (roleName === "Admin" || roleName === "Tourism Officer") {
     tourismData = await apiClient
       .get<Tourism>(`/tourism/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (roleName === 'Business Owner') {
+  } else if (roleName === "Business Owner") {
     ownerData = await apiClient
       .get<Owner>(`/owner/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (roleName === 'Staff') {
+  } else if (roleName === "Staff") {
     staffData = await apiClient
       .get<Staff>(`/staff/user/${user_id}`)
       .then((r) => r.data)
@@ -343,9 +351,9 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
     .catch(() => {
       // Fallback to basic role info
       return {
-        data: { 
-          role_name: "Unknown", 
-          description: ""
+        data: {
+          role_name: "Unknown",
+          description: "",
         } as UserRoles,
       };
     });
@@ -362,24 +370,24 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
   // ============================================
   // Simple role-based categorization using fixed role names
   // 5 roles: Admin, Tourism Officer, Business Owner, Tourist, Staff
-  
+
   let ownerData: Partial<Owner> | null = null;
   let touristData: Partial<Tourist> | null = null;
   let tourismData: Partial<Tourism> | null = null;
   let staffData: Partial<Staff> | null = null;
 
   // Fetch profile based on role name
-  if (roleName === 'Admin' || roleName === 'Tourism Officer') {
+  if (roleName === "Admin" || roleName === "Tourism Officer") {
     tourismData = await apiClient
       .get<Tourism>(`/tourism/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (roleName === 'Business Owner') {
+  } else if (roleName === "Business Owner") {
     ownerData = await apiClient
       .get<Owner>(`/owner/user/${user_id}`)
       .then((r) => r.data)
       .catch(() => null);
-  } else if (roleName === 'Staff') {
+  } else if (roleName === "Staff") {
     staffData = await apiClient
       .get<Staff>(`/staff/user/${user_id}`)
       .then((r) => r.data)
@@ -493,9 +501,13 @@ export const changePassword = async (
       current_password: currentPassword,
       new_password: newPassword,
     });
-    return { success: true, message: data.message || "Password changed successfully" };
+    return {
+      success: true,
+      message: data.message || "Password changed successfully",
+    };
   } catch (error: any) {
-    const message = error?.response?.data?.message || "Failed to change password";
+    const message =
+      error?.response?.data?.message || "Failed to change password";
     return { success: false, message };
   }
 };
@@ -504,12 +516,19 @@ export const changePassword = async (
  * COMPLETE STAFF PROFILE
  * Called after password change to mark profile as completed
  */
-export const completeStaffProfile = async (): Promise<{ success: boolean; message: string }> => {
+export const completeStaffProfile = async (): Promise<{
+  success: boolean;
+  message: string;
+}> => {
   try {
     const { data } = await apiClient.post(`/users/complete-profile`);
-    return { success: true, message: data.message || "Profile completed successfully" };
+    return {
+      success: true,
+      message: data.message || "Profile completed successfully",
+    };
   } catch (error: any) {
-    const message = error?.response?.data?.message || "Failed to complete profile";
+    const message =
+      error?.response?.data?.message || "Failed to complete profile";
     return { success: false, message };
   }
 };
