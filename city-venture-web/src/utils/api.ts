@@ -451,8 +451,23 @@ class ApiService {
     }
   }
 
+  async getUserStats(): Promise<any> {
+    try {
+      console.debug('[apiService] GET /users/stats');
+      const response = await api.get('/users/stats');
+      return response.data;
+    } catch (err: any) {
+      console.error('[apiService] Failed GET /users/stats', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      });
+      throw err;
+    }
+  }
+
   // ===== EVENT MANAGEMENT =====
-  
+
   async getEvents(): Promise<any[]> {
     try {
       console.debug('[apiService] GET /events');

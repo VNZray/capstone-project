@@ -25,7 +25,7 @@ function hashToken(token) {
 export async function generateTokens(user) {
   // Fetch role info from user_role table
   let roleName = user.role_name;
-  
+
   if (user.user_role_id && !roleName) {
     const [roleRows] = await db.query(
       'SELECT role_name FROM user_role WHERE id = ?',
@@ -131,15 +131,19 @@ export async function loginUser(email, password) {
     decodedRefresh.familyId
   ]);
 
+  // Update user online status and last_login
+  await db.query('CALL UpdateUserOnlineStatus(?, ?)', [user.id, true]);
+  await db.query('UPDATE user SET last_login = NOW() WHERE id = ?', [user.id]);
+
   // Include flags for frontend to handle required actions
-  return { 
+  return {
     user: {
       ...user,
       must_change_password: user.must_change_password === 1 || user.must_change_password === true,
       profile_completed: user.profile_completed === 1 || user.profile_completed === true,
-    }, 
-    accessToken, 
-    refreshToken 
+    },
+    accessToken,
+    refreshToken
   };
 }
 
@@ -215,7 +219,7 @@ export async function refreshAccessToken(incomingRefreshToken) {
 
   // Fetch role name
   let roleName = user.role_name;
-  
+
   if (user.user_role_id) {
     const [roleRows] = await db.query(
       'SELECT role_name FROM user_role WHERE id = ?',
@@ -274,6 +278,18 @@ export async function revokeUserRefreshTokens(userId) {
 export async function logout(incomingRefreshToken) {
     if (!incomingRefreshToken) return;
     const tokenHash = hashToken(incomingRefreshToken);
+
+    // Get user ID from token before deleting
+    try {
+      const payload = jwt.decode(incomingRefreshToken);
+      if (payload?.id) {
+        // Set user offline
+        await db.query('CALL UpdateUserOnlineStatus(?, ?)', [payload.id, false]);
+      }
+    } catch (error) {
+      console.error('Error setting user offline:', error);
+    }
+
     await db.query('CALL DeleteRefreshToken(?)', [tokenHash]);
 }
 

@@ -24,13 +24,16 @@ exports.up = async function (knex) {
     table.text("user_profile").nullable();
     table.string("otp", 6).nullable();
     table.boolean("is_verified").defaultTo(false);
-    table.boolean("is_active").defaultTo(false);
+    table.boolean("is_active").defaultTo(false); // Account active status (regularly used)
+    table.boolean("is_online").defaultTo(false); // Real-time online status
     table.boolean("must_change_password").defaultTo(false);
     table.boolean("profile_completed").defaultTo(true);
     table.string("invitation_token", 64).nullable();
     table.timestamp("invitation_expires_at").nullable();
     table.timestamp("created_at").defaultTo(knex.fn.now());
-    table.timestamp("last_login").nullable();
+    table.timestamp("last_login").nullable(); // Last successful login
+    table.timestamp("last_seen").nullable(); // Last activity/heartbeat
+    table.timestamp("last_activity").nullable(); // Last meaningful action
 
     table
       .integer("user_role_id")

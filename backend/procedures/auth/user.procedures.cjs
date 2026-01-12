@@ -1,9 +1,71 @@
 async function createUserProcedures(knex) {
-  // Get all users
+  // Get all users with role information
   await knex.raw(`
     CREATE PROCEDURE GetAllUsers()
     BEGIN
-      SELECT * FROM user;
+      SELECT
+        u.*,
+        ur.role_name
+      FROM user u
+      LEFT JOIN user_role ur ON u.user_role_id = ur.id
+      ORDER BY u.created_at DESC;
+    END;
+  `);
+
+  // Get user statistics
+  await knex.raw(`
+    CREATE PROCEDURE GetUserStats()
+    BEGIN
+      DECLARE v_total_users INT DEFAULT 0;
+      DECLARE v_active_users INT DEFAULT 0;
+      DECLARE v_pending_users INT DEFAULT 0;
+      DECLARE v_business_owners INT DEFAULT 0;
+      DECLARE v_last_month_total INT DEFAULT 0;
+      DECLARE v_growth_percentage DECIMAL(10,2) DEFAULT 0;
+      DECLARE v_active_percentage INT DEFAULT 0;
+
+      -- Get total users
+      SELECT COUNT(*) INTO v_total_users FROM user;
+
+      -- Get active users (logged in within last 30 days)
+      SELECT COUNT(*) INTO v_active_users
+      FROM user
+      WHERE last_login >= DATE_SUB(NOW(), INTERVAL 30 DAY);
+
+      -- Get pending approval users (not verified)
+      SELECT COUNT(*) INTO v_pending_users
+      FROM user
+      WHERE is_verified = false;
+
+      -- Get business owners count
+      SELECT COUNT(*) INTO v_business_owners
+      FROM user u
+      JOIN user_role r ON u.user_role_id = r.id
+      WHERE r.role_name = 'Business Owner' AND u.is_verified = true;
+
+      -- Get last month's total for percentage calculation
+      SELECT COUNT(*) INTO v_last_month_total
+      FROM user
+      WHERE created_at < DATE_SUB(NOW(), INTERVAL 1 MONTH);
+
+      -- Calculate growth percentage
+      IF v_last_month_total > 0 THEN
+        SET v_growth_percentage = ((v_total_users - v_last_month_total) / v_last_month_total * 100);
+      END IF;
+
+      -- Calculate active percentage
+      IF v_total_users > 0 THEN
+        SET v_active_percentage = ROUND((v_active_users / v_total_users) * 100);
+      END IF;
+
+      -- Return results
+      SELECT
+        v_total_users AS totalUsers,
+        v_active_users AS activeUsers,
+        v_pending_users AS pendingApproval,
+        v_business_owners AS businessOwners,
+        CAST(v_growth_percentage AS SIGNED) AS growthPercentage,
+        v_active_percentage AS activePercentage;
     END;
   `);
 
@@ -287,11 +349,120 @@ async function createUserProcedures(knex) {
       ORDER BY s.created_at DESC;
     END
   `);
+
+  // UpdateUserOnlineStatus - Set user online/offline status
+  await knex.raw(`
+    CREATE PROCEDURE UpdateUserOnlineStatus(
+      IN p_user_id CHAR(64),
+      IN p_is_online BOOLEAN
+    )
+    BEGIN
+      UPDATE user
+      SET is_online = p_is_online,
+          last_seen = IF(p_is_online = false, NOW(), last_seen)
+      WHERE id = p_user_id;
+
+      SELECT id, email, is_online, last_seen, last_login, last_activity
+      FROM user
+      WHERE id = p_user_id;
+    END;
+  `);
+
+  // UpdateUserLastSeen - Update last seen timestamp (heartbeat)
+  await knex.raw(`
+    CREATE PROCEDURE UpdateUserLastSeen(IN p_user_id CHAR(64))
+    BEGIN
+      UPDATE user
+      SET last_seen = NOW(),
+          is_online = true
+      WHERE id = p_user_id;
+
+      SELECT id, email, is_online, last_seen, last_login
+      FROM user
+      WHERE id = p_user_id;
+    END;
+  `);
+
+  // UpdateUserActivity - Update last activity timestamp
+  await knex.raw(`
+    CREATE PROCEDURE UpdateUserActivity(IN p_user_id CHAR(64))
+    BEGIN
+      UPDATE user
+      SET last_activity = NOW(),
+          last_seen = NOW(),
+          is_online = true,
+          is_active = true
+      WHERE id = p_user_id;
+
+      SELECT id, email, is_online, is_active, last_seen, last_activity
+      FROM user
+      WHERE id = p_user_id;
+    END;
+  `);
+
+  // GetOnlineUsers - Get all currently online users
+  await knex.raw(`
+    CREATE PROCEDURE GetOnlineUsers()
+    BEGIN
+      SELECT
+        u.id,
+        u.email,
+        u.phone_number,
+        u.user_profile,
+        u.is_online,
+        u.is_active,
+        u.last_seen,
+        u.last_login,
+        u.last_activity,
+        ur.role_name
+      FROM user u
+      LEFT JOIN user_role ur ON u.user_role_id = ur.id
+      WHERE u.is_online = true
+      ORDER BY u.last_seen DESC;
+    END;
+  `);
+
+  // GetUserOnlineStatus - Get specific user's online status
+  await knex.raw(`
+    CREATE PROCEDURE GetUserOnlineStatus(IN p_user_id CHAR(64))
+    BEGIN
+      SELECT
+        id,
+        email,
+        is_online,
+        is_active,
+        last_seen,
+        last_login,
+        last_activity,
+        CASE
+          WHEN is_online = true THEN 'online'
+          WHEN last_seen >= DATE_SUB(NOW(), INTERVAL 5 MINUTE) THEN 'away'
+          WHEN last_seen >= DATE_SUB(NOW(), INTERVAL 30 MINUTE) THEN 'idle'
+          ELSE 'offline'
+        END AS status
+      FROM user
+      WHERE id = p_user_id;
+    END;
+  `);
+
+  // MarkInactiveUsersOffline - Auto-mark users offline after inactivity (5 minutes)
+  await knex.raw(`
+    CREATE PROCEDURE MarkInactiveUsersOffline()
+    BEGIN
+      UPDATE user
+      SET is_online = false
+      WHERE is_online = true
+        AND last_seen < DATE_SUB(NOW(), INTERVAL 5 MINUTE);
+
+      SELECT ROW_COUNT() AS users_marked_offline;
+    END;
+  `);
 }
 
 async function dropUserProcedures(knex) {
   // Basic user procedures
   await knex.raw("DROP PROCEDURE IF EXISTS GetAllUsers;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetUserStats;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetUserById;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetUserByUserId;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetUsersByRoleId;");
@@ -310,6 +481,14 @@ async function dropUserProcedures(knex) {
   await knex.raw("DROP PROCEDURE IF EXISTS RevokeUserPermission;");
   await knex.raw("DROP PROCEDURE IF EXISTS SetUserPermissions;");
   await knex.raw("DROP PROCEDURE IF EXISTS GetBusinessStaffWithPermissions;");
+
+  // Online status procedures
+  await knex.raw("DROP PROCEDURE IF EXISTS UpdateUserOnlineStatus;");
+  await knex.raw("DROP PROCEDURE IF EXISTS UpdateUserLastSeen;");
+  await knex.raw("DROP PROCEDURE IF EXISTS UpdateUserActivity;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetOnlineUsers;");
+  await knex.raw("DROP PROCEDURE IF EXISTS GetUserOnlineStatus;");
+  await knex.raw("DROP PROCEDURE IF EXISTS MarkInactiveUsersOffline;");
 
   // Legacy RBAC procedures (cleanup)
   await knex.raw("DROP PROCEDURE IF EXISTS GetUserEffectivePermissions;");

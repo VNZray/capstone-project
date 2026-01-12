@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { IoAdd } from "react-icons/io5";
-import { Star, Search, Landmark, Church, History, Trees, Building2 } from "lucide-react";
+import {
+  Star,
+  Search,
+  Landmark,
+  Church,
+  History,
+  Trees,
+  Building2,
+} from "lucide-react";
 import Typography from "@/src/components/Typography";
 import Button from "@/src/components/Button";
 import TouristSpotForm from "@/src/features/admin/services/tourist-spot/components/TouristSpotForm";
+import TouristSpotCard from "@/src/features/admin/services/tourist-spot/components/TouristSpotCard";
 import type { TouristSpot } from "@/src/types/TouristSpot";
 import type { Category } from "@/src/types/Category";
 import { apiService } from "@/src/utils/api";
@@ -17,14 +26,7 @@ import Table, { type TableColumn } from "@/src/components/ui/Table";
 import DynamicTab from "@/src/components/ui/DynamicTab";
 import NoDataFound from "@/src/components/NoDataFound";
 import IconButton from "@/src/components/IconButton";
-import {
-  Input,
-  Chip,
-  Stack,
-  Select,
-  Option,
-} from "@mui/joy";
-import Card from "@/src/components/Card";
+import { Input, Chip, Stack, Select, Option, Box } from "@mui/joy";
 import placeholderImage from "@/src/assets/images/placeholder-image.png";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import TableRowsRoundedIcon from "@mui/icons-material/TableRowsRounded";
@@ -46,7 +48,7 @@ const Spot = () => {
   const [mainCategoryTab, setMainCategoryTab] = useState<string>("All");
   const [subCategoryTab, setSubCategoryTab] = useState<string>("All");
   const [isMySubmissionsModalOpen, setMySubmissionsModalOpen] = useState(false);
-  
+
   type DisplayMode = "cards" | "table";
   const [display, setDisplay] = useState<DisplayMode>("cards");
   const [statusFilter, setStatusFilter] = useState<
@@ -66,7 +68,9 @@ const Spot = () => {
         // Merge root categories (types) and subcategories
         setAllCategories([...(types as unknown as Category[]), ...categories]);
       } catch {
-        console.warn("Failed to fetch full category tree, filtering might be limited.");
+        console.warn(
+          "Failed to fetch full category tree, filtering might be limited."
+        );
       }
     } catch (error) {
       console.error("Error:", error);
@@ -96,11 +100,11 @@ const Spot = () => {
   // Compute available Main Categories based on existing spots
   const mainTabs = useMemo(() => {
     const usedMainIds = new Set<number>();
-    
-    spots.forEach(spot => {
-      spot.categories?.forEach(cat => {
+
+    spots.forEach((spot) => {
+      spot.categories?.forEach((cat) => {
         // Find the category definition
-        const def = allCategories.find(c => c.id === Number(cat.category_id));
+        const def = allCategories.find((c) => c.id === Number(cat.category_id));
         if (def) {
           if (def.parent_category) {
             usedMainIds.add(def.parent_category);
@@ -111,12 +115,26 @@ const Spot = () => {
       });
     });
 
-    const tabs = Array.from(usedMainIds).map(id => {
-      const cat = allCategories.find(c => c.id === id);
-      return cat ? { id: String(cat.id), label: cat.title, icon: categoryIconFor(cat.title) } : null;
-    }).filter((t): t is { id: string; label: string; icon: React.ReactNode } => t !== null);
+    const tabs = Array.from(usedMainIds)
+      .map((id) => {
+        const cat = allCategories.find((c) => c.id === id);
+        return cat
+          ? {
+              id: String(cat.id),
+              label: cat.title,
+              icon: categoryIconFor(cat.title),
+            }
+          : null;
+      })
+      .filter(
+        (t): t is { id: string; label: string; icon: React.ReactNode } =>
+          t !== null
+      );
 
-    return [{ id: "All", label: "All", icon: <Landmark size={16} /> }, ...tabs.sort((a, b) => a.label.localeCompare(b.label))];
+    return [
+      { id: "All", label: "All", icon: <Landmark size={16} /> },
+      ...tabs.sort((a, b) => a.label.localeCompare(b.label)),
+    ];
   }, [spots, allCategories]);
 
   // Compute available Subcategories based on selected Main Category and existing spots
@@ -126,9 +144,9 @@ const Spot = () => {
     const mainId = Number(mainCategoryTab);
     const usedSubIds = new Set<number>();
 
-    spots.forEach(spot => {
-      spot.categories?.forEach(cat => {
-        const def = allCategories.find(c => c.id === Number(cat.category_id));
+    spots.forEach((spot) => {
+      spot.categories?.forEach((cat) => {
+        const def = allCategories.find((c) => c.id === Number(cat.category_id));
         // Check if this category is a child of the selected main category
         if (def && def.parent_category === mainId) {
           usedSubIds.add(def.id);
@@ -136,14 +154,28 @@ const Spot = () => {
       });
     });
 
-    const tabs = Array.from(usedSubIds).map(id => {
-      const cat = allCategories.find(c => c.id === id);
-      return cat ? { id: String(cat.id), label: cat.title, icon: categoryIconFor(cat.title) } : null;
-    }).filter((t): t is { id: string; label: string; icon: React.ReactNode } => t !== null);
+    const tabs = Array.from(usedSubIds)
+      .map((id) => {
+        const cat = allCategories.find((c) => c.id === id);
+        return cat
+          ? {
+              id: String(cat.id),
+              label: cat.title,
+              icon: categoryIconFor(cat.title),
+            }
+          : null;
+      })
+      .filter(
+        (t): t is { id: string; label: string; icon: React.ReactNode } =>
+          t !== null
+      );
 
     if (tabs.length === 0) return [];
-    
-    return [{ id: "All", label: "All", icon: <Landmark size={16} /> }, ...tabs.sort((a, b) => a.label.localeCompare(b.label))];
+
+    return [
+      { id: "All", label: "All", icon: <Landmark size={16} /> },
+      ...tabs.sort((a, b) => a.label.localeCompare(b.label)),
+    ];
   }, [spots, allCategories, mainCategoryTab]);
 
   // Reset subcategory when main category changes
@@ -209,9 +241,13 @@ const Spot = () => {
       filtered = filtered.filter((spot) =>
         Array.isArray(spot.categories)
           ? spot.categories.some((cat) => {
-              const def = allCategories.find(c => c.id === Number(cat.category_id));
+              const def = allCategories.find(
+                (c) => c.id === Number(cat.category_id)
+              );
               // Match if category is the main category OR its parent is the main category
-              return def && (def.id === mainId || def.parent_category === mainId);
+              return (
+                def && (def.id === mainId || def.parent_category === mainId)
+              );
             })
           : false
       );
@@ -244,7 +280,14 @@ const Spot = () => {
     }
 
     return filtered;
-  }, [spots, searchQuery, mainCategoryTab, subCategoryTab, statusFilter, allCategories]);
+  }, [
+    spots,
+    searchQuery,
+    mainCategoryTab,
+    subCategoryTab,
+    statusFilter,
+    allCategories,
+  ]);
 
   const getPrimaryImageUrl = (spot: TouristSpot): string => {
     const img = spot.images?.find((i) => i.is_primary) || spot.images?.[0];
@@ -518,19 +561,18 @@ const Spot = () => {
               <TableRowsRoundedIcon />
             </IconButton>
           </Container>
-
         </Container>
 
         {/* Tabs */}
         <Container padding="0">
-          <Stack spacing={0} sx={{ width: '100%' }}>
+          <Stack spacing={0} sx={{ width: "100%" }}>
             <DynamicTab
               tabs={mainTabs}
               activeTabId={mainCategoryTab}
               onChange={(tabId) => setMainCategoryTab(String(tabId))}
-              padding="16px 20px 4px 20px"
+              padding="16px 20px 20px 20px"
             />
-            
+
             {subTabs.length > 0 && (
               <DynamicTab
                 tabs={subTabs}
@@ -541,153 +583,91 @@ const Spot = () => {
             )}
           </Stack>
         </Container>
+      </Container>
 
-      <Container background="transparent" padding={display === "table" ? "20px" : "0"}>
-        {loading ? (
-          <Container
-            align="center"
-            justify="center"
-            padding="4rem"
-            style={{ minHeight: "400px" }}
+      {loading ? (
+        <Container
+          align="center"
+          justify="center"
+          padding="4rem"
+          style={{ minHeight: "400px" }}
+        >
+          <div className="loading-spinner" />
+          <Typography.Body
+            size="normal"
+            sx={{ color: "#666", marginTop: "1rem" }}
           >
-            <div className="loading-spinner" />
-            <Typography.Body
-              size="normal"
-              sx={{ color: "#666", marginTop: "1rem" }}
-            >
-              Loading tourist spots...
-            </Typography.Body>
-          </Container>
-        ) : error ? (
-          <Container
-            align="center"
-            justify="center"
-            padding="4rem"
-            style={{ minHeight: "400px" }}
+            Loading tourist spots...
+          </Typography.Body>
+        </Container>
+      ) : error ? (
+        <Container
+          align="center"
+          justify="center"
+          padding="4rem"
+          style={{ minHeight: "400px" }}
+        >
+          <Typography.Body size="normal" sx={{ color: "#ff4d4d" }}>
+            Error: {error}
+          </Typography.Body>
+        </Container>
+      ) : spots.length === 0 ? (
+        <NoDataFound
+          icon="database"
+          title="No Tourist Spots Listed"
+          message="No tourist spots yet. Add your first spot above."
+        >
+          <Button
+            onClick={() => setAddSpotModalVisible(true)}
+            startDecorator={<IoAdd size={20} />}
+            colorScheme="primary"
+            variant="solid"
+            size="md"
           >
-            <Typography.Body size="normal" sx={{ color: "#ff4d4d" }}>
-              Error: {error}
-            </Typography.Body>
-          </Container>
-        ) : spots.length === 0 ? (
-          <NoDataFound
-            icon="database"
-            title="No Tourist Spots Listed"
-            message="No tourist spots yet. Add your first spot above."
-          >
-            <Button
-              onClick={() => setAddSpotModalVisible(true)}
-              startDecorator={<IoAdd size={20} />}
-              colorScheme="primary"
-              variant="solid"
-              size="md"
-            >
-              Add Tourist Spot
-            </Button>
-          </NoDataFound>
-        ) : filteredSpots.length === 0 && searchQuery.trim() !== "" ? (
-          <NoDataFound
-            icon="search"
-            title="No Results Found"
-            message={`No spots match "${searchQuery}". Try a different search term.`}
-          />
-        ) : display === "table" ? (
-          <Table
-            columns={columns}
-            data={filteredSpots}
-            rowKey="id"
-            onRowClick={(row) => handleViewDetails(row)}
-            rowsPerPage={10}
-            loading={loading}
-            emptyMessage="No tourist spots found"
-            stickyHeader
-            maxHeight="600px"
-          />
-        ) : (
-            <>
-              <style>
-                {`
-                  .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                    height: 6px;
-                  }
-                  .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                  }
-                  .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(0, 0, 0, 0.2);
-                    border-radius: 3px;
-                  }
-                  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(0, 0, 0, 0.3);
-                  }
-                `}
-              </style>
-              <div
-                className="custom-scrollbar"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                  gap: "10px",
-                  padding: "20px",
-                  maxHeight: "680px",
-                  overflowY: "auto",
-                }}
-              >
-                {filteredSpots.map((spot) => (
-                <Card
-                  key={spot.id}
-                  variant="grid"
-                  image={getPrimaryImageUrl(spot)}
-                  aspectRatio="16/9"
-                  title={spot.name}
-                  subtitle={getAddressLine(spot)}
-                  size="sm"
-                  elevation={2}
-                  actions={[
-                    {
-                      label: 'View',
-                      onClick: () => handleViewDetails(spot),
-                      variant: 'solid',
-                      colorScheme: 'primary',
-                      fullWidth: true,
-                    },
-                    {
-                      label: 'Edit',
-                      onClick: () => handleEditSpot(spot),
-                      variant: 'outlined',
-                      colorScheme: 'primary',
-                      fullWidth: true,
-                    },                    {
-                      label: 'Delete',
-                      onClick: () => handleDeleteSpot(spot),
-                      variant: 'outlined',
-                      colorScheme: 'error',
-                      fullWidth: true,
-                    },                    {
-                      label: 'Reviews',
-                      onClick: () => handleViewReviews(spot),
-                      variant: 'outlined',
-                      colorScheme: 'secondary',
-                      fullWidth: true,
-                    },
-                  ]}
-                >
-                  <Chip
-                    size="sm"
-                    color={
-                      spot.spot_status === "active" ? "success" : "neutral"
-                    }
-                  >
-                    {spot.spot_status}
-                  </Chip>
-                </Card>
-              ))}
-            </div>
-            </>
-        )}
-      </Container>
-      </Container>
+            Add Tourist Spot
+          </Button>
+        </NoDataFound>
+      ) : filteredSpots.length === 0 && searchQuery.trim() !== "" ? (
+        <NoDataFound
+          icon="search"
+          title="No Results Found"
+          message={`No spots match "${searchQuery}". Try a different search term.`}
+        />
+      ) : display === "table" ? (
+        <Table
+          columns={columns}
+          data={filteredSpots}
+          rowKey="id"
+          onRowClick={(row) => handleViewDetails(row)}
+          rowsPerPage={10}
+          loading={loading}
+          emptyMessage="No tourist spots found"
+          stickyHeader
+          maxHeight="600px"
+        />
+      ) : (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gap: "20px",
+            maxHeight: "680px",
+          }}
+        >
+          {filteredSpots.map((spot) => (
+            <TouristSpotCard
+              key={spot.id}
+              spot={spot}
+              imageUrl={getPrimaryImageUrl(spot)}
+              addressLine={getAddressLine(spot)}
+              onView={() => handleViewDetails(spot)}
+              onEdit={() => handleEditSpot(spot)}
+              onDelete={() => handleDeleteSpot(spot)}
+              onViewReviews={() => handleViewReviews(spot)}
+            />
+          ))}
+        </Box>
+      )}
 
       <TouristSpotForm
         isVisible={isAddSpotModalVisible}

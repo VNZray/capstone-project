@@ -73,11 +73,26 @@ export const refreshTokens = async (): Promise<string | null> => {
 // Request Interceptor
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    console.debug('[apiClient] Request to:', config.url, '| Has token:', !!accessToken);
+    // Public endpoints that don't require authentication
+    const publicEndpoints = [
+      '/auth/login',
+      '/auth/refresh',
+      '/auth/register',
+      '/auth/forgot-password',
+      '/auth/reset-password',
+      '/auth/verify-email',
+    ];
+
+    const isPublicEndpoint = publicEndpoints.some(endpoint =>
+      config.url?.includes(endpoint)
+    );
+
+    console.debug('[apiClient] Request to:', config.url, '| Has token:', !!accessToken, '| Public:', isPublicEndpoint);
+
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
-    } else {
-      console.warn('[apiClient] No access token available for request:', config.url);
+    } else if (!isPublicEndpoint) {
+      console.warn('[apiClient] No access token available for protected endpoint:', config.url);
     }
     return config;
   },
