@@ -5,8 +5,8 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 
 const cookieOptions = {
   httpOnly: true,
-  secure: IS_PROD, // true in prod (https), false in dev (http)
-  sameSite: IS_PROD ? 'strict' : 'lax',
+  secure: IS_PROD, // Only use secure in production (HTTPS)
+  sameSite: IS_PROD ? 'strict' : 'lax', // 'lax' works for same-site in dev
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   path: '/' // accessible to all routes (e.g. /api/auth/refresh)
 };
@@ -32,6 +32,11 @@ export async function login(req, res) {
 
     // Web Client: Set HttpOnly Cookie
     if (client === 'web') {
+      console.log('[Login] Setting cookie for web client:', {
+        cookieName: COOKIE_NAME,
+        cookieOptions,
+        refreshTokenPresent: !!refreshToken
+      });
       res.cookie(COOKIE_NAME, refreshToken, cookieOptions);
       // Do NOT return refreshToken in body for web
       return res.json({
@@ -78,12 +83,18 @@ export async function login(req, res) {
 
 export async function refresh(req, res) {
   try {
+    // Identify client type from request body or default to cookie presence
+    const { client } = req.body || {};
+    const isWebClient = client === 'web' || !!req.cookies?.[COOKIE_NAME];
+
     // Try getting token from Cookie (Web) or Body (Mobile)
     const refreshToken = req.cookies?.[COOKIE_NAME] || req.body?.refreshToken;
 
-    // Debug logging (remove in production)
+    // Debug logging
+    console.log('[Refresh] Client type:', isWebClient ? 'web' : 'mobile');
     console.log('[Refresh] Cookie present:', !!req.cookies?.[COOKIE_NAME]);
     console.log('[Refresh] Body token present:', !!req.body?.refreshToken);
+    console.log('[Refresh] Cookies received:', Object.keys(req.cookies || {}));
 
     if (!refreshToken) {
       console.log('[Refresh] No token found - returning 401');
@@ -92,9 +103,13 @@ export async function refresh(req, res) {
 
     const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await authService.refreshAccessToken(refreshToken);
 
-    // Web: Update Cookie
-    if (req.cookies?.[COOKIE_NAME]) {
-      console.log('[Refresh] Setting new cookie for web client');
+    // Web Client: Update Cookie
+    if (isWebClient) {
+      console.log('[Refresh] Setting new cookie for web client:', {
+        cookieName: COOKIE_NAME,
+        cookieOptions,
+        newRefreshTokenPresent: !!newRefreshToken
+      });
       res.cookie(COOKIE_NAME, newRefreshToken, cookieOptions);
       return res.json({ accessToken: newAccessToken });
     }
@@ -105,7 +120,7 @@ export async function refresh(req, res) {
   } catch (error) {
     console.error('Refresh error:', error.message);
     // Clear cookie if invalid
-    res.clearCookie(COOKIE_NAME);
+    res.clearCookie(COOKIE_NAME, { path: '/' });
     return res.status(403).json({ message: error.message || 'Invalid refresh token' });
   }
 }

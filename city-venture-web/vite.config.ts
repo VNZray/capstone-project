@@ -17,9 +17,9 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     hmr: {
-      protocol: 'ws',
-      host: '152.42.197.214',
-      port: 5173,
+      // Let the browser automatically determine the correct host
+      // This prevents WebSocket connection issues when IP changes
+      clientPort: 5173,
     },
   },
 });
