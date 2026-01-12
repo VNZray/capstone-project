@@ -8,7 +8,11 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
+
+// Debug: Log base URL
+console.log('[apiClient] Initialized with baseURL:', api);
 
 // In-memory access token
 let accessToken: string | null = null;
