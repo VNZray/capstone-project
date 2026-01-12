@@ -44,6 +44,13 @@ router.post(
 // ADMIN USER MANAGEMENT (Platform scope + manage_users permission)
 // ============================================================
 
+// Get user statistics
+router.get(
+  "/stats",
+  authenticate,
+  userController.getUserStats
+);
+
 // User CRUD - protected routes requiring manage_users permission
 router.get(
   "/",
