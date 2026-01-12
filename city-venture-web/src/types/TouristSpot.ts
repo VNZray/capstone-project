@@ -25,6 +25,8 @@ export interface TouristSpot {
   barangay: string;
   images?: TouristSpotImage[];
   rejection_reason?: string;
+  views?: number;
+  average_rating?: number;
 }
 
 export interface Province {
