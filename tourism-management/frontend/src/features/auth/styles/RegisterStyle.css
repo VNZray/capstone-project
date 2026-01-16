@@ -1,0 +1,43 @@
+.checkbox-group {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    /* space between checkboxes */
+    align-items: center;
+    flex-wrap: wrap;
+    /* optional, wraps if too long */
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    /* space between checkbox and label text */
+}
+
+.color {
+    color: var(--dark);
+}
+
+input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.checkbox-item input[type="checkbox"]:checked {
+  background-color: var(--secondary-color); /* Checked background */
+  border-color: var(--secondary-color);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    /* space between columns */
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}

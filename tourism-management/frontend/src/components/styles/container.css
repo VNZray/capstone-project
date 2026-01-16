@@ -1,0 +1,35 @@
+.container {
+  background-color: var(--white);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+/* Elevation levels */
+.elevation-0 {
+  box-shadow: none;
+}
+
+.elevation-1 {
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.12)
+}
+
+.elevation-2 {
+  box-shadow: 0 1px 16px rgba(0, 0, 0, 0.16)
+}
+
+.elevation-3 {
+  box-shadow: 0 1px 22px rgba(0, 0, 0, 0.19)
+}
+
+.elevation-4 {
+  box-shadow: 0 1px 36px rgba(0, 0, 0, 0.25)
+}
+
+.elevation-5 {
+  box-shadow: 0 1px 42px rgba(0, 0, 0, 0.30)
+}
+
+.elevation-6 {
+  box-shadow: 0 1px 58px rgba(0, 0, 0, 0.35)
+}

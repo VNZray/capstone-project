@@ -1,0 +1,49 @@
+.main-layout {
+  display: flex;
+  max-height: 100vh;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow: hidden;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.main-outlet {
+  overflow: auto;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.business-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100dvh;
+  max-width: 100vw;
+  min-width: 100vw;
+  overflow: hidden;
+}
+
+.landing-page-layout {
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.auth-layout {
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Sidebar overlay when open on mobile */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1300; /* above MUI AppBar (1100) */
+}

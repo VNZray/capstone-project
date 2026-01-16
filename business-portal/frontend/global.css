@@ -1,0 +1,177 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap");
+
+/* Base font */
+.text {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Variants */
+.text.title {
+    font-size: 2.25rem;
+    /* ~36px */
+    font-weight: 700;
+}
+
+.text.sub-title {
+    font-size: 1.5rem;
+    /* ~24px */
+    font-weight: 500;
+}
+
+.text.paragraph {
+    font-size: 1rem;
+    /* 16px */
+    line-height: 1.6;
+}
+
+.text.card-title {
+    font-size: 1.125rem;
+    /* 18px */
+    font-weight: 600;
+}
+
+.text.card-sub-title {
+    font-size: 0.875rem;
+    /* 14px */
+}
+
+.text.normal {
+    font-size: 1rem;
+    /* 16px */
+    font-weight: 400;
+}
+
+.text.bold {
+    font-size: 1rem;
+    /* 16px */
+    font-weight: 700;
+}
+
+.text.label {
+    font-size: 1rem;
+    /* 16px */
+    font-weight: 600;
+}
+
+.text.medium {
+    font-size: 1rem;
+    /* 16px */
+    font-weight: 500;
+}
+
+.text.header-title {
+    font-size: 1.25rem;
+    /* ~24px */
+    font-weight: 900;
+}
+
+.header-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.header-email {
+    font-size: 12px;
+    color: #555;
+}
+
+/* ===============================
+     Business Registration (Scoped)
+     Compact, minimal, and professional
+     =============================== */
+.br-section {
+    --br-gap: 12px;
+    --br-gap-lg: 16px;
+    --br-radius: 12px;
+    --br-border: 1px solid rgba(0,0,0,0.06);
+    --br-muted: rgba(0,0,0,0.54);
+}
+
+.br-form-wrapper {
+    display: grid;
+    gap: var(--br-gap-lg);
+}
+
+/* Headings inside steps */
+.br-form-wrapper h1,
+.br-form-wrapper h2,
+.br-form-wrapper h3,
+.br-form-wrapper .title,
+.br-form-wrapper .subtitle {
+    margin: 0 0 8px 0 !important;
+    line-height: 1.25;
+}
+
+/* Reduce default spacing between MUI/Joy fields */
+.br-form-wrapper .MuiFormControl-root {
+    margin: 0 0 10px 0 !important;
+}
+.br-form-wrapper .MuiFormLabel-root,
+.br-form-wrapper label {
+    margin-bottom: 4px !important;
+    color: var(--br-muted);
+}
+
+/* Joy UI controls sizing via CSS vars */
+.br-form-wrapper :where(.MuiInput-root,
+    .MuiSelect-root,
+    .MuiOutlinedInput-root,
+    .MuiInputBase-root,
+    .MuiAutocomplete-root) {
+    border-radius: 10px !important;
+}
+
+/* Joy specific min heights */
+.br-form-wrapper :where(.MuiInput-root,.MuiSelect-root) {
+    --Input-minHeight: 40px;
+}
+.br-form-wrapper :where(textarea,.MuiTextarea-root) {
+    --Textarea-minHeight: 88px;
+}
+
+/* Grid compaction */
+.br-form-wrapper .MuiGrid-container {
+    gap: 12px !important;
+    margin: 0 !important;
+}
+.br-form-wrapper .MuiGrid-item {
+    padding: 0 !important;
+}
+
+/* Inline fields utility (opt-in) */
+.br-form-wrapper .inline-fields {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 10px;
+}
+.br-form-wrapper .inline-fields > *[data-col="3"] { grid-column: span 3; }
+.br-form-wrapper .inline-fields > *[data-col="4"] { grid-column: span 4; }
+.br-form-wrapper .inline-fields > *[data-col="6"] { grid-column: span 6; }
+.br-form-wrapper .inline-fields > *[data-col="8"] { grid-column: span 8; }
+.br-form-wrapper .inline-fields > *[data-col="12"] { grid-column: span 12; }
+
+/* Toggle groups */
+.br-form-wrapper .MuiToggleButtonGroup-root {
+    gap: 8px;
+}
+.br-form-wrapper .MuiToggleButton-root {
+    padding: 8px 12px;
+    border-radius: 10px !important;
+}
+
+/* Subtle separators between logical groups */
+.br-form-wrapper .group + .group {
+    padding-top: 12px;
+    border-top: var(--br-border);
+}
+
+/* Action row spacing within section container */
+.br-section .MuiStack-root:last-child {
+    margin-top: 12px !important;
+}
+
+/* Responsive tweaks */
+@media (max-width: 1024px) {
+    .br-form-wrapper { gap: var(--br-gap); }
+    .br-form-wrapper .MuiGrid-container { gap: 10px !important; }
+}
