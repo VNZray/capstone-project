@@ -1,14 +1,14 @@
 /**
  * Refund Service (Mobile App)
- * 
+ *
  * Service for handling refund and cancellation requests from the mobile app.
  * Uses apiClient for automatic JWT token handling and refresh.
- * 
+ *
  * @see backend/services/refundService.js
  * @see backend/controller/refund/refundController.js
  */
 
-import apiClient from '@/services/apiClient';
+import apiClient from '@/services/api/apiClient';
 
 // ============= Types =============
 
@@ -69,7 +69,7 @@ export interface RefundRecord {
 
 export type RefundStatus = 'pending' | 'processing' | 'succeeded' | 'failed' | 'cancelled';
 
-export type RefundReason = 
+export type RefundReason =
   | 'requested_by_customer'
   | 'duplicate'
   | 'fraudulent'
@@ -137,11 +137,11 @@ export async function requestOrderRefund(
     };
   } catch (error: any) {
     console.error('[RefundService] requestOrderRefund error:', error);
-    
+
     // Extract error message from response
     const errorMessage = error.response?.data?.message || 'Failed to request refund';
     const requiresCustomerService = error.response?.data?.requiresCustomerService;
-    
+
     throw {
       ...error,
       message: errorMessage,
@@ -175,11 +175,11 @@ export async function cancelCashOnPickupOrder(
     };
   } catch (error: any) {
     console.error('[RefundService] cancelCashOnPickupOrder error:', error);
-    
+
     const errorMessage = error.response?.data?.message || 'Failed to cancel order';
     const requiresCustomerService = error.response?.data?.requiresCustomerService;
     const shouldRefund = error.response?.data?.shouldRefund;
-    
+
     throw {
       ...error,
       message: errorMessage,
@@ -297,7 +297,7 @@ export async function requestBookingRefund(
     };
   } catch (error: any) {
     console.error('[RefundService] requestBookingRefund error:', error);
-    
+
     const errorMessage = error.response?.data?.message || 'Failed to request booking refund';
     throw {
       ...error,
@@ -374,15 +374,15 @@ export default {
   requestOrderRefund,
   cancelCashOnPickupOrder,
   getOrderRefundStatus,
-  
+
   // Booking refunds
   checkBookingRefundEligibility,
   requestBookingRefund,
-  
+
   // User history
   getMyRefunds,
   getRefundById,
-  
+
   // Helpers
   getRefundReasonLabel,
   getRefundStatusLabel,

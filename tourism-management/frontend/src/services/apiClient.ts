@@ -40,13 +40,15 @@ export const getAccessToken = () => accessToken;
 export const refreshTokens = async (): Promise<string | null> => {
   // If already refreshing, return the existing promise
   if (isRefreshing && refreshPromise) {
+    console.debug('[refreshTokens] Already refreshing, waiting for existing promise');
     return refreshPromise;
   }
 
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      console.debug('[refreshTokens] Attempting refresh. Current cookies:', document.cookie);
+      console.debug('[refreshTokens] Attempting refresh...');
+      console.debug('[refreshTokens] Cookies visible to JS:', document.cookie || '(none - HttpOnly cookies are not visible)');
 
       // Use refreshClient (configured with withCredentials) instead of raw axios
       const response = await refreshClient.post('/auth/refresh', {
@@ -58,7 +60,19 @@ export const refreshTokens = async (): Promise<string | null> => {
       const { accessToken: newAccessToken } = response.data;
       setAccessToken(newAccessToken);
       return newAccessToken;
-    } catch (error) {
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { status?: number; data?: { message?: string } }; message?: string };
+      const status = axiosError?.response?.status;
+      const message = axiosError?.response?.data?.message || axiosError?.message || 'Unknown error';
+
+      // 401/403 means no valid refresh token (not logged in or expired)
+      // This is expected on fresh page load when not logged in
+      if (status === 401 || status === 403) {
+        console.debug('[refreshTokens] No valid session found (expected if not logged in):', message);
+      } else {
+        console.error('[refreshTokens] Refresh failed with unexpected error:', status, message);
+      }
+
       setAccessToken(null);
       return null;
     } finally {

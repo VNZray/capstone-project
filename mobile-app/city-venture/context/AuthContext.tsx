@@ -4,18 +4,20 @@ import {
   useEffect,
   useState,
   useCallback,
-} from 'react';
-import type { ReactNode } from 'react';
+} from "react";
+import type { ReactNode } from "react";
 import {
   loginUser,
   logoutUser,
   getStoredUser,
   initializeAuth,
-} from '@/services/AuthService';
-import type { UserDetails } from '../types/User';
-import debugLogger from '@/utils/debugLogger';
-import PushNotificationService from '@/services/PushNotificationService';
-import type * as Notifications from 'expo-notifications';
+} from "@/services/AuthService";
+import type { UserDetails } from "../types/User";
+import debugLogger from "@/utils/debugLogger";
+import PushNotificationService from "@/services/PushNotificationService";
+import type * as Notifications from "expo-notifications";
+import { saveUserData } from "@/utils/secureStorage";
+import apiClient from "@/services/api/apiClient";
 
 interface AuthContextType {
   user: UserDetails | null;
@@ -43,7 +45,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const initializeNotifications = useCallback(async (userId?: string) => {
     if (!userId) {
       console.warn(
-        '[AuthContext] Cannot initialize notifications without userId'
+        "[AuthContext] Cannot initialize notifications without userId",
       );
       return;
     }
@@ -53,21 +55,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         userId,
         onNotificationReceived: (notification: Notifications.Notification) => {
           console.log(
-            '[AuthContext] 📱 Notification received in foreground:',
-            notification.request.content.title
+            "[AuthContext] 📱 Notification received in foreground:",
+            notification.request.content.title,
           );
           // Notification is automatically added to the notification list by backend
         },
         onNotificationTapped: (
-          response: Notifications.NotificationResponse
+          response: Notifications.NotificationResponse,
         ) => {
           console.log(
-            '[AuthContext] 👆 User tapped notification:',
-            response.notification.request.content.title
+            "[AuthContext] 👆 User tapped notification:",
+            response.notification.request.content.title,
           );
           // TODO: Navigate to appropriate screen based on notification type
           const data = response.notification.request.content.data;
-          console.log('[AuthContext] Notification data:', data);
+          console.log("[AuthContext] Notification data:", data);
         },
       });
 
@@ -75,13 +77,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setExpoPushToken(token);
 
       debugLogger({
-        title: 'AuthContext: Push notifications initialized',
+        title: "AuthContext: Push notifications initialized",
         data: { userId, hasToken: !!token },
       });
     } catch (error) {
       console.error(
-        '[AuthContext] Failed to initialize push notifications:',
-        error
+        "[AuthContext] Failed to initialize push notifications:",
+        error,
       );
     }
   }, []);
@@ -91,7 +93,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const init = async () => {
       try {
         debugLogger({
-          title: 'AuthContext: Initializing...',
+          title: "AuthContext: Initializing...",
         });
 
         // Attempt to restore session via refresh token
@@ -101,7 +103,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const storedUser = await getStoredUser();
           if (storedUser) {
             debugLogger({
-              title: 'AuthContext: User restored',
+              title: "AuthContext: User restored",
               data: { user_id: storedUser.user_id },
             });
             setUser(storedUser);
@@ -115,12 +117,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         } else {
           debugLogger({
-            title: 'AuthContext: No valid session found',
+            title: "AuthContext: No valid session found",
           });
           setUser(null);
         }
       } catch (error) {
-        console.error('[AuthContext] Initialization error:', error);
+        console.error("[AuthContext] Initialization error:", error);
         setUser(null);
       } finally {
         setLoading(false);
@@ -135,7 +137,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     async (email: string, password: string) => {
       try {
         debugLogger({
-          title: 'AuthContext: Login started',
+          title: "AuthContext: Login started",
           data: { email },
         });
 
@@ -146,7 +148,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         await initializeNotifications(loggedInUser.user_id);
 
         debugLogger({
-          title: 'AuthContext: ✅ Login successful',
+          title: "AuthContext: ✅ Login successful",
           data: {
             user_id: loggedInUser.user_id,
             role: loggedInUser.role_name,
@@ -154,20 +156,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         });
       } catch (error) {
         debugLogger({
-          title: 'AuthContext: ❌ Login failed',
+          title: "AuthContext: ❌ Login failed",
           error: error instanceof Error ? error.message : String(error),
         });
         throw error;
       }
     },
-    [initializeNotifications]
+    [initializeNotifications],
   );
 
   /** LOGOUT */
   const logout = useCallback(async () => {
     try {
       debugLogger({
-        title: 'AuthContext: Logout started',
+        title: "AuthContext: Logout started",
       });
 
       await logoutUser();
@@ -178,10 +180,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null);
 
       debugLogger({
-        title: 'AuthContext: ✅ Logout successful',
+        title: "AuthContext: ✅ Logout successful",
       });
     } catch (error) {
-      console.error('[AuthContext] Logout error:', error);
+      console.error("[AuthContext] Logout error:", error);
       setUser(null);
     }
   }, []);
@@ -190,52 +192,48 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const updateUser = useCallback(
     async (updates: Partial<UserDetails>) => {
       if (!user) {
-        throw new Error('No user logged in');
+        throw new Error("No user logged in");
       }
 
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
 
       // Update secure storage
-      const { saveUserData } = await import('@/utils/secureStorage');
       await saveUserData(JSON.stringify(updatedUser));
 
       debugLogger({
-        title: 'AuthContext: User updated',
+        title: "AuthContext: User updated",
         data: updates,
       });
     },
-    [user]
+    [user],
   );
 
   /** REFRESH USER DATA - Fetch latest user info from server */
   const refreshUserData = useCallback(async () => {
     try {
       if (!user?.user_id) {
-        throw new Error('No user logged in');
+        throw new Error("No user logged in");
       }
 
-      const response = await import('@/services/apiClient').then((mod) =>
-        mod.default.get('/auth/me')
-      );
+      const response = await apiClient.get("/auth/me");
 
       if (response.data?.user) {
         const updatedUser = { ...user, ...response.data.user };
         setUser(updatedUser);
 
         // Update secure storage
-        const { saveUserData } = await import('@/utils/secureStorage');
         await saveUserData(JSON.stringify(updatedUser));
 
         debugLogger({
-          title: 'AuthContext: User data refreshed',
+          title: "AuthContext: User data refreshed",
           data: updatedUser,
         });
 
         return updatedUser;
       }
     } catch (error) {
-      console.error('[AuthContext] Failed to refresh user data:', error);
+      console.error("[AuthContext] Failed to refresh user data:", error);
       throw error;
     }
   }, [user]);
@@ -262,6 +260,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

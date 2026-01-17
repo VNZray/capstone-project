@@ -1,5 +1,5 @@
-import apiClient from './apiClient';
-import api from './api';
+import apiClient from './api/apiClient';
+import api from './api/api';
 import { Tourist } from '../types/Tourist';
 
 /**

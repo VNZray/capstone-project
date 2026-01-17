@@ -1,22 +1,24 @@
+/**
+ * Tourist Routes (Mobile Backend)
+ * Handles tourist profile management for the mobile app
+ */
+
 import express from "express";
-import * as touristController from "../controller/auth/TouristController.js"; // Add `.js` extension
-import { authenticate } from '../middleware/authenticate.js';
-import { authorizeRole } from '../middleware/authorizeRole.js';
+import * as touristController from "../controller/auth/TouristController.js";
+import { authenticate } from "../middleware/authenticate.js";
 
 const router = express.Router();
 
 // Tourist registration is public (part of user signup flow)
 router.post("/", touristController.createTourist);
 
-// All other routes require authentication
-router.get("/", authenticate, touristController.getAllTourists);
-
-// Specific routes MUST come before parameterized routes
+// Get tourist by user ID (needed for profile loading after login)
 router.get("/user/:user_id", authenticate, touristController.getTouristByUserId);
 
-// Parameterized routes
+// Get tourist by ID
 router.get("/:id", authenticate, touristController.getTouristById);
-router.delete("/:id", authenticate, touristController.deleteTourist);
+
+// Update tourist profile
 router.put("/:id", authenticate, touristController.updateTourist);
 
 export default router;

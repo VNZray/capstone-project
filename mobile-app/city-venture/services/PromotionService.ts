@@ -1,5 +1,5 @@
 
-import apiClient from '@/services/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 import type { Promotion } from '@/types/Promotion';
 
 /**
@@ -9,7 +9,7 @@ import type { Promotion } from '@/types/Promotion';
 export const fetchPromotionsByBusinessId = async (businessId: string): Promise<Promotion[]> => {
   try {
     console.log('[PromotionService] Fetching promotions for business:', businessId);
-    const { data } = await apiClient.get<Promotion[]>(
+    const { data } = await businessApiClient.get<Promotion[]>(
       `/promotions/business/${businessId}`
     );
 

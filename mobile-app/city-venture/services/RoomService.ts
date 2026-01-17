@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import apiClient from '@/services/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 import type { Room } from '../types/Business';
 
 
@@ -20,7 +20,7 @@ export const clearStoredRoomId = async () => {
 
 /** Fetch Room Details from API */
 export const fetchRoomDetails = async (room_id: string): Promise<Room> => {
-  const { data } = await apiClient.get<Room>(`/room/profile/${room_id}`);
+  const { data } = await businessApiClient.get<Room>(`/room/profile/${room_id}`);
   return data;
 };
 
@@ -30,7 +30,7 @@ export async function fetchRoomsByBusinessId(
   opts?: { noCache?: boolean }
 ): Promise<Room[]> {
   const cacheSuffix = opts?.noCache ? `?ts=${Date.now()}` : '';
-  const { data } = await apiClient.get(`/room/${businessId}${cacheSuffix}`, {
+  const { data } = await businessApiClient.get(`/room/${businessId}${cacheSuffix}`, {
     headers: opts?.noCache
       ? {
         'Cache-Control': 'no-cache',
@@ -63,7 +63,7 @@ export type RoomBlockedDate = {
  * Fetch blocked dates for a specific room
  */
 export const fetchBlockedDatesByRoomId = async (roomId: string): Promise<RoomBlockedDate[]> => {
-  const { data } = await apiClient.get<RoomBlockedDate[]>(`/room-blocked-dates/room/${roomId}`);
+  const { data } = await businessApiClient.get<RoomBlockedDate[]>(`/room-blocked-dates/room/${roomId}`);
   return Array.isArray(data) ? data : [];
 };
 
@@ -71,7 +71,7 @@ export const fetchBlockedDatesByRoomId = async (roomId: string): Promise<RoomBlo
  * Fetch blocked dates for a business
  */
 export const fetchBlockedDatesByBusinessId = async (businessId: string): Promise<RoomBlockedDate[]> => {
-  const { data } = await apiClient.get<RoomBlockedDate[]>(`/room-blocked-dates/business/${businessId}`);
+  const { data } = await businessApiClient.get<RoomBlockedDate[]>(`/room-blocked-dates/business/${businessId}`);
   return Array.isArray(data) ? data : [];
 };
 

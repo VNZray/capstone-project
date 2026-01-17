@@ -15,11 +15,11 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 6173,
     hmr: {
       // Let the browser automatically determine the correct host
       // This prevents WebSocket connection issues when IP changes
-      clientPort: 5173,
+      clientPort: 6173,
     },
   },
 });

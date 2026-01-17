@@ -1,3 +1,8 @@
+/**
+ * Address Controller (Mobile Backend)
+ * Handles province, municipality, and barangay lookups
+ */
+
 import db from "../../db.js";
 import { handleDbError } from "../../utils/errorHandler.js";
 

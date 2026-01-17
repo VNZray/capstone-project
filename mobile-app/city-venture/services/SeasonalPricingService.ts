@@ -4,7 +4,7 @@
  * Handles API calls for seasonal and weekend pricing configurations
  */
 
-import apiClient from './apiClient';
+import businessApiClient from './api/businessApiClient';
 import type {
     SeasonalPricing,
     PriceCalculation,
@@ -20,7 +20,7 @@ const BASE_PATH = '/seasonal-pricing';
 export const fetchSeasonalPricingByBusinessId = async (
     businessId: string
 ): Promise<SeasonalPricing[]> => {
-    const { data } = await apiClient.get<SeasonalPricing[]>(
+    const { data } = await businessApiClient.get<SeasonalPricing[]>(
         `${BASE_PATH}/business/${businessId}`
     );
     return Array.isArray(data) ? data : [];
@@ -33,7 +33,7 @@ export const fetchSeasonalPricingByRoomId = async (
     roomId: string
 ): Promise<SeasonalPricing | null> => {
     try {
-        const { data } = await apiClient.get<SeasonalPricing>(
+        const { data } = await businessApiClient.get<SeasonalPricing>(
             `${BASE_PATH}/room/${roomId}`
         );
         return data;
@@ -52,7 +52,7 @@ export const calculatePriceForDate = async (
     roomId: string,
     date: string
 ): Promise<PriceCalculation> => {
-    const { data } = await apiClient.get<PriceCalculation>(
+    const { data } = await businessApiClient.get<PriceCalculation>(
         `${BASE_PATH}/calculate/${roomId}/date`,
         { params: { date } }
     );
@@ -67,7 +67,7 @@ export const calculatePriceForDateRange = async (
     startDate: string,
     endDate: string
 ): Promise<PriceRangeResult> => {
-    const { data } = await apiClient.get<PriceRangeResult>(
+    const { data } = await businessApiClient.get<PriceRangeResult>(
         `${BASE_PATH}/calculate/${roomId}/range`,
         { params: { start_date: startDate, end_date: endDate } }
     );

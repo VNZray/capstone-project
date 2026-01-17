@@ -3,7 +3,7 @@
  * Handles API calls for business policies and house rules
  */
 
-import apiClient from './apiClient';
+import businessApiClient from './api/businessApiClient';
 import type { BusinessPolicies } from '@/types/BusinessPolicies';
 import { defaultBusinessPolicies } from '@/types/BusinessPolicies';
 
@@ -14,7 +14,7 @@ export const fetchBusinessPolicies = async (
   businessId: string
 ): Promise<BusinessPolicies> => {
   try {
-    const { data } = await apiClient.get(`/business-policies/${businessId}`);
+    const { data } = await businessApiClient.get(`/business-policies/${businessId}`);
 
     // Normalize the response
     const policies = normalizeResponse(data);

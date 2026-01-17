@@ -1,4 +1,4 @@
-import apiClient from '@/services/apiClient';
+import apiClient from '@/services/api/apiClient';
 import type { EntityCategory } from '@/types/Category';
 import { useEffect, useState } from 'react';
 
@@ -51,16 +51,16 @@ export function useCategoryAndType(entityType?: string, entityId?: string) {
   // Map to legacy format for backward compatibility
   const category = primaryCategory
     ? {
-        id: primaryCategory.category_id,
-        category: primaryCategory.category_title,
-      }
+      id: primaryCategory.category_id,
+      category: primaryCategory.category_title,
+    }
     : null;
 
   const type = primaryCategory?.parent_title
     ? {
-        id: primaryCategory.parent_category || 0,
-        type: primaryCategory.parent_title,
-      }
+      id: primaryCategory.parent_category || 0,
+      type: primaryCategory.parent_title,
+    }
     : null;
 
   return { loading, type, category, categories };

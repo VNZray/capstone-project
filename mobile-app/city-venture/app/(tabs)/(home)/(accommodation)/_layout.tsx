@@ -1,16 +1,16 @@
-import Container from '@/components/Container';
-import { AppHeader } from '@/components/header/AppHeader';
-import HeaderButton from '@/components/header/HeaderButton';
+import Container from "@/components/Container";
+import { AppHeader } from "@/components/header/AppHeader";
+import HeaderButton from "@/components/header/HeaderButton";
 import {
   AccommodationProvider,
   useAccommodation,
-} from '@/context/AccommodationContext';
-import { RoomProvider, useRoom } from '@/context/RoomContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
-import React from 'react';
-import { TouchableOpacity, View } from 'react-native';
+} from "@/context/AccommodationContext";
+import { RoomProvider, useRoom } from "@/context/RoomContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Ionicons } from "@expo/vector-icons";
+import { Stack } from "expo-router";
+import React from "react";
+import { TouchableOpacity, View } from "react-native";
 const AccommodationLayout = () => {
   const { accommodationDetails } = useAccommodation();
   const { roomDetails } = useRoom();
@@ -33,7 +33,7 @@ const AccommodationLayout = () => {
             name="profile/profile"
             options={{
               headerShown: false,
-              animation: 'slide_from_right',
+              animation: "slide_from_right",
               header: () => (
                 <AppHeader
                   backButton
@@ -50,7 +50,7 @@ const AccommodationLayout = () => {
                     >
                       <HeaderButton
                         onPress={toggleFavorite}
-                        icon={favorite ? 'heart' : 'heart'}
+                        icon={favorite ? "heart" : "heart"}
                       />
                       <HeaderButton icon="heart" />
                     </Container>
@@ -64,12 +64,12 @@ const AccommodationLayout = () => {
             options={{
               headerTransparent: true,
               headerShown: false,
-              animation: 'slide_from_right',
-              headerTitleAlign: 'center',
+              animation: "slide_from_right",
+              headerTitleAlign: "center",
               headerTitleStyle: {
-                color: '#fff',
+                color: "#fff",
               },
-              headerTintColor: '#fff',
+              headerTintColor: "#fff",
               header: () => (
                 <AppHeader
                   backButton
@@ -81,12 +81,12 @@ const AccommodationLayout = () => {
           />
 
           <Stack.Screen
-            name="room/booking/Summary"
+            name="room/(booking)/Summary"
             options={{
               headerShown: true,
-              animation: 'slide_from_right',
-              headerTitleAlign: 'center',
-              headerTitle: 'Booking Summary',
+              animation: "slide_from_right",
+              headerTitleAlign: "center",
+              headerTitle: "Booking Summary",
               headerBackVisible: false,
             }}
           />
@@ -95,7 +95,7 @@ const AccommodationLayout = () => {
             name="room/booking-success"
             options={{
               headerShown: false,
-              animation: 'fade',
+              animation: "fade",
               gestureEnabled: false,
             }}
           />
@@ -103,7 +103,7 @@ const AccommodationLayout = () => {
             name="room/(booking)"
             options={{
               headerShown: false,
-              animation: 'slide_from_right',
+              animation: "slide_from_right",
               gestureEnabled: false,
             }}
           />
@@ -111,7 +111,7 @@ const AccommodationLayout = () => {
             name="room/booking-cancel"
             options={{
               headerShown: false,
-              animation: 'fade',
+              animation: "fade",
               gestureEnabled: false,
             }}
           />
@@ -119,16 +119,16 @@ const AccommodationLayout = () => {
             name="index"
             options={{
               headerShown: true,
-              animation: 'slide_from_right',
-              headerTitleAlign: 'center',
-              headerTitle: '',
-              headerBackTitle: 'Back',
+              animation: "slide_from_right",
+              headerTitleAlign: "center",
+              headerTitle: "",
+              headerBackTitle: "Back",
               headerBackVisible: true,
               headerShadowVisible: false,
-              headerStyle: { backgroundColor: '#F9FAFB' },
+              headerStyle: { backgroundColor: "#F9FAFB" },
               headerRight: () => (
                 <View
-                  style={{ flexDirection: 'row', gap: 16, marginRight: 16 }}
+                  style={{ flexDirection: "row", gap: 16, marginRight: 16 }}
                 >
                   <TouchableOpacity>
                     <View>
@@ -139,15 +139,15 @@ const AccommodationLayout = () => {
                       />
                       <View
                         style={{
-                          position: 'absolute',
+                          position: "absolute",
                           top: 0,
                           right: 2,
                           width: 8,
                           height: 8,
                           borderRadius: 4,
-                          backgroundColor: '#007AFF',
+                          backgroundColor: "#007AFF",
                           borderWidth: 1,
-                          borderColor: '#F9FAFB',
+                          borderColor: "#F9FAFB",
                         }}
                       />
                     </View>

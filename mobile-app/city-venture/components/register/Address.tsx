@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import Dropdown from '@/components/Dropdown';
-import { ThemedText } from '@/components/themed-text';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { colors } from '@/constants/color';
-import axios from 'axios';
-import api from '@/services/api';
-import { FontAwesome5 } from '@expo/vector-icons';
-import Section from '@/components/Section';
+import React, { useEffect, useState } from "react";
+import { View, TouchableOpacity, StyleSheet } from "react-native";
+import Dropdown from "@/components/Dropdown";
+import { ThemedText } from "@/components/themed-text";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { colors } from "@/constants/color";
+import axios from "axios";
+import api from "@/services/api/api";
+import { FontAwesome5 } from "@expo/vector-icons";
+import Section from "@/components/Section";
 
 interface AddressProps {
   data: {
@@ -22,15 +22,15 @@ interface AddressProps {
 
 export default function Address({ data, onUpdate }: AddressProps) {
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
   const [province, setProvince] = useState<{ id: number; province: string }[]>(
-    []
+    [],
   );
   const [municipality, setMunicipality] = useState<
     { id: number; municipality: string }[]
   >([]);
   const [barangay, setBarangay] = useState<{ id: number; barangay: string }[]>(
-    []
+    [],
   );
 
   const fetchProvince = async () => {
@@ -40,33 +40,33 @@ export default function Address({ data, onUpdate }: AddressProps) {
         setProvince(response.data);
       }
     } catch (error) {
-      console.error('Error fetching provinces:', error);
+      console.error("Error fetching provinces:", error);
     }
   };
 
   const fetchMunicipality = async (provinceId: number) => {
     try {
       const response = await axios.get(
-        `${api}/address/municipalities/${provinceId}`
+        `${api}/address/municipalities/${provinceId}`,
       );
       if (Array.isArray(response.data)) {
         setMunicipality(response.data);
       }
     } catch (error) {
-      console.error('Error fetching municipalities:', error);
+      console.error("Error fetching municipalities:", error);
     }
   };
 
   const fetchBarangay = async (municipalityId: number) => {
     try {
       const response = await axios.get(
-        `${api}/address/barangays/${municipalityId}`
+        `${api}/address/barangays/${municipalityId}`,
       );
       if (Array.isArray(response.data)) {
         setBarangay(response.data);
       }
     } catch (error) {
-      console.error('Error fetching barangays:', error);
+      console.error("Error fetching barangays:", error);
     }
   };
 
@@ -120,8 +120,8 @@ export default function Address({ data, onUpdate }: AddressProps) {
           label="Municipality/City"
           placeholder={
             data.provinceId
-              ? 'Select your municipality'
-              : 'Select province first'
+              ? "Select your municipality"
+              : "Select province first"
           }
           items={municipality.map((m) => ({ id: m.id, label: m.municipality }))}
           value={data.municipalityId}
@@ -142,8 +142,8 @@ export default function Address({ data, onUpdate }: AddressProps) {
           label="Barangay"
           placeholder={
             data.municipalityId
-              ? 'Select your barangay'
-              : 'Select municipality first'
+              ? "Select your barangay"
+              : "Select municipality first"
           }
           items={barangay.map((b) => ({ id: b.id, label: b.barangay }))}
           value={data.barangayId}
@@ -163,29 +163,29 @@ export default function Address({ data, onUpdate }: AddressProps) {
       <Section icon="globe" title="Demographics" isDark={isDark}>
         <View>
           <ThemedText mb={8} type="label-medium" weight="semi-bold">
-            I am a:{' '}
+            I am a:{" "}
             <ThemedText type="label-small" style={{ color: colors.error }}>
               *
             </ThemedText>
           </ThemedText>
           <View style={styles.radioGroup}>
             {[
-              { value: 'Bicolano', description: 'From Bicol Region' },
-              { value: 'Non-Bicolano', description: 'From other regions' },
-              { value: 'Foreigner', description: 'International visitor' },
+              { value: "Bicolano", description: "From Bicol Region" },
+              { value: "Non-Bicolano", description: "From other regions" },
+              { value: "Foreigner", description: "International visitor" },
             ].map((type) => (
               <TouchableOpacity
                 key={type.value}
                 style={[
                   styles.demographicOption,
                   {
-                    backgroundColor: isDark ? '#1B2232' : '#F9F9F9',
+                    backgroundColor: isDark ? "#1B2232" : "#F9F9F9",
                     borderColor:
                       data.ethnicity === type.value
                         ? colors.primary
                         : isDark
-                        ? '#2A3142'
-                        : '#E5E7EB',
+                          ? "#2A3142"
+                          : "#E5E7EB",
                   },
                   data.ethnicity === type.value && styles.radioSelected,
                 ]}
@@ -208,7 +208,7 @@ export default function Address({ data, onUpdate }: AddressProps) {
                     type="body-small"
                     style={{
                       marginTop: 2,
-                      color: isDark ? '#8B92A6' : '#64748B',
+                      color: isDark ? "#8B92A6" : "#64748B",
                     }}
                   >
                     {type.description}
@@ -228,29 +228,29 @@ export default function Address({ data, onUpdate }: AddressProps) {
 
         <View>
           <ThemedText mb={8} type="label-medium" weight="semi-bold">
-            Origin:{' '}
+            Origin:{" "}
             <ThemedText type="label-small" style={{ color: colors.error }}>
               *
             </ThemedText>
           </ThemedText>
           <View style={styles.radioGroup}>
             {[
-              { value: 'Domestic', icon: 'flag' },
-              { value: 'Local', icon: 'home' },
-              { value: 'Overseas', icon: 'plane' },
+              { value: "Domestic", icon: "flag" },
+              { value: "Local", icon: "home" },
+              { value: "Overseas", icon: "plane" },
             ].map((type) => (
               <TouchableOpacity
                 key={type.value}
                 style={[
                   styles.radioButton,
                   {
-                    backgroundColor: isDark ? '#1B2232' : '#F9F9F9',
+                    backgroundColor: isDark ? "#1B2232" : "#F9F9F9",
                     borderColor:
                       data.origin === type.value
                         ? colors.primary
                         : isDark
-                        ? '#2A3142'
-                        : '#E5E7EB',
+                          ? "#2A3142"
+                          : "#E5E7EB",
                   },
                   data.origin === type.value && styles.radioSelected,
                 ]}
@@ -263,8 +263,8 @@ export default function Address({ data, onUpdate }: AddressProps) {
                     data.origin === type.value
                       ? colors.primary
                       : isDark
-                      ? '#8B92A6'
-                      : '#64748B'
+                        ? "#8B92A6"
+                        : "#64748B"
                   }
                 />
                 <ThemedText
@@ -273,7 +273,7 @@ export default function Address({ data, onUpdate }: AddressProps) {
                     { marginLeft: 6 },
                     data.origin === type.value && {
                       color: colors.primary,
-                      fontWeight: '600',
+                      fontWeight: "600",
                     },
                   ]}
                 >
@@ -296,16 +296,16 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   radioButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 10,
     borderWidth: 2,
   },
   demographicOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,

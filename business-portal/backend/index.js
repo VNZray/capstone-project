@@ -261,8 +261,12 @@ app.use(
 
       // List of allowed origins
       const allowedOrigins = [
-        "http://localhost:5173",
-        "http://localhost:3000",
+        "http://localhost:5173",  // Tourism frontend
+        "http://localhost:6173",  // Business frontend
+        "http://localhost:3000",  // Tourism backend
+        "http://localhost:4000",  // Business backend
+        "http://localhost:5000",  // Mobile backend
+        "http://localhost:8081",  // Expo dev
         process.env.WEB_URL,
         process.env.FRONTEND_URL,
         process.env.FRONTEND_BASE_URL,

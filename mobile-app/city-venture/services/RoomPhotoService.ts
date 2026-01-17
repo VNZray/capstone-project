@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import businessApiClient from './api/businessApiClient';
 
 export interface RoomPhoto {
   id: string;
@@ -14,7 +14,7 @@ export interface RoomPhoto {
  */
 export const fetchRoomPhotosByRoomId = async (roomId: string): Promise<RoomPhoto[]> => {
   try {
-    const response = await apiClient.get(`/room-photos/room/${roomId}`);
+    const response = await businessApiClient.get(`/room-photos/room/${roomId}`);
     return response.data || [];
   } catch (error) {
     console.error('Failed to fetch room photos:', error);
@@ -27,7 +27,7 @@ export const fetchRoomPhotosByRoomId = async (roomId: string): Promise<RoomPhoto
  */
 export const fetchRoomPhotoById = async (photoId: string): Promise<RoomPhoto | null> => {
   try {
-    const response = await apiClient.get(`/room-photos/${photoId}`);
+    const response = await businessApiClient.get(`/room-photos/${photoId}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch room photo:', error);

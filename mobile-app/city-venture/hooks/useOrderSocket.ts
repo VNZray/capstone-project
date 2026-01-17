@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/context/AuthContext';
-import { getAccessToken } from '@/services/apiClient';
+import { getAccessToken } from '@/services/api/apiClient';
 
 /**
  * Hook for Socket.IO connection to receive real-time order updates
@@ -23,7 +23,7 @@ export const useOrderSocket = () => {
       // Small delay to ensure auth initialization has completed
       // getAccessToken is sync but token may not be set immediately on app start
       await new Promise((resolve) => setTimeout(resolve, 100));
-      
+
       const currentToken = getAccessToken();
       if (isMounted) {
         setToken(currentToken);
@@ -88,7 +88,7 @@ export const useOrderSocket = () => {
       // Connection event handlers
       socket.on('connect', () => {
         console.log('[useOrderSocket] ✅ Connected! Socket ID:', socket.id);
-        
+
         // Join user-specific room for order updates
         socket.emit('join:user', { userId: user.id });
         console.log('[useOrderSocket] 📥 Joined room: user:' + user.id);
@@ -130,7 +130,7 @@ export const useOrderSocket = () => {
     // Cleanup on unmount or when dependencies change
     return () => {
       console.log('[useOrderSocket] 🧹 Cleaning up socket connection');
-      
+
       if (socketRef.current) {
         socketRef.current.emit('leave:user', { userId: user.id });
         socketRef.current.disconnect();

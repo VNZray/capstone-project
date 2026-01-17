@@ -70,7 +70,7 @@ const stopTabActivityTracking = (): void => {
 export const loginUser = async (
   email: string,
   password: string,
-  rememberMe: boolean = false
+  rememberMe: boolean = false,
 ): Promise<UserDetails> => {
   // ============================================
   // STEP 1: Authenticate User & Get Token
@@ -102,7 +102,7 @@ export const loginUser = async (
   const { accessToken, user: loginUserSummary } = data;
   console.debug(
     "[AuthService] Received access token",
-    accessToken ? "<redacted>" : null
+    accessToken ? "<redacted>" : null,
   );
 
   // Store access token in memory
@@ -211,7 +211,7 @@ export const loginUser = async (
         .catch(() => ({}));
       municipality = await apiClient
         .get<Municipality>(
-          `/address/municipality/${addressData.municipality_id}`
+          `/address/municipality/${addressData.municipality_id}`,
         )
         .then((r) => r.data)
         .catch(() => ({}));
@@ -420,7 +420,7 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
         .catch(() => ({}));
       municipality = await apiClient
         .get<Municipality>(
-          `/address/municipality/${addressData.municipality_id}`
+          `/address/municipality/${addressData.municipality_id}`,
         )
         .then((r) => r.data)
         .catch(() => ({}));
@@ -472,9 +472,25 @@ export const fetchCurrentUser = async (): Promise<UserDetails> => {
 // Initialize Auth (Try refresh) - Uses centralized refresh with lock
 export const initializeAuth = async (): Promise<boolean> => {
   try {
+    console.debug(
+      "[initializeAuth] Attempting to restore session from cookie...",
+    );
     const accessToken = await refreshTokens();
-    return accessToken !== null;
+
+    if (accessToken) {
+      console.debug("[initializeAuth] Session restored successfully");
+      return true;
+    } else {
+      console.debug(
+        "[initializeAuth] No valid session found (user not logged in or session expired)",
+      );
+      return false;
+    }
   } catch (e) {
+    console.error(
+      "[initializeAuth] Unexpected error during auth initialization:",
+      e,
+    );
     return false;
   }
 };
@@ -494,7 +510,7 @@ export const stopSessionTracking = (): void => {
  */
 export const changePassword = async (
   currentPassword: string,
-  newPassword: string
+  newPassword: string,
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const { data } = await apiClient.post(`/users/change-password`, {

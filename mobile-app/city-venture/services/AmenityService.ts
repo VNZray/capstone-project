@@ -1,5 +1,5 @@
 // city-venture/services/AmenityService.tsx
-import apiClient from '@/services/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 import type {
   Amenity,
   BusinessAmenities,
@@ -8,21 +8,21 @@ import type {
   RoomAmenity,
 } from '@/types/Business';
 
-// Fetch all amenities
+// Fetch all amenities (from business backend on port 4000)
 export const fetchAmenities = async (): Promise<Amenity[]> => {
-  const { data } = await apiClient.get<Amenity[]>(`/amenities`);
+  const { data } = await businessApiClient.get<Amenity[]>(`/amenities`);
   return Array.isArray(data) ? data : [];
 };
 
 // Fetch all business_amenities join rows
 export const fetchAllBusinessAmenityLinks = async (): Promise<BusinessAmenity[]> => {
-  const { data } = await apiClient.get<BusinessAmenity[]>(`/business-amenities`);
+  const { data } = await businessApiClient.get<BusinessAmenity[]>(`/business-amenities`);
   return Array.isArray(data) ? data : [];
 };
 
 // Fetch all room_amenities join rows
 export const fetchAllRoomAmenityLinks = async (): Promise<RoomAmenity[]> => {
-  const { data } = await apiClient.get<RoomAmenity[]>(`/room-amenities`);
+  const { data } = await businessApiClient.get<RoomAmenity[]>(`/room-amenities`);
   return Array.isArray(data) ? data : [];
 };
 

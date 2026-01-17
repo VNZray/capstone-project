@@ -1,45 +1,32 @@
+/**
+ * Mobile Booking Routes
+ * Handles ONLINE bookings for tourists via the mobile app.
+ * Walk-in bookings are handled by the Business Backend (port 4000).
+ */
+
 import express from "express";
-import * as bookingController from '../controller/accommodation/bookingController.js'
-import { authenticate } from '../middleware/authenticate.js';
-import { authorizeRole, authorize, authorizeAny, authorizeBusinessAccess } from '../middleware/authorizeRole.js';
+import * as bookingController from "../controller/booking/bookingController.js";
+import { authenticate } from "../middleware/authenticate.js";
 
 const router = express.Router();
 
-// Guest search endpoint for walk-in bookings (must be before /:id route)
-// Requires manage_bookings permission (staff with front desk access)
-router.get("/search/guests", authenticate, authorize('manage_bookings'), bookingController.searchGuests);
+// ===== PUBLIC ROUTES =====
 
-// Today's arrivals for a business (requires business access + view permission)
-router.get("/business/:business_id/arrivals", authenticate, authorizeBusinessAccess('business_id'), bookingController.getTodaysArrivals);
+// Get available rooms for a date range (for browsing/searching)
+router.get("/available-rooms", bookingController.getAvailableRooms);
 
-// Today's departures for a business
-router.get("/business/:business_id/departures", authenticate, authorizeBusinessAccess('business_id'), bookingController.getTodaysDepartures);
+// ===== AUTHENTICATED ROUTES (Tourist) =====
 
-// Currently occupied rooms for a business
-router.get("/business/:business_id/occupied", authenticate, authorizeBusinessAccess('business_id'), bookingController.getCurrentlyOccupied);
+// Get all bookings for the authenticated tourist
+router.get("/my-bookings", authenticate, bookingController.getMyBookings);
 
-// Walk-in booking (onsite check-in) - requires manage_bookings permission
-router.post("/walk-in", authenticate, authorize('manage_bookings'), bookingController.createWalkInBooking);
-
-// Standard booking routes
-router.post("/", bookingController.insertBooking);
-// Get booking by ID (controller validates ownership/business access)
+// Get a specific booking by ID
 router.get("/:id", authenticate, bookingController.getBookingById);
-// Get all bookings (any authenticated user - controller filters by access)
-router.get("/", authenticate, bookingController.getAllBookings);
-// Get tourist's bookings (controller validates tourist ownership)
-router.get("/tourist/:tourist_id", authenticate, bookingController.getBookingsByTouristId);
-// Get bookings by room (controller validates business access)
-router.get("/room/:room_id", authenticate, bookingController.getBookingsByRoomId);
-// Update booking (controller validates ownership/business access)
-router.put("/:id", authenticate, bookingController.updateBooking);
-// Delete booking (requires manage_bookings permission)
-router.delete("/:id", authenticate, authorize('manage_bookings'), bookingController.deleteBooking);
-router.get("/business/:business_id", bookingController.getBookingsByBusinessId);
-router.get("/business/:business_id/available-rooms", bookingController.getAvailableRoomsByDateRange);
 
-// NOTE: Payment routes have been moved to the unified payment workflow
-// Use POST /api/payments/initiate with { payment_for: 'booking', reference_id: bookingId }
-// Use POST /api/payments/verify for verification
+// Create a new online booking
+router.post("/", authenticate, bookingController.createOnlineBooking);
+
+// Cancel a booking
+router.put("/:id/cancel", authenticate, bookingController.cancelBooking);
 
 export default router;

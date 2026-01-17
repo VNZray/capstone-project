@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,12 +12,12 @@ import {
   Image,
   BackHandler,
   Alert,
-} from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Routes } from '@/routes/mainRoutes';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors, colors } from '@/constants/color';
-import PageContainer from '@/components/PageContainer';
+} from "react-native";
+import { Stack, router, useLocalSearchParams } from "expo-router";
+import { Routes } from "@/routes/mainRoutes";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors, colors } from "@/constants/color";
+import PageContainer from "@/components/PageContainer";
 import {
   createPaymentMethod,
   attachPaymentMethodClient,
@@ -26,11 +26,11 @@ import {
   validateCardNumber,
   formatCardNumber,
   getCardBrand,
-} from '@/services/PaymentIntentService';
-import { Ionicons } from '@expo/vector-icons';
-import API_URL from '@/services/api';
-import { cancelOrder, getOrderById } from '@/services/OrderService';
-import { useCart } from '@/context/CartContext';
+} from "@/services/PaymentIntentService";
+import { Ionicons } from "@expo/vector-icons";
+import API_URL from "@/services/api/api";
+import { cancelOrder, getOrderById } from "@/services/OrderService";
+import { useCart } from "@/context/CartContext";
 
 /**
  * Card Payment Screen
@@ -46,7 +46,7 @@ import { useCart } from '@/context/CartContext';
 const CardPaymentScreen = () => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme as keyof typeof Colors];
-  const isDark = colorScheme === 'dark';
+  const isDark = colorScheme === "dark";
   const { restoreFromOrder } = useCart();
 
   const params = useLocalSearchParams<{
@@ -60,12 +60,12 @@ const CardPaymentScreen = () => {
   }>();
 
   // Card details state
-  const [cardNumber, setCardNumber] = useState('');
-  const [expMonth, setExpMonth] = useState('');
-  const [expYear, setExpYear] = useState('');
-  const [cvc, setCvc] = useState('');
-  const [cardholderName, setCardholderName] = useState('');
-  const [email, setEmail] = useState('');
+  const [cardNumber, setCardNumber] = useState("");
+  const [expMonth, setExpMonth] = useState("");
+  const [expYear, setExpYear] = useState("");
+  const [cvc, setCvc] = useState("");
+  const [cardholderName, setCardholderName] = useState("");
+  const [email, setEmail] = useState("");
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -86,13 +86,13 @@ const CardPaymentScreen = () => {
    */
   const cancelOrderAndRedirect = useCallback(async () => {
     if (!params.orderId) {
-      router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
+      router.replace(Routes.checkout.cart({ fromPaymentFailed: "true" }));
       return;
     }
 
     try {
       setCancellingOrder(true);
-      console.log('[CardPayment] Cancelling order:', params.orderId);
+      console.log("[CardPayment] Cancelling order:", params.orderId);
 
       // Fetch order details to restore cart items
       const orderDetails = await getOrderById(params.orderId);
@@ -109,39 +109,46 @@ const CardPaymentScreen = () => {
             product_image_url: item.product_image_url,
           })),
           orderDetails.business_id,
-          orderDetails.business_name
+          orderDetails.business_name,
         );
-        console.log('[CardPayment] Restored', orderDetails.items.length, 'items to cart');
+        console.log(
+          "[CardPayment] Restored",
+          orderDetails.items.length,
+          "items to cart",
+        );
       }
 
       // Cancel the order with reason
       try {
-        await cancelOrder(params.orderId, 'User cancelled from card payment screen');
-        console.log('[CardPayment] Order cancelled successfully');
+        await cancelOrder(
+          params.orderId,
+          "User cancelled from card payment screen",
+        );
+        console.log("[CardPayment] Order cancelled successfully");
       } catch (cancelError: any) {
         // Order might have already been cancelled or in a non-cancellable state
         // Still proceed to cart since items are restored
-        console.warn('[CardPayment] Order cancel failed (may already be cancelled):', cancelError.message);
+        console.warn(
+          "[CardPayment] Order cancel failed (may already be cancelled):",
+          cancelError.message,
+        );
       }
 
       // Navigate to cart
-      router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
+      router.replace(Routes.checkout.cart({ fromPaymentFailed: "true" }));
     } catch (error: any) {
-      console.error('[CardPayment] Failed to cancel order:', error);
-      Alert.alert(
-        'Error',
-        'Failed to cancel order. Please try again.',
-        [
-          {
-            text: 'Go to Cart Anyway',
-            onPress: () => router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' })),
-          },
-          {
-            text: 'Stay',
-            style: 'cancel',
-          },
-        ]
-      );
+      console.error("[CardPayment] Failed to cancel order:", error);
+      Alert.alert("Error", "Failed to cancel order. Please try again.", [
+        {
+          text: "Go to Cart Anyway",
+          onPress: () =>
+            router.replace(Routes.checkout.cart({ fromPaymentFailed: "true" })),
+        },
+        {
+          text: "Stay",
+          style: "cancel",
+        },
+      ]);
     } finally {
       setCancellingOrder(false);
     }
@@ -159,21 +166,21 @@ const CardPaymentScreen = () => {
 
     // Show confirmation dialog
     Alert.alert(
-      'Cancel Payment?',
-      'Going back will cancel this order. Your items will be restored to your cart.',
+      "Cancel Payment?",
+      "Going back will cancel this order. Your items will be restored to your cart.",
       [
         {
-          text: 'Stay',
-          style: 'cancel',
+          text: "Stay",
+          style: "cancel",
         },
         {
-          text: 'Cancel Order',
-          style: 'destructive',
+          text: "Cancel Order",
+          style: "destructive",
           onPress: () => {
             cancelOrderAndRedirect();
           },
         },
-      ]
+      ],
     );
 
     return true; // Prevent default back behavior
@@ -185,11 +192,11 @@ const CardPaymentScreen = () => {
    */
   useEffect(() => {
     const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
+      "hardwareBackPress",
       () => {
         handleBackNavigation();
         return true; // Prevent default back behavior
-      }
+      },
     );
 
     return () => backHandler.remove();
@@ -198,9 +205,9 @@ const CardPaymentScreen = () => {
   // Get card brand icon for input
   const getCardBrandIcon = () => {
     switch (cardBrand) {
-      case 'visa':
+      case "visa":
         return <Ionicons name="card" size={24} color="#1A1F71" />;
-      case 'mastercard':
+      case "mastercard":
         return <Ionicons name="card" size={24} color="#EB001B" />;
       default:
         return (
@@ -214,21 +221,21 @@ const CardPaymentScreen = () => {
     const formatted = formatCardNumber(text);
     setCardNumber(formatted);
     if (errors.cardNumber) {
-      setErrors((prev) => ({ ...prev, cardNumber: '' }));
+      setErrors((prev) => ({ ...prev, cardNumber: "" }));
     }
     // Auto focus check
-    if (formatted.replace(/\s/g, '').length === 16) {
+    if (formatted.replace(/\s/g, "").length === 16) {
       expMonthRef.current?.focus();
     }
   };
 
   // Handle expiry month input
   const handleExpMonthChange = (text: string) => {
-    const digits = text.replace(/\D/g, '');
+    const digits = text.replace(/\D/g, "");
     if (digits.length <= 2) {
       setExpMonth(digits);
       if (errors.expMonth) {
-        setErrors((prev) => ({ ...prev, expMonth: '' }));
+        setErrors((prev) => ({ ...prev, expMonth: "" }));
       }
       if (digits.length === 2) {
         expYearRef.current?.focus();
@@ -238,11 +245,11 @@ const CardPaymentScreen = () => {
 
   // Handle expiry year input
   const handleExpYearChange = (text: string) => {
-    const digits = text.replace(/\D/g, '');
+    const digits = text.replace(/\D/g, "");
     if (digits.length <= 2) {
       setExpYear(digits);
       if (errors.expYear) {
-        setErrors((prev) => ({ ...prev, expYear: '' }));
+        setErrors((prev) => ({ ...prev, expYear: "" }));
       }
       if (digits.length === 2) {
         cvcRef.current?.focus();
@@ -252,11 +259,11 @@ const CardPaymentScreen = () => {
 
   // Handle CVC input
   const handleCvcChange = (text: string) => {
-    const digits = text.replace(/\D/g, '');
+    const digits = text.replace(/\D/g, "");
     if (digits.length <= 4) {
       setCvc(digits);
       if (errors.cvc) {
-        setErrors((prev) => ({ ...prev, cvc: '' }));
+        setErrors((prev) => ({ ...prev, cvc: "" }));
       }
     }
   };
@@ -265,51 +272,51 @@ const CardPaymentScreen = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    const cleanCardNumber = cardNumber.replace(/\s/g, '');
+    const cleanCardNumber = cardNumber.replace(/\s/g, "");
     if (!cleanCardNumber) {
-      newErrors.cardNumber = 'Card number is required';
+      newErrors.cardNumber = "Card number is required";
     } else if (!validateCardNumber(cleanCardNumber)) {
-      newErrors.cardNumber = 'Invalid card number';
+      newErrors.cardNumber = "Invalid card number";
     }
 
     const month = parseInt(expMonth, 10);
     if (!expMonth) {
-      newErrors.expMonth = 'Required';
+      newErrors.expMonth = "Required";
     } else if (month < 1 || month > 12) {
-      newErrors.expMonth = 'Invalid';
+      newErrors.expMonth = "Invalid";
     }
 
     const year = parseInt(expYear, 10);
     const currentYear = new Date().getFullYear() % 100;
     if (!expYear) {
-      newErrors.expYear = 'Required';
+      newErrors.expYear = "Required";
     } else if (year < currentYear) {
-      newErrors.expYear = 'Expired';
+      newErrors.expYear = "Expired";
     }
 
     if (expMonth && expYear && !newErrors.expMonth && !newErrors.expYear) {
       const now = new Date();
       const expDate = new Date(2000 + year, month, 0);
       if (expDate < now) {
-        newErrors.expMonth = 'Card expired';
+        newErrors.expMonth = "Card expired";
       }
     }
 
     if (!cvc) {
-      newErrors.cvc = 'Required';
+      newErrors.cvc = "Required";
     } else if (cvc.length < 3) {
-      newErrors.cvc = 'Invalid';
+      newErrors.cvc = "Invalid";
     }
 
     if (!cardholderName.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = "Name is required";
     }
 
     // Email validation
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Invalid email';
+      newErrors.email = "Invalid email";
     }
 
     setErrors(newErrors);
@@ -320,7 +327,7 @@ const CardPaymentScreen = () => {
    * Map PayMongo error codes to user-friendly messages
    */
   const getErrorMessage = (
-    err: any
+    err: any,
   ): { title: string; message: string; isCardError: boolean } => {
     const subCode =
       err.response?.data?.errors?.[0]?.sub_code ||
@@ -335,19 +342,19 @@ const CardPaymentScreen = () => {
       err.last_payment_error?.code;
 
     const GENERIC_DECLINE_MESSAGE =
-      'Your card was declined. Please contact your bank or try a different card.';
+      "Your card was declined. Please contact your bank or try a different card.";
 
-    if (err.message?.includes('declined') || err.message?.includes('card')) {
+    if (err.message?.includes("declined") || err.message?.includes("card")) {
       return {
-        title: 'Payment Failed',
+        title: "Payment Failed",
         message: err.message || GENERIC_DECLINE_MESSAGE,
         isCardError: true,
       };
     }
 
     return {
-      title: 'Payment Failed',
-      message: err.message || 'Processing failed. Please try again.',
+      title: "Payment Failed",
+      message: err.message || "Processing failed. Please try again.",
       isCardError: true,
     };
   };
@@ -362,9 +369,9 @@ const CardPaymentScreen = () => {
         total: params.total,
         errorMessage: message,
         errorTitle: title,
-        isCardError: isCardError ? 'true' : 'false',
-        orderCreated: 'true',
-      })
+        isCardError: isCardError ? "true" : "false",
+        orderCreated: "true",
+      }),
     );
   };
 
@@ -374,21 +381,21 @@ const CardPaymentScreen = () => {
     }
 
     if (!params.paymentIntentId || !params.clientKey) {
-      navigateToPaymentFailed({ message: 'Missing payment information.' });
+      navigateToPaymentFailed({ message: "Missing payment information." });
       return;
     }
 
     try {
       setLoading(true);
 
-      const backendBaseUrl = (API_URL || '').replace('/api', '');
+      const backendBaseUrl = (API_URL || "").replace("/api", "");
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
 
       // Step 1: Create Payment Method
       const paymentMethodResponse = await createPaymentMethod(
-        'card',
+        "card",
         {
-          card_number: cardNumber.replace(/\s/g, ''),
+          card_number: cardNumber.replace(/\s/g, ""),
           exp_month: parseInt(expMonth, 10),
           exp_year: 2000 + parseInt(expYear, 10),
           cvc: cvc,
@@ -396,7 +403,7 @@ const CardPaymentScreen = () => {
         {
           name: cardholderName.trim(),
           email: email.trim().toLowerCase(),
-        }
+        },
       );
 
       const paymentMethodId = paymentMethodResponse.data.id;
@@ -406,7 +413,7 @@ const CardPaymentScreen = () => {
         params.paymentIntentId,
         paymentMethodId,
         params.clientKey,
-        returnUrl
+        returnUrl,
       );
 
       const status = attachResponse.data.attributes.status;
@@ -419,21 +426,21 @@ const CardPaymentScreen = () => {
         return;
       }
 
-      if (status === 'awaiting_next_action' && nextAction?.redirect?.url) {
+      if (status === "awaiting_next_action" && nextAction?.redirect?.url) {
         const authResult = await open3DSAuthentication(
           nextAction.redirect.url,
-          returnUrl
+          returnUrl,
         );
 
         dismissBrowser();
 
-        if (authResult.type === 'cancel') {
+        if (authResult.type === "cancel") {
           router.replace(
             Routes.checkout.paymentCancel({
               orderId: params.orderId,
               orderNumber: params.orderNumber,
-              reason: 'cancelled',
-            })
+              reason: "cancelled",
+            }),
           );
           return;
         }
@@ -445,21 +452,21 @@ const CardPaymentScreen = () => {
             arrivalCode: params.arrivalCode,
             paymentIntentId: params.paymentIntentId,
             total: params.total,
-          })
+          }),
         );
         return;
       }
 
-      if (status === 'succeeded' || status === 'processing') {
+      if (status === "succeeded" || status === "processing") {
         const route =
-          status === 'succeeded'
+          status === "succeeded"
             ? Routes.checkout.orderConfirmation({
                 orderId: params.orderId,
                 orderNumber: params.orderNumber,
                 arrivalCode: params.arrivalCode,
                 total: params.total,
-                paymentMethod: 'paymongo',
-                paymentSuccess: 'true',
+                paymentMethod: "paymongo",
+                paymentSuccess: "true",
               })
             : Routes.checkout.paymentProcessing({
                 orderId: params.orderId,
@@ -474,10 +481,10 @@ const CardPaymentScreen = () => {
       }
 
       navigateToPaymentFailed({
-        message: 'Payment incomplete. Please try again.',
+        message: "Payment incomplete. Please try again.",
       });
     } catch (error: any) {
-      console.error('[CardPayment] Error:', error);
+      console.error("[CardPayment] Error:", error);
       navigateToPaymentFailed(error);
     } finally {
       setLoading(false);
@@ -487,17 +494,17 @@ const CardPaymentScreen = () => {
   // Pre-fill for dev/testing
   useEffect(() => {
     // Optional: Remove for production or keep for demo
-    setCardholderName('Test User');
-    setEmail('test@example.com');
+    setCardholderName("Test User");
+    setEmail("test@example.com");
   }, []);
 
   return (
     <>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           headerShown: false,
           gestureEnabled: false, // Prevent iOS swipe-back gesture
-        }} 
+        }}
       />
       {/* Loading overlay when cancelling order */}
       {cancellingOrder && (
@@ -507,7 +514,7 @@ const CardPaymentScreen = () => {
         </View>
       )}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
         <PageContainer>
@@ -516,8 +523,8 @@ const CardPaymentScreen = () => {
           >
             {/* Header with back button */}
             <View style={styles.header}>
-              <Pressable 
-                style={styles.backButton} 
+              <Pressable
+                style={styles.backButton}
                 onPress={handleBackNavigation}
                 disabled={loading || cancellingOrder}
               >
@@ -545,8 +552,8 @@ const CardPaymentScreen = () => {
                 <Text style={[styles.totalAmount, { color: theme.text }]}>
                   ₱
                   {parseFloat(
-                    params.total || params.amount || '0'
-                  ).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    params.total || params.amount || "0",
+                  ).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                 </Text>
               </View>
 
@@ -583,7 +590,7 @@ const CardPaymentScreen = () => {
                     value={email}
                     onChangeText={(text) => {
                       setEmail(text);
-                      if (errors.email) setErrors({ ...errors, email: '' });
+                      if (errors.email) setErrors({ ...errors, email: "" });
                     }}
                     keyboardType="email-address"
                     autoCapitalize="none"
@@ -622,7 +629,7 @@ const CardPaymentScreen = () => {
                     onChangeText={(text) => {
                       setCardholderName(text);
                       if (errors.name)
-                        setErrors((prev) => ({ ...prev, name: '' }));
+                        setErrors((prev) => ({ ...prev, name: "" }));
                     }}
                     editable={!loading}
                   />
@@ -640,9 +647,9 @@ const CardPaymentScreen = () => {
                         backgroundColor: theme.inputBackground,
                         borderColor: errors.cardNumber
                           ? theme.error
-                          : focusedField === 'cardNumber'
-                          ? theme.primary
-                          : theme.border,
+                          : focusedField === "cardNumber"
+                            ? theme.primary
+                            : theme.border,
                       },
                     ]}
                   >
@@ -652,7 +659,7 @@ const CardPaymentScreen = () => {
                       placeholderTextColor={theme.textSecondary}
                       value={cardNumber}
                       onChangeText={handleCardNumberChange}
-                      onFocus={() => setFocusedField('cardNumber')}
+                      onFocus={() => setFocusedField("cardNumber")}
                       onBlur={() => setFocusedField(null)}
                       keyboardType="numeric"
                       maxLength={19}
@@ -705,7 +712,7 @@ const CardPaymentScreen = () => {
                         style={{
                           color: theme.textSecondary,
                           marginHorizontal: 8,
-                          alignSelf: 'center',
+                          alignSelf: "center",
                         }}
                       >
                         /
@@ -790,8 +797,8 @@ const CardPaymentScreen = () => {
                   <Text style={styles.payButtonText}>
                     Pay ₱
                     {parseFloat(
-                      params.total || params.amount || '0'
-                    ).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                      params.total || params.amount || "0",
+                    ).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                   </Text>
                 )}
               </Pressable>
@@ -808,35 +815,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cancelOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 999,
   },
   cancelOverlayText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
     marginTop: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 15,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
   backButton: {
     padding: 8,
@@ -853,22 +860,22 @@ const styles = StyleSheet.create({
   },
   amountSection: {
     marginBottom: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   totalLabel: {
     fontSize: 14,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 4,
   },
   totalAmount: {
     fontSize: 32,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   secureBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 12,
     borderRadius: 8,
     marginBottom: 32,
@@ -876,11 +883,11 @@ const styles = StyleSheet.create({
   },
   secureText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 12,
   },
   formContainer: {
@@ -892,7 +899,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     marginBottom: 6,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   input: {
     height: 50,
@@ -902,8 +909,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   inputWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     height: 50,
     borderRadius: 8,
     borderWidth: 1,
@@ -912,7 +919,7 @@ const styles = StyleSheet.create({
   inputFlex: {
     flex: 1,
     fontSize: 16,
-    height: '100%',
+    height: "100%",
   },
   iconContainer: {
     marginLeft: 10,
@@ -922,10 +929,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   row: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   expiryRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   footer: {
     padding: 20,
@@ -934,18 +941,18 @@ const styles = StyleSheet.create({
   payButton: {
     height: 54,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
   payButtonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

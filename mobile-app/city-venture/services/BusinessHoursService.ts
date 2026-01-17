@@ -1,5 +1,5 @@
 
-import apiClient from '@/services/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 import type { BusinessHours, BusinessHoursDisplay, BusinessOperatingStatus, DayOfWeek } from '@/types/BusinessHours';
 
 /**
@@ -8,7 +8,7 @@ import type { BusinessHours, BusinessHoursDisplay, BusinessOperatingStatus, DayO
  */
 export const fetchBusinessHours = async (businessId: string): Promise<BusinessHours[]> => {
   try {
-    const { data } = await apiClient.get<BusinessHours[]>(
+    const { data } = await businessApiClient.get<BusinessHours[]>(
       `/business-hours/${businessId}`
     );
     return data;
@@ -46,9 +46,9 @@ const formatTime = (time: string): string => {
 export const getOperatingStatus = (hours: BusinessHours[]): BusinessOperatingStatus => {
   const now = new Date();
   const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }) as DayOfWeek;
-  
+
   const todayHours = hours.find(h => h.day_of_week === currentDay);
-  
+
   if (!todayHours || todayHours.is_closed) {
     return {
       is_open: false,
@@ -56,10 +56,10 @@ export const getOperatingStatus = (hours: BusinessHours[]): BusinessOperatingSta
       today_hours: todayHours,
     };
   }
-  
+
   const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
   const isOpen = currentTime >= todayHours.opening_time && currentTime <= todayHours.closing_time;
-  
+
   return {
     is_open: isOpen,
     current_day: currentDay,

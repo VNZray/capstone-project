@@ -3,7 +3,7 @@
  * Handles API calls for platform-wide Terms & Conditions and Privacy Policy
  */
 
-import apiClient from './apiClient';
+import apiClient from './api/apiClient';
 
 export interface AppLegalPolicies {
     id?: string;

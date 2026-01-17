@@ -3,7 +3,7 @@
  * Displayed when user cancels/closes PayMongo payment without completing
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,38 +12,38 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
-} from 'react-native';
-import { useLocalSearchParams, Stack, router } from 'expo-router';
-import { Routes } from '@/routes/mainRoutes';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { colors } from '@/constants/color';
-import { useTypography } from '@/constants/typography';
-import PageContainer from '@/components/PageContainer';
-import { Ionicons } from '@expo/vector-icons';
-import { getOrderById } from '@/services/OrderService';
-import { useCart } from '@/context/CartContext';
+} from "react-native";
+import { useLocalSearchParams, Stack, router } from "expo-router";
+import { Routes } from "@/routes/mainRoutes";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { colors } from "@/constants/color";
+import { useTypography } from "@/constants/typography";
+import PageContainer from "@/components/PageContainer";
+import { Ionicons } from "@expo/vector-icons";
+import { getOrderById } from "@/services/OrderService";
+import { useCart } from "@/context/CartContext";
 import {
   createPaymentIntent,
   attachEwalletPaymentMethod,
   open3DSAuthentication,
   dismissBrowser,
-} from '@/services/PaymentIntentService';
-import API_URL from '@/services/api';
+} from "@/services/PaymentIntentService";
+import API_URL from "@/services/api/api";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
   withSequence,
-} from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+} from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const PaymentCancelScreen = () => {
   const params = useLocalSearchParams<{ orderId: string }>();
   const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = scheme === "dark";
   const type = useTypography();
   const { h1, h2, body, bodySmall } = type;
   const [retrying, setRetrying] = useState(false);
@@ -67,51 +67,51 @@ const PaymentCancelScreen = () => {
       withTiming(10, { duration: 100 }),
       withTiming(-10, { duration: 100 }),
       withTiming(10, { duration: 100 }),
-      withTiming(0, { duration: 100 })
+      withTiming(0, { duration: 100 }),
     );
   }, []);
 
   const palette = {
-    bg: isDark ? '#0D1B2A' : '#F8F9FA',
-    card: isDark ? '#1C2833' : '#FFFFFF',
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
-    subText: isDark ? '#9BA1A6' : '#6B7280',
-    border: isDark ? '#2A2F36' : '#E5E8EC',
-    errorBg: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
+    bg: isDark ? "#0D1B2A" : "#F8F9FA",
+    card: isDark ? "#1C2833" : "#FFFFFF",
+    text: isDark ? "#ECEDEE" : "#0D1B2A",
+    subText: isDark ? "#9BA1A6" : "#6B7280",
+    border: isDark ? "#2A2F36" : "#E5E8EC",
+    errorBg: isDark ? "rgba(239, 68, 68, 0.1)" : "#FEF2F2",
   };
 
   const handleRetryPayment = async () => {
     try {
       setRetrying(true);
       console.log(
-        '[PaymentCancel] Retrying payment for order:',
-        params.orderId
+        "[PaymentCancel] Retrying payment for order:",
+        params.orderId,
       );
 
       // Get order details to determine payment method type
       const orderDetails = await getOrderById(params.orderId);
-      
+
       // Use payment_method as the primary field (stores 'gcash', 'paymaya', 'card', 'cash_on_pickup')
       // Fallback to deprecated payment_method_type for backward compatibility
       let paymentMethodType = orderDetails.payment_method;
 
       // Skip cash_on_pickup since it doesn't need online payment
-      if (paymentMethodType === 'cash_on_pickup') {
+      if (paymentMethodType === "cash_on_pickup") {
         Alert.alert(
-          'Payment Method',
-          'This order uses cash on pickup. No online payment needed.',
-          [{ text: 'OK' }]
+          "Payment Method",
+          "This order uses cash on pickup. No online payment needed.",
+          [{ text: "OK" }],
         );
         setRetrying(false);
         return;
       }
 
       // Fallback to deprecated field if payment_method is not an e-wallet/card type
-      if (!['gcash', 'paymaya', 'card'].includes(paymentMethodType)) {
-        paymentMethodType = orderDetails.payment_method_type || 'gcash';
+      if (!["gcash", "paymaya", "card"].includes(paymentMethodType)) {
+        paymentMethodType = orderDetails.payment_method_type || "gcash";
       }
 
-      console.log('[PaymentCancel] Using payment method:', paymentMethodType);
+      console.log("[PaymentCancel] Using payment method:", paymentMethodType);
 
       // Create Payment Intent using unified API
       // This REUSES the existing order (no ghost data) - backend will:
@@ -119,7 +119,7 @@ const PaymentCancelScreen = () => {
       // 2. Create new Payment Intent for the SAME order
       // 3. Reset order status to 'pending' and re-deduct stock if needed
       const intentResponse = await createPaymentIntent({
-        payment_for: 'order',
+        payment_for: "order",
         reference_id: params.orderId,
         payment_method: paymentMethodType,
       });
@@ -129,8 +129,10 @@ const PaymentCancelScreen = () => {
 
       // For card payments, navigate to card payment screen with NEW payment intent
       // This reuses the existing order instead of creating a new one
-      if (paymentMethodType === 'card') {
-        console.log('[PaymentCancel] Card payment - navigating to card-payment screen for retry');
+      if (paymentMethodType === "card") {
+        console.log(
+          "[PaymentCancel] Card payment - navigating to card-payment screen for retry",
+        );
         router.replace(
           Routes.checkout.cardPayment({
             orderId: params.orderId,
@@ -140,36 +142,36 @@ const PaymentCancelScreen = () => {
             clientKey,
             amount: intentResponse.data.amount.toString(),
             total: orderDetails.total_amount?.toString(),
-          })
+          }),
         );
         return;
       }
 
       // For e-wallets, attach payment method and redirect (Client-Side)
-      const backendBaseUrl = (API_URL || '').replace('/api', '');
+      const backendBaseUrl = (API_URL || "").replace("/api", "");
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
 
       const attachResponse = await attachEwalletPaymentMethod(
         paymentIntentId,
-        paymentMethodType as 'gcash' | 'paymaya',
+        paymentMethodType as "gcash" | "paymaya",
         returnUrl,
-        intentResponse.data.client_key // Pass client_key for direct PayMongo call
+        intentResponse.data.client_key, // Pass client_key for direct PayMongo call
       );
 
       const nextAction = attachResponse.data.attributes.next_action;
       if (nextAction?.redirect?.url) {
         const authResult = await open3DSAuthentication(
           nextAction.redirect.url,
-          returnUrl
+          returnUrl,
         );
 
         dismissBrowser();
 
-        if (authResult.type === 'cancel' || authResult.type === 'dismiss') {
+        if (authResult.type === "cancel" || authResult.type === "dismiss") {
           Alert.alert(
-            'Payment Cancelled',
-            'You cancelled the payment. You can try again later.',
-            [{ text: 'OK' }]
+            "Payment Cancelled",
+            "You cancelled the payment. You can try again later.",
+            [{ text: "OK" }],
           );
           return;
         }
@@ -182,16 +184,16 @@ const PaymentCancelScreen = () => {
             arrivalCode: orderDetails.arrival_code,
             paymentIntentId,
             total: orderDetails.total_amount?.toString(),
-          })
+          }),
         );
       }
     } catch (error: any) {
-      console.error('[PaymentCancel] Payment retry failed:', error);
+      console.error("[PaymentCancel] Payment retry failed:", error);
       Alert.alert(
-        'Payment Error',
+        "Payment Error",
         error.response?.data?.message ||
           error.message ||
-          'Failed to start payment process'
+          "Failed to start payment process",
       );
     } finally {
       setRetrying(false);
@@ -212,15 +214,17 @@ const PaymentCancelScreen = () => {
    */
   const handleChangePaymentMethod = async () => {
     if (!params.orderId) {
-      router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' }));
+      router.replace(
+        Routes.checkout.index({ fromChangePaymentMethod: "true" }),
+      );
       return;
     }
 
     try {
       setChangingPaymentMethod(true);
       console.log(
-        '[PaymentCancel] Changing payment method for order:',
-        params.orderId
+        "[PaymentCancel] Changing payment method for order:",
+        params.orderId,
       );
 
       // Fetch order details to get items and restore to cart
@@ -238,12 +242,12 @@ const PaymentCancelScreen = () => {
             product_image_url: item.product_image_url,
           })),
           orderDetails.business_id,
-          orderDetails.business_name
+          orderDetails.business_name,
         );
         console.log(
-          '[PaymentCancel] Restored',
+          "[PaymentCancel] Restored",
           orderDetails.items.length,
-          'items to cart'
+          "items to cart",
         );
       }
 
@@ -255,22 +259,25 @@ const PaymentCancelScreen = () => {
           prefillBillingEmail: orderDetails.billing_email || undefined,
           prefillBillingPhone: orderDetails.billing_phone || undefined,
           prefillPickupDatetime: orderDetails.pickup_datetime || undefined,
-          prefillSpecialInstructions: orderDetails.special_instructions || undefined,
-          fromChangePaymentMethod: 'true',
-        })
+          prefillSpecialInstructions:
+            orderDetails.special_instructions || undefined,
+          fromChangePaymentMethod: "true",
+        }),
       );
     } catch (error: any) {
-      console.error('[PaymentCancel] Failed to change payment method:', error);
+      console.error("[PaymentCancel] Failed to change payment method:", error);
       Alert.alert(
-        'Error',
-        'Unable to change payment method. Please try again.',
+        "Error",
+        "Unable to change payment method. Please try again.",
         [
           {
-            text: 'OK',
+            text: "OK",
             onPress: () =>
-              router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' })),
+              router.replace(
+                Routes.checkout.index({ fromChangePaymentMethod: "true" }),
+              ),
           },
-        ]
+        ],
       );
     } finally {
       setChangingPaymentMethod(false);
@@ -299,7 +306,7 @@ const PaymentCancelScreen = () => {
           <View style={styles.content}>
             <Animated.View style={[styles.iconWrapper, animatedIconStyle]}>
               <LinearGradient
-                colors={[colors.error, '#EF4444']}
+                colors={[colors.error, "#EF4444"]}
                 style={styles.gradientIcon}
               >
                 <Ionicons name="close" size={64} color="#FFF" />
@@ -314,7 +321,7 @@ const PaymentCancelScreen = () => {
                   {
                     fontSize: h1,
                     color: palette.text,
-                    textAlign: 'center',
+                    textAlign: "center",
                     marginBottom: 8,
                   },
                 ]}
@@ -326,7 +333,7 @@ const PaymentCancelScreen = () => {
                   {
                     fontSize: body,
                     color: palette.subText,
-                    textAlign: 'center',
+                    textAlign: "center",
                     marginBottom: 32,
                     paddingHorizontal: 20,
                   },
@@ -357,7 +364,7 @@ const PaymentCancelScreen = () => {
                         {
                           fontSize: bodySmall,
                           color: palette.text,
-                          fontWeight: '600',
+                          fontWeight: "600",
                           marginBottom: 4,
                         },
                       ]}
@@ -385,7 +392,8 @@ const PaymentCancelScreen = () => {
                   style={[
                     styles.primaryButton,
                     { backgroundColor: colors.primary },
-                    (retrying || changingPaymentMethod) && styles.disabledButton,
+                    (retrying || changingPaymentMethod) &&
+                      styles.disabledButton,
                   ]}
                   onPress={handleRetryPayment}
                   disabled={retrying || changingPaymentMethod}
@@ -409,8 +417,18 @@ const PaymentCancelScreen = () => {
                   {changingPaymentMethod ? (
                     <ActivityIndicator size="small" color={palette.text} />
                   ) : (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Ionicons name="swap-horizontal" size={18} color={palette.text} />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name="swap-horizontal"
+                        size={18}
+                        color={palette.text}
+                      />
                       <Text
                         style={[
                           styles.secondaryButtonText,
@@ -463,12 +481,12 @@ const PaymentCancelScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
-    alignItems: 'center',
-    width: '100%',
+    alignItems: "center",
+    width: "100%",
     paddingHorizontal: 24,
     marginTop: -40,
   },
@@ -484,34 +502,34 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   contentWrapper: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   infoCard: {
-    width: '100%',
+    width: "100%",
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 32,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   buttonContainer: {
-    width: '100%',
+    width: "100%",
     gap: 12,
   },
   primaryButton: {
-    width: '100%',
+    width: "100%",
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -519,32 +537,32 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   secondaryButton: {
-    width: '100%',
+    width: "100%",
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   textButton: {
-    width: '100%',
+    width: "100%",
     height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   buttonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   secondaryButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   textButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   disabledButton: {
     opacity: 0.6,

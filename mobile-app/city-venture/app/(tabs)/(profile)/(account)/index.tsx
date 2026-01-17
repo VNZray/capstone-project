@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -7,45 +7,45 @@ import {
   Alert,
   Image,
   ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import PageContainer from '@/components/PageContainer';
-import Container from '@/components/Container';
-import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/color';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useAuth } from '@/context/AuthContext';
-import * as ImagePicker from 'expo-image-picker';
-import { supabase } from '@/utils/supabase';
-import apiClient from '@/services/apiClient';
-import SectionHeader from '@/components/ui/SectionHeader';
-import MenuItem from '@/components/ui/MenuItem';
-import ChangeName from './components/ChangeName';
-import ChangeBirthday from './components/ChangeBirthday';
-import ChangeGender from './components/ChangeGender';
-import ChangeNationality from './components/ChangeNationality';
-import ChangePhoneNumber from './components/ChangePhoneNumber';
-import ChangeAddress from './components/ChangeAddress';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import PageContainer from "@/components/PageContainer";
+import Container from "@/components/Container";
+import { ThemedText } from "@/components/themed-text";
+import { Colors } from "@/constants/color";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAuth } from "@/context/AuthContext";
+import * as ImagePicker from "expo-image-picker";
+import { supabase } from "@/utils/supabase";
+import apiClient from "@/services/api/apiClient";
+import SectionHeader from "@/components/ui/SectionHeader";
+import MenuItem from "@/components/ui/MenuItem";
+import ChangeName from "./components/ChangeName";
+import ChangeBirthday from "./components/ChangeBirthday";
+import ChangeGender from "./components/ChangeGender";
+import ChangeNationality from "./components/ChangeNationality";
+import ChangePhoneNumber from "./components/ChangePhoneNumber";
+import ChangeAddress from "./components/ChangeAddress";
 
 const ProfileInformation = () => {
   const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = scheme === "dark";
   const { user, updateUser } = useAuth();
 
   const bg = Colors.light.background;
-  const cardBg = isDark ? '#1E293B' : '#FFFFFF';
-  const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
-  const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const borderColor = isDark ? '#262B3A' : '#E3E7EF';
+  const cardBg = isDark ? "#1E293B" : "#FFFFFF";
+  const textColor = isDark ? "#ECEDEE" : "#0D1B2A";
+  const subTextColor = isDark ? "#9BA1A6" : "#6B7280";
+  const borderColor = isDark ? "#262B3A" : "#E3E7EF";
 
   // Format birthdate
   const formatBirthdate = (date?: string) => {
     if (!date) return undefined;
     const d = new Date(date);
-    return d.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
+    return d.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
@@ -58,16 +58,16 @@ const ProfileInformation = () => {
   // Get full name
   const getFullName = () => {
     const parts = [user?.first_name, user?.middle_name, user?.last_name].filter(
-      Boolean
+      Boolean,
     );
-    return parts.length > 0 ? parts.join(' ') : undefined;
+    return parts.length > 0 ? parts.join(" ") : undefined;
   };
 
   // Get initials for avatar
   const getInitials = () => {
-    const first = user?.first_name?.[0] || '';
-    const last = user?.last_name?.[0] || '';
-    return (first + last).toUpperCase() || 'U';
+    const first = user?.first_name?.[0] || "";
+    const last = user?.last_name?.[0] || "";
+    return (first + last).toUpperCase() || "U";
   };
 
   // Handle edit actions
@@ -98,7 +98,7 @@ const ProfileInformation = () => {
   // Handle successful updates
   const handleUpdateSuccess = () => {
     // Data will be automatically updated through AuthContext
-    Alert.alert('Success', 'Your information has been updated successfully!');
+    Alert.alert("Success", "Your information has been updated successfully!");
   };
 
   // State for photo upload
@@ -115,62 +115,62 @@ const ProfileInformation = () => {
   const [isAddressModalVisible, setIsAddressModalVisible] = useState(false);
 
   useEffect(() => {
-    console.log('User profile image URL:', user);
+    console.log("User profile image URL:", user);
   }, [user]);
   // Generate file name: User/User Full Name - Date
   const generateFileName = () => {
     const fullName =
       [user?.first_name, user?.middle_name, user?.last_name]
         .filter(Boolean)
-        .join(' ')
-        .replace(/\s+/g, '_') || 'Unknown';
-    const date = new Date().toISOString().split('T')[0];
+        .join(" ")
+        .replace(/\s+/g, "_") || "Unknown";
+    const date = new Date().toISOString().split("T")[0];
     const timestamp = Date.now();
     return `User/${fullName}_-_${date}_${timestamp}`;
   };
 
   const handleChangePhoto = async () => {
     // Show action sheet for camera or gallery
-    Alert.alert('Change Profile Photo', 'Choose an option', [
+    Alert.alert("Change Profile Photo", "Choose an option", [
       {
-        text: 'Take Photo',
-        onPress: () => pickImage('camera'),
+        text: "Take Photo",
+        onPress: () => pickImage("camera"),
       },
       {
-        text: 'Choose from Library',
-        onPress: () => pickImage('library'),
+        text: "Choose from Library",
+        onPress: () => pickImage("library"),
       },
       {
-        text: 'Cancel',
-        style: 'cancel',
+        text: "Cancel",
+        style: "cancel",
       },
     ]);
   };
 
-  const pickImage = async (source: 'camera' | 'library') => {
+  const pickImage = async (source: "camera" | "library") => {
     try {
       // Request permissions
-      if (source === 'camera') {
+      if (source === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== 'granted') {
+        if (status !== "granted") {
           Alert.alert(
-            'Permission Denied',
-            'Camera permission is required to take photos.'
+            "Permission Denied",
+            "Camera permission is required to take photos.",
           );
           return;
         }
       }
 
       const result =
-        source === 'camera'
+        source === "camera"
           ? await ImagePicker.launchCameraAsync({
-              mediaTypes: ['images'],
+              mediaTypes: ["images"],
               allowsEditing: true,
               aspect: [1, 1],
               quality: 0.8,
             })
           : await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ['images'],
+              mediaTypes: ["images"],
               allowsEditing: true,
               aspect: [1, 1],
               quality: 0.8,
@@ -180,8 +180,8 @@ const ProfileInformation = () => {
         await uploadProfilePhoto(result.assets[0]);
       }
     } catch (error) {
-      console.error('Image picker error:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      console.error("Image picker error:", error);
+      Alert.alert("Error", "Failed to pick image. Please try again.");
     }
   };
 
@@ -190,7 +190,7 @@ const ProfileInformation = () => {
 
     try {
       const fileName = generateFileName();
-      const fileExt = asset.uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const fileExt = asset.uri.split(".").pop()?.toLowerCase() || "jpg";
       const filePath = `${fileName}.${fileExt}`;
 
       // Convert URI to blob for upload
@@ -202,7 +202,7 @@ const ProfileInformation = () => {
 
       // Upload to Supabase bucket "user"
       const { data, error: uploadError } = await supabase.storage
-        .from('user')
+        .from("user")
         .upload(filePath, arrayBuffer, {
           contentType: `image/${fileExt}`,
           upsert: true,
@@ -214,11 +214,11 @@ const ProfileInformation = () => {
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('user')
+        .from("user")
         .getPublicUrl(filePath);
 
       if (!urlData?.publicUrl) {
-        throw new Error('Failed to get public URL');
+        throw new Error("Failed to get public URL");
       }
 
       // Update user profile in backend
@@ -232,12 +232,12 @@ const ProfileInformation = () => {
       // Update AuthContext and secure storage
       await updateUser({ user_profile: urlData.publicUrl });
 
-      Alert.alert('Success', 'Profile photo updated successfully!');
+      Alert.alert("Success", "Profile photo updated successfully!");
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       Alert.alert(
-        'Upload Failed',
-        error?.message || 'Failed to upload photo. Please try again.'
+        "Upload Failed",
+        error?.message || "Failed to upload photo. Please try again.",
       );
     } finally {
       setIsUploadingPhoto(false);
@@ -272,7 +272,7 @@ const ProfileInformation = () => {
                 <ThemedText
                   type="header-large"
                   weight="bold"
-                  style={{ color: '#FFFFFF' }}
+                  style={{ color: "#FFFFFF" }}
                 >
                   {getInitials()}
                 </ThemedText>
@@ -292,7 +292,7 @@ const ProfileInformation = () => {
             type="body-medium"
             style={{ color: Colors.light.primary, marginTop: 12 }}
           >
-            {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
+            {isUploadingPhoto ? "Uploading..." : "Change Photo"}
           </ThemedText>
         </View>
         <Container gap={8} backgroundColor="transparent">
@@ -399,9 +399,9 @@ const ProfileInformation = () => {
               last={false}
               subLabel={
                 user?.created_at
-                  ? new Date(user.created_at).toLocaleDateString('en-US', {
-                      month: 'long',
-                      year: 'numeric',
+                  ? new Date(user.created_at).toLocaleDateString("en-US", {
+                      month: "long",
+                      year: "numeric",
                     })
                   : undefined
               }
@@ -453,11 +453,11 @@ const styles = StyleSheet.create({
     paddingBottom: 220,
   },
   photoSection: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 24,
   },
   avatarContainer: {
-    position: 'relative',
+    position: "relative",
   },
   avatar: {
     width: 120,
@@ -468,62 +468,62 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   cameraButton: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: Colors.light.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 3,
-    borderColor: '#FFFFFF',
+    borderColor: "#FFFFFF",
   },
   uploadingOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     borderRadius: 50,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   section: {
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   sectionHeader: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    borderBottomColor: "rgba(0,0,0,0.05)",
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
   },
   infoRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   iconWrapper: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   infoTextContainer: {

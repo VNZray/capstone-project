@@ -1,11 +1,11 @@
-import apiClient from '@/services/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 import type { Service, ServiceCategory } from '@/types/Service';
 
 /** Fetch Services by Business ID */
 export const fetchServicesByBusinessId = async (
   businessId: string
 ): Promise<Service[]> => {
-  const { data } = await apiClient.get<Service[]>(`/services/business/${businessId}`);
+  const { data } = await businessApiClient.get<Service[]>(`/services/business/${businessId}`);
   return data;
 };
 
@@ -13,7 +13,7 @@ export const fetchServicesByBusinessId = async (
 export const fetchServiceCategoriesByBusinessId = async (
   businessId: string
 ): Promise<ServiceCategory[]> => {
-  const { data } = await apiClient.get<ServiceCategory[]>(
+  const { data } = await businessApiClient.get<ServiceCategory[]>(
     `/service-categories/business/${businessId}`
   );
   return data;
@@ -21,6 +21,6 @@ export const fetchServiceCategoriesByBusinessId = async (
 
 /** Fetch Single Service */
 export const fetchServiceById = async (serviceId: string): Promise<Service> => {
-  const { data } = await apiClient.get<Service>(`/services/${serviceId}`);
+  const { data } = await businessApiClient.get<Service>(`/services/${serviceId}`);
   return data;
 };

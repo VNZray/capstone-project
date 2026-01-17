@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,22 +7,22 @@ import {
   Alert,
   ActivityIndicator,
   BackHandler,
-} from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Routes } from '@/routes/mainRoutes';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/color';
-import PageContainer from '@/components/PageContainer';
-import { Ionicons } from '@expo/vector-icons';
-import { getOrderById } from '@/services/OrderService';
-import { useCart } from '@/context/CartContext';
+} from "react-native";
+import { Stack, router, useLocalSearchParams } from "expo-router";
+import { Routes } from "@/routes/mainRoutes";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/color";
+import PageContainer from "@/components/PageContainer";
+import { Ionicons } from "@expo/vector-icons";
+import { getOrderById } from "@/services/OrderService";
+import { useCart } from "@/context/CartContext";
 import {
   createPaymentIntent,
   attachEwalletPaymentMethod,
   open3DSAuthentication,
   dismissBrowser,
-} from '@/services/PaymentIntentService';
-import API_URL from '@/services/api';
+} from "@/services/PaymentIntentService";
+import API_URL from "@/services/api/api";
 
 /**
  * Payment Failed Screen
@@ -34,7 +34,7 @@ import API_URL from '@/services/api';
  */
 const PaymentFailedScreen = () => {
   const colorScheme = useColorScheme();
-  const theme = Colors[(colorScheme ?? 'light') as keyof typeof Colors];
+  const theme = Colors[(colorScheme ?? "light") as keyof typeof Colors];
   const [retrying, setRetrying] = useState(false);
   const [goingToCart, setGoingToCart] = useState(false);
   const [changingPaymentMethod, setChangingPaymentMethod] = useState(false);
@@ -51,9 +51,9 @@ const PaymentFailedScreen = () => {
     orderCreated?: string;
   }>();
 
-  const orderCreated = params.orderCreated === 'true';
-  const isCardError = params.isCardError === 'true';
-  const errorTitle = params.errorTitle || 'Payment Failed';
+  const orderCreated = params.orderCreated === "true";
+  const isCardError = params.isCardError === "true";
+  const errorTitle = params.errorTitle || "Payment Failed";
 
   /**
    * Handle "Go back to cart" - restore order items to cart and navigate
@@ -62,15 +62,15 @@ const PaymentFailedScreen = () => {
   const handleGoToCart = useCallback(async () => {
     if (!params.orderId) {
       // No order - just go to cart
-      router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
+      router.replace(Routes.checkout.cart({ fromPaymentFailed: "true" }));
       return;
     }
 
     try {
       setGoingToCart(true);
       console.log(
-        '[PaymentFailed] Restoring items from order:',
-        params.orderId
+        "[PaymentFailed] Restoring items from order:",
+        params.orderId,
       );
 
       // Fetch order details to get items
@@ -88,31 +88,31 @@ const PaymentFailedScreen = () => {
             product_image_url: item.product_image_url,
           })),
           orderDetails.business_id,
-          orderDetails.business_name
+          orderDetails.business_name,
         );
         console.log(
-          '[PaymentFailed] Restored',
+          "[PaymentFailed] Restored",
           orderDetails.items.length,
-          'items to cart'
+          "items to cart",
         );
       }
 
       // Navigate to cart
-      router.replace(Routes.checkout.cart({ fromPaymentFailed: 'true' }));
+      router.replace(Routes.checkout.cart({ fromPaymentFailed: "true" }));
     } catch (error: any) {
-      console.error('[PaymentFailed] Failed to restore cart:', error);
+      console.error("[PaymentFailed] Failed to restore cart:", error);
       Alert.alert(
-        'Could not restore cart',
-        'Unable to restore your items. Going to cart anyway.',
+        "Could not restore cart",
+        "Unable to restore your items. Going to cart anyway.",
         [
           {
-            text: 'OK',
+            text: "OK",
             onPress: () =>
               router.replace(
-                Routes.checkout.cart({ fromPaymentFailed: 'true' })
+                Routes.checkout.cart({ fromPaymentFailed: "true" }),
               ),
           },
-        ]
+        ],
       );
     } finally {
       setGoingToCart(false);
@@ -133,8 +133,8 @@ const PaymentFailedScreen = () => {
     };
 
     const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      handleHardwareBackPress
+      "hardwareBackPress",
+      handleHardwareBackPress,
     );
 
     return () => backHandler.remove();
@@ -147,8 +147,8 @@ const PaymentFailedScreen = () => {
   const handleRetryPayment = async () => {
     if (!params.orderId) {
       Alert.alert(
-        'Error',
-        'Order not found. Please try again from your orders.'
+        "Error",
+        "Order not found. Please try again from your orders.",
       );
       return;
     }
@@ -156,8 +156,8 @@ const PaymentFailedScreen = () => {
     try {
       setRetrying(true);
       console.log(
-        '[PaymentFailed] Retrying payment for order:',
-        params.orderId
+        "[PaymentFailed] Retrying payment for order:",
+        params.orderId,
       );
 
       // Get order details to determine payment method type
@@ -168,22 +168,22 @@ const PaymentFailedScreen = () => {
       let paymentMethodType = orderDetails.payment_method;
 
       // Skip cash_on_pickup since it doesn't need online payment
-      if (paymentMethodType === 'cash_on_pickup') {
+      if (paymentMethodType === "cash_on_pickup") {
         Alert.alert(
-          'Payment Method',
-          'This order uses cash on pickup. No online payment needed.',
-          [{ text: 'OK' }]
+          "Payment Method",
+          "This order uses cash on pickup. No online payment needed.",
+          [{ text: "OK" }],
         );
         setRetrying(false);
         return;
       }
 
       // Fallback to deprecated field if payment_method is not an e-wallet/card type
-      if (!['gcash', 'paymaya', 'card'].includes(paymentMethodType)) {
-        paymentMethodType = orderDetails.payment_method_type || 'gcash';
+      if (!["gcash", "paymaya", "card"].includes(paymentMethodType)) {
+        paymentMethodType = orderDetails.payment_method_type || "gcash";
       }
 
-      console.log('[PaymentFailed] Using payment method:', paymentMethodType);
+      console.log("[PaymentFailed] Using payment method:", paymentMethodType);
 
       // Create Payment Intent using unified API
       // This REUSES the existing order (no ghost data) - backend will:
@@ -191,7 +191,7 @@ const PaymentFailedScreen = () => {
       // 2. Create new Payment Intent for the SAME order
       // 3. Reset order status to 'pending' and re-deduct stock
       const intentResponse = await createPaymentIntent({
-        payment_for: 'order',
+        payment_for: "order",
         reference_id: params.orderId,
         payment_method: paymentMethodType,
       });
@@ -201,57 +201,59 @@ const PaymentFailedScreen = () => {
 
       // For card payments, navigate to card-payment screen with NEW payment intent
       // This reuses the existing order instead of creating a new one
-      if (paymentMethodType === 'card') {
-        console.log('[PaymentFailed] Card payment - navigating to card-payment screen for retry');
-        console.log('[PaymentFailed] New Payment Intent:', paymentIntentId);
-        
+      if (paymentMethodType === "card") {
+        console.log(
+          "[PaymentFailed] Card payment - navigating to card-payment screen for retry",
+        );
+        console.log("[PaymentFailed] New Payment Intent:", paymentIntentId);
+
         // Navigate to card-payment screen with payment intent details
         // User will re-enter card details there (we can't store them securely)
         router.replace(
           Routes.checkout.cardPayment({
             orderId: params.orderId,
-            orderNumber: orderDetails.order_number || params.orderNumber || '',
-            arrivalCode: orderDetails.arrival_code || params.arrivalCode || '',
+            orderNumber: orderDetails.order_number || params.orderNumber || "",
+            arrivalCode: orderDetails.arrival_code || params.arrivalCode || "",
             paymentIntentId,
             clientKey,
-            total: orderDetails.total_amount?.toString() || params.total || '0',
-          })
+            total: orderDetails.total_amount?.toString() || params.total || "0",
+          }),
         );
         return;
       }
 
       // For e-wallets, attach payment method and redirect
-      const backendBaseUrl = (API_URL || '').replace('/api', '');
+      const backendBaseUrl = (API_URL || "").replace("/api", "");
       const returnUrl = `${backendBaseUrl}/orders/${params.orderId}/payment-success`;
 
       const attachResponse = await attachEwalletPaymentMethod(
         paymentIntentId,
-        paymentMethodType as 'gcash' | 'paymaya',
+        paymentMethodType as "gcash" | "paymaya",
         returnUrl,
-        intentResponse.data.client_key
+        intentResponse.data.client_key,
       );
 
       const nextAction = attachResponse.data.attributes.next_action;
       if (nextAction?.redirect?.url) {
         const authResult = await open3DSAuthentication(
           nextAction.redirect.url,
-          returnUrl
+          returnUrl,
         );
 
         dismissBrowser();
 
         console.log(
-          '[PaymentFailed] Auth result:',
+          "[PaymentFailed] Auth result:",
           authResult.type,
-          'url' in authResult ? authResult.url : 'no url'
+          "url" in authResult ? authResult.url : "no url",
         );
 
         // Check if this was a successful redirect (user completed auth)
         // 'success' means the redirect URL was matched
         // If there's a URL in the result, the redirect completed
         if (
-          authResult.type === 'success' ||
-          ('url' in authResult && authResult.url)
+          authResult.type === "success" ||
+          ("url" in authResult && authResult.url)
         ) {
           // Payment auth completed - navigate to processing to verify
           router.replace(
@@ -261,7 +263,7 @@ const PaymentFailedScreen = () => {
               arrivalCode: orderDetails.arrival_code,
               paymentIntentId,
               total: orderDetails.total_amount?.toString(),
-            })
+            }),
           );
           return;
         }
@@ -269,11 +271,11 @@ const PaymentFailedScreen = () => {
         // User explicitly cancelled the payment auth flow
         // Note: We only show alert for explicit 'cancel', not 'dismiss'
         // 'dismiss' can occur when deep link navigates away (which means success)
-        if (authResult.type === 'cancel') {
+        if (authResult.type === "cancel") {
           Alert.alert(
-            'Payment Cancelled',
-            'You cancelled the payment. You can try again.',
-            [{ text: 'OK' }]
+            "Payment Cancelled",
+            "You cancelled the payment. You can try again.",
+            [{ text: "OK" }],
           );
           return;
         }
@@ -283,16 +285,16 @@ const PaymentFailedScreen = () => {
         // - If payment failed, user is still here and can retry
         // - No need to navigate or show alert
         console.log(
-          '[PaymentFailed] Auth dismissed - user may have been redirected via deep link'
+          "[PaymentFailed] Auth dismissed - user may have been redirected via deep link",
         );
       }
     } catch (error: any) {
-      console.error('[PaymentFailed] Payment retry failed:', error);
+      console.error("[PaymentFailed] Payment retry failed:", error);
       Alert.alert(
-        'Payment Error',
+        "Payment Error",
         error.response?.data?.message ||
           error.message ||
-          'Failed to start payment process'
+          "Failed to start payment process",
       );
     } finally {
       setRetrying(false);
@@ -315,15 +317,17 @@ const PaymentFailedScreen = () => {
   const handleChangePaymentMethod = async () => {
     if (!params.orderId) {
       // No order - just go to checkout
-      router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' }));
+      router.replace(
+        Routes.checkout.index({ fromChangePaymentMethod: "true" }),
+      );
       return;
     }
 
     try {
       setChangingPaymentMethod(true);
       console.log(
-        '[PaymentFailed] Changing payment method for order:',
-        params.orderId
+        "[PaymentFailed] Changing payment method for order:",
+        params.orderId,
       );
 
       // Fetch order details to get items and restore to cart
@@ -341,12 +345,12 @@ const PaymentFailedScreen = () => {
             product_image_url: item.product_image_url,
           })),
           orderDetails.business_id,
-          orderDetails.business_name
+          orderDetails.business_name,
         );
         console.log(
-          '[PaymentFailed] Restored',
+          "[PaymentFailed] Restored",
           orderDetails.items.length,
-          'items to cart'
+          "items to cart",
         );
       }
 
@@ -358,22 +362,25 @@ const PaymentFailedScreen = () => {
           prefillBillingEmail: orderDetails.billing_email || undefined,
           prefillBillingPhone: orderDetails.billing_phone || undefined,
           prefillPickupDatetime: orderDetails.pickup_datetime || undefined,
-          prefillSpecialInstructions: orderDetails.special_instructions || undefined,
-          fromChangePaymentMethod: 'true',
-        })
+          prefillSpecialInstructions:
+            orderDetails.special_instructions || undefined,
+          fromChangePaymentMethod: "true",
+        }),
       );
     } catch (error: any) {
-      console.error('[PaymentFailed] Failed to change payment method:', error);
+      console.error("[PaymentFailed] Failed to change payment method:", error);
       Alert.alert(
-        'Error',
-        'Unable to change payment method. Please try again.',
+        "Error",
+        "Unable to change payment method. Please try again.",
         [
           {
-            text: 'OK',
+            text: "OK",
             onPress: () =>
-              router.replace(Routes.checkout.index({ fromChangePaymentMethod: 'true' })),
+              router.replace(
+                Routes.checkout.index({ fromChangePaymentMethod: "true" }),
+              ),
           },
-        ]
+        ],
       );
     } finally {
       setChangingPaymentMethod(false);
@@ -409,7 +416,7 @@ const PaymentFailedScreen = () => {
 
           <Text style={[styles.message, { color: theme.textSecondary }]}>
             {params.errorMessage ||
-              'Your payment could not be processed. Please try again.'}
+              "Your payment could not be processed. Please try again."}
           </Text>
 
           {/* Order Info - only show if order was created */}
@@ -434,11 +441,11 @@ const PaymentFailedScreen = () => {
             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
               {orderCreated
                 ? isCardError
-                  ? 'Your card details need to be re-entered. Tap below to return to checkout.'
-                  : 'You can retry payment or change to a different payment method.'
+                  ? "Your card details need to be re-entered. Tap below to return to checkout."
+                  : "You can retry payment or change to a different payment method."
                 : isCardError
-                ? 'You can try a different card or switch to GCash/Maya.'
-                : 'Please check your payment details and try again.'}
+                  ? "You can try a different card or switch to GCash/Maya."
+                  : "Please check your payment details and try again."}
             </Text>
           </View>
 
@@ -452,12 +459,13 @@ const PaymentFailedScreen = () => {
                   style={[
                     styles.primaryButton,
                     { backgroundColor: theme.primary },
-                    (retrying || changingPaymentMethod) && styles.disabledButton,
+                    (retrying || changingPaymentMethod) &&
+                      styles.disabledButton,
                   ]}
                   onPress={handleRetryPayment}
                   disabled={retrying || changingPaymentMethod}
                 >
-                  {(retrying || (isCardError && changingPaymentMethod)) ? (
+                  {retrying || (isCardError && changingPaymentMethod) ? (
                     <ActivityIndicator color="#FFF" size="small" />
                   ) : (
                     <>
@@ -488,7 +496,10 @@ const PaymentFailedScreen = () => {
                           color={theme.text}
                         />
                         <Text
-                          style={[styles.secondaryButtonText, { color: theme.text }]}
+                          style={[
+                            styles.secondaryButtonText,
+                            { color: theme.text },
+                          ]}
                         >
                           Change Payment Method
                         </Text>
@@ -533,7 +544,7 @@ const PaymentFailedScreen = () => {
                 >
                   <Ionicons name="arrow-back" size={20} color="#FFF" />
                   <Text style={styles.primaryButtonText}>
-                    {isCardError ? 'Try Different Card' : 'Try Again'}
+                    {isCardError ? "Try Different Card" : "Try Again"}
                   </Text>
                 </Pressable>
 
@@ -574,26 +585,26 @@ const PaymentFailedScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 60,
   },
   iconContainer: {
     width: 140,
     height: 140,
     borderRadius: 70,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 32,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   message: {
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
     lineHeight: 24,
     paddingHorizontal: 16,
@@ -602,7 +613,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   orderLabel: {
@@ -611,11 +622,11 @@ const styles = StyleSheet.create({
   },
   orderNumber: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   infoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 32,
@@ -627,45 +638,45 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   buttonContainer: {
-    width: '100%',
+    width: "100%",
     gap: 12,
   },
   primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
   },
   primaryButtonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   disabledButton: {
     opacity: 0.6,
   },
   secondaryButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1,
   },
   secondaryButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   textButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     marginTop: 8,
   },
   textButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

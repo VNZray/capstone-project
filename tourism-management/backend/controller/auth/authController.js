@@ -3,12 +3,46 @@ import * as authService from '../../services/authService.js';
 const COOKIE_NAME = 'refresh_token';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
+/**
+ * Cookie options for refresh token storage
+ *
+ * IMPORTANT: For cross-origin requests (different domain/IP between frontend and backend):
+ * - In development: Use 'lax' for same-origin OR configure same localhost
+ * - In production: Use 'strict' with HTTPS
+ *
+ * If frontend and backend are on different IPs/domains in development,
+ * the cookie won't be sent with cross-origin requests unless SameSite is 'none' + Secure.
+ * Since HTTP doesn't support Secure cookies, we need to use same-origin in dev.
+ */
+const getCookieOptions = (req) => {
+  // Check if it's a cross-origin request
+  const origin = req.get('origin') || '';
+  const host = req.get('host') || '';
+
+  // Determine if this is a same-origin request
+  // In development, localhost:5173 -> localhost:3000 is cross-origin but same host
+  const isSameHost = origin.includes('localhost') && host.includes('localhost');
+
+  return {
+    httpOnly: true,
+    secure: IS_PROD, // Only use secure in production (HTTPS)
+    // Use 'lax' in development - works for same-site navigation
+    // For true cross-origin (different IPs), cookies may not work without HTTPS
+    sameSite: IS_PROD ? 'strict' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/', // accessible to all routes (e.g. /api/auth/refresh)
+    // In development, don't set domain to allow cross-origin with withCredentials
+    // The cookie will be set for the backend's domain
+  };
+};
+
+// Keep backward compatibility with static cookieOptions for places that don't have req
 const cookieOptions = {
   httpOnly: true,
-  secure: IS_PROD, // Only use secure in production (HTTPS)
-  sameSite: IS_PROD ? 'strict' : 'lax', // 'lax' works for same-site in dev
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  path: '/' // accessible to all routes (e.g. /api/auth/refresh)
+  secure: IS_PROD,
+  sameSite: IS_PROD ? 'strict' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: '/'
 };
 
 export async function login(req, res) {
@@ -32,12 +66,13 @@ export async function login(req, res) {
 
     // Web Client: Set HttpOnly Cookie
     if (client === 'web') {
+      const options = getCookieOptions(req);
       console.log('[Login] Setting cookie for web client:', {
         cookieName: COOKIE_NAME,
-        cookieOptions,
+        cookieOptions: options,
         refreshTokenPresent: !!refreshToken
       });
-      res.cookie(COOKIE_NAME, refreshToken, cookieOptions);
+      res.cookie(COOKIE_NAME, refreshToken, options);
       // Do NOT return refreshToken in body for web
       return res.json({
         message: 'Login successful',
@@ -105,12 +140,13 @@ export async function refresh(req, res) {
 
     // Web Client: Update Cookie
     if (isWebClient) {
+      const options = getCookieOptions(req);
       console.log('[Refresh] Setting new cookie for web client:', {
         cookieName: COOKIE_NAME,
-        cookieOptions,
+        cookieOptions: options,
         newRefreshTokenPresent: !!newRefreshToken
       });
-      res.cookie(COOKIE_NAME, newRefreshToken, cookieOptions);
+      res.cookie(COOKIE_NAME, newRefreshToken, options);
       return res.json({ accessToken: newAccessToken });
     }
 

@@ -1,4 +1,3 @@
-import axios from "axios";
 import { useEffect, useState } from "react";
 import { Outlet, Route, Routes } from "react-router-dom";
 
@@ -31,18 +30,20 @@ import { BusinessProvider } from "../context/BusinessContext";
 
 // Services & Types
 import Loading from "../components/ui/Loading";
-import api from "../services/api";
+import { checkTourismBackendHealth } from "../services/healthCheck";
 
 export default function AppRoutes() {
   const [isServerUp, setIsServerUp] = useState<boolean | null>(null);
 
   const checkServerStatus = async () => {
     try {
-      // Use a public endpoint for health check (business list is public)
-      const response = await axios.get(`${api}/business`, {
-        timeout: 5000,
-      });
-      setIsServerUp(response.status === 200);
+      // Only check Tourism backend health - independent of Business backend
+      const result = await checkTourismBackendHealth();
+      setIsServerUp(result.isUp);
+
+      if (!result.isUp) {
+        console.error("Tourism backend health check failed:", result.error);
+      }
     } catch (error) {
       console.error("Server status check failed:", error);
       setIsServerUp(false);

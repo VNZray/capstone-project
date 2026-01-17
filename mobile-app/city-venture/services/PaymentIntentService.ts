@@ -1,20 +1,20 @@
 /**
  * Payment Intent Service
  * Handles Payment Intent workflow for custom checkout integration
- * 
+ *
  * This service enables card payments with more control than Checkout Sessions.
  * The flow is:
  * 1. Server creates Payment Intent (via createPaymentIntent)
- * 2. Client collects card details 
+ * 2. Client collects card details
  * 3. Client creates Payment Method using PayMongo public key
  * 4. Client attaches Payment Method to Intent
  * 5. Client handles 3DS redirect if needed
  * 6. Webhook confirms payment success/failure
- * 
+ *
  * @see docs/ORDERING_SYSTEM_AUDIT.md - Phase 4
  */
 
-import apiClient from '@/services/apiClient';
+import apiClient from '@/services/api/apiClient';
 import * as WebBrowser from 'expo-web-browser';
 
 // PayMongo Public Key from environment
@@ -150,16 +150,16 @@ export interface PaymentIntentStatus {
 /**
  * Create a Payment Intent for an order or booking
  * Call this from your checkout screen when user confirms payment
- * 
+ *
  * Uses the unified /payment/initiate endpoint
- * 
+ *
  * @param request - Payment Intent creation request with payment_for and reference_id
  * @returns Payment Intent with client_key for client-side operations
- * 
+ *
  * @example
  * // For orders:
  * createPaymentIntent({ payment_for: 'order', reference_id: orderId })
- * 
+ *
  * // For bookings:
  * createPaymentIntent({ payment_for: 'booking', reference_id: bookingId })
  */
@@ -182,10 +182,10 @@ export async function createPaymentIntent(
 /**
  * Create a Payment Method directly with PayMongo (client-side)
  * Uses the public key for PCI-compliant card data handling
- * 
+ *
  * IMPORTANT: This calls PayMongo API directly from the client
  * Card data never touches your server
- * 
+ *
  * @param type - Payment method type ('card' for card payments)
  * @param details - Card details (for card type)
  * @param billing - Billing information
@@ -249,7 +249,7 @@ export async function createPaymentMethod(
 /**
  * Attach Payment Method to Payment Intent (client-side for cards)
  * Uses client_key for authentication
- * 
+ *
  * @param paymentIntentId - Payment Intent ID
  * @param paymentMethodId - Payment Method ID
  * @param clientKey - Client key from createPaymentIntent response
@@ -326,10 +326,10 @@ export async function attachPaymentMethodClient(
 /**
  * Attach e-wallet Payment Method to Payment Intent (Client-Side)
  * Communicates directly with PayMongo, bypassing the backend.
- * 
+ *
  * This is the recommended approach for e-wallets (GCash, PayMaya)
  * as it keeps the backend clean and follows the same pattern as card payments.
- * 
+ *
  * @param paymentIntentId - Payment Intent ID
  * @param paymentMethodType - E-wallet type ('gcash', 'paymaya')
  * @param returnUrl - URL to return after wallet authorization
@@ -393,7 +393,7 @@ export async function attachEwalletPaymentMethod(
 /**
  * Get Payment Intent status
  * Uses the unified /payment/intent/:id endpoint
- * 
+ *
  * @param paymentIntentId - Payment Intent ID
  * @returns Payment Intent status details
  */
@@ -416,9 +416,9 @@ export async function getPaymentIntentStatus(
  * Open 3DS/e-wallet authentication URL in an in-app browser session
  * Uses openAuthSessionAsync which:
  * - Opens browser inside the app
- * - Auto-closes when redirect URL is detected  
+ * - Auto-closes when redirect URL is detected
  * - Returns control back to the app with the final URL
- * 
+ *
  * @param redirectUrl - 3DS or e-wallet authentication URL from PayMongo
  * @param expectedRedirectBase - Base URL that PayMongo will redirect to after auth (your backend bridge)
  * @returns Browser auth session result with final URL
@@ -432,10 +432,10 @@ export async function open3DSAuthentication(
     // openAuthSessionAsync will detect when the browser navigates to this URL
     // and automatically close, returning the full URL with query params
     const redirectListenUrl = expectedRedirectBase || redirectUrl;
-    
+
     console.log('[PaymentIntentService] Opening auth session:', redirectUrl);
     console.log('[PaymentIntentService] Listening for redirect to:', redirectListenUrl);
-    
+
     const result = await WebBrowser.openAuthSessionAsync(
       redirectUrl,
       redirectListenUrl,
@@ -471,7 +471,7 @@ export function dismissBrowser(): void {
 /**
  * Complete card payment flow
  * Combines all steps: create intent, create method, attach, handle 3DS
- * 
+ *
  * @param orderId - Order ID to pay for
  * @param cardDetails - Card information
  * @param billing - Billing information
@@ -551,7 +551,7 @@ export async function processCardPayment(
 /**
  * Poll for Payment Intent status after 3DS
  * Use this after user returns from 3DS authentication
- * 
+ *
  * @param paymentIntentId - Payment Intent ID
  * @param maxAttempts - Maximum polling attempts (default 15)
  * @param intervalMs - Polling interval (default 2000ms)
@@ -590,7 +590,7 @@ export async function pollPaymentIntentStatus(
       }
     } catch (error: any) {
       console.error(`[PaymentIntentService] Poll attempt ${attempt + 1} failed:`, error.message);
-      
+
       if (attempt < maxAttempts - 1) {
         await new Promise(resolve => setTimeout(resolve, intervalMs));
       }
@@ -611,7 +611,7 @@ export async function pollPaymentIntentStatus(
  */
 export function validateCardNumber(cardNumber: string): boolean {
   const digits = cardNumber.replace(/\D/g, '');
-  
+
   if (digits.length < 13 || digits.length > 19) {
     return false;
   }
@@ -667,7 +667,7 @@ export function getCardBrand(cardNumber: string): string {
 /**
  * Test card numbers for PayMongo sandbox
  * @see https://developers.paymongo.com/docs/testing
- * 
+ *
  * Use any future expiration date and any 3-digit CVC
  */
 export const TEST_CARDS = {

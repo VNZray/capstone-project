@@ -4,37 +4,37 @@
  * Polls backend to verify payment completion
  */
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
   Pressable,
-} from 'react-native';
-import { useLocalSearchParams, Stack, router } from 'expo-router';
-import { Routes } from '@/routes/mainRoutes';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { colors } from '@/constants/color';
-import { useTypography } from '@/constants/typography';
-import PageContainer from '@/components/PageContainer';
-import { getOrderById } from '@/services/OrderService';
-import { Ionicons } from '@expo/vector-icons';
-import { io, Socket } from 'socket.io-client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import API_URL from '@/services/api';
+} from "react-native";
+import { useLocalSearchParams, Stack, router } from "expo-router";
+import { Routes } from "@/routes/mainRoutes";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { colors } from "@/constants/color";
+import { useTypography } from "@/constants/typography";
+import PageContainer from "@/components/PageContainer";
+import { getOrderById } from "@/services/OrderService";
+import { Ionicons } from "@expo/vector-icons";
+import { io, Socket } from "socket.io-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import API_URL from "@/services/api/api";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
-} from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
+} from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 
 const PaymentSuccessScreen = () => {
   const params = useLocalSearchParams<{ orderId: string }>();
   const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = scheme === "dark";
   const type = useTypography();
   const { h1, h2, h4, body, bodySmall } = type;
 
@@ -48,49 +48,49 @@ const PaymentSuccessScreen = () => {
   const translateY = useSharedValue(50);
 
   const palette = {
-    bg: isDark ? '#0D1B2A' : '#F8F9FA',
-    card: isDark ? '#1C2833' : '#FFFFFF',
-    text: isDark ? '#ECEDEE' : '#0D1B2A',
-    subText: isDark ? '#9BA1A6' : '#6B7280',
-    border: isDark ? '#2A2F36' : '#E5E8EC',
-    successBg: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ECFDF5',
-    successText: '#10B981',
+    bg: isDark ? "#0D1B2A" : "#F8F9FA",
+    card: isDark ? "#1C2833" : "#FFFFFF",
+    text: isDark ? "#ECEDEE" : "#0D1B2A",
+    subText: isDark ? "#9BA1A6" : "#6B7280",
+    border: isDark ? "#2A2F36" : "#E5E8EC",
+    successBg: isDark ? "rgba(16, 185, 129, 0.1)" : "#ECFDF5",
+    successText: "#10B981",
   };
 
   // Socket listener for real-time payment updates
   useEffect(() => {
     const setupSocket = async () => {
       try {
-        const token = await AsyncStorage.getItem('authToken');
+        const token = await AsyncStorage.getItem("authToken");
         if (!token) return;
 
-        const socketUrl = (API_URL ?? '').replace('/api', '');
+        const socketUrl = (API_URL ?? "").replace("/api", "");
         const socket = io(socketUrl, {
           auth: { token },
-          transports: ['websocket', 'polling'],
+          transports: ["websocket", "polling"],
         });
 
         socketRef.current = socket;
 
-        socket.on('payment:updated', (data: any) => {
+        socket.on("payment:updated", (data: any) => {
           if (
             data.order_id === params.orderId &&
-            data.status?.toLowerCase() === 'paid'
+            data.status?.toLowerCase() === "paid"
           ) {
             setVerifying(false);
           }
         });
 
-        socket.on('order:updated', (data: any) => {
+        socket.on("order:updated", (data: any) => {
           if (
             data.id === params.orderId &&
-            data.payment_status?.toLowerCase() === 'paid'
+            data.payment_status?.toLowerCase() === "paid"
           ) {
             setVerifying(false);
           }
         });
       } catch (err) {
-        console.error('[PaymentSuccess] Socket setup error:', err);
+        console.error("[PaymentSuccess] Socket setup error:", err);
       }
     };
 
@@ -120,16 +120,16 @@ const PaymentSuccessScreen = () => {
       // Immediate check
       try {
         const immediateCheck = await getOrderById(params.orderId);
-        if (immediateCheck.payment_status?.toLowerCase() === 'paid') {
+        if (immediateCheck.payment_status?.toLowerCase() === "paid") {
           console.log(
-            '[PaymentSuccess] Immediate check passed, redirecting to order confirmation'
+            "[PaymentSuccess] Immediate check passed, redirecting to order confirmation",
           );
           router.replace(
             Routes.checkout.orderConfirmation({
               orderId: params.orderId,
-              paymentMethod: 'paymongo',
-              paymentSuccess: 'true',
-            })
+              paymentMethod: "paymongo",
+              paymentSuccess: "true",
+            }),
           );
           return;
         }
@@ -145,23 +145,23 @@ const PaymentSuccessScreen = () => {
         try {
           const order = await getOrderById(params.orderId);
 
-          if (order.payment_status?.toLowerCase() === 'paid') {
+          if (order.payment_status?.toLowerCase() === "paid") {
             console.log(
-              '[PaymentSuccess] Payment verified, redirecting to order confirmation'
+              "[PaymentSuccess] Payment verified, redirecting to order confirmation",
             );
             // Redirect to order confirmation screen for consistent UX
             router.replace(
               Routes.checkout.orderConfirmation({
                 orderId: params.orderId,
-                paymentMethod: 'paymongo',
-                paymentSuccess: 'true',
-              })
+                paymentMethod: "paymongo",
+                paymentSuccess: "true",
+              }),
             );
             return;
           }
 
-          if (order.payment_status?.toLowerCase() === 'failed') {
-            setError('Payment failed. Please try again.');
+          if (order.payment_status?.toLowerCase() === "failed") {
+            setError("Payment failed. Please try again.");
             setVerifying(false);
             return;
           }
@@ -170,7 +170,7 @@ const PaymentSuccessScreen = () => {
           attempts++;
         } catch (err: any) {
           if (err.response?.status === 404 || err.response?.status === 403) {
-            setError('Order not found or access denied.');
+            setError("Order not found or access denied.");
             setVerifying(false);
             return;
           }
@@ -182,27 +182,27 @@ const PaymentSuccessScreen = () => {
       // Final check
       try {
         const finalCheck = await getOrderById(params.orderId);
-        if (finalCheck.payment_status?.toLowerCase() === 'paid') {
+        if (finalCheck.payment_status?.toLowerCase() === "paid") {
           console.log(
-            '[PaymentSuccess] Final check passed, redirecting to order confirmation'
+            "[PaymentSuccess] Final check passed, redirecting to order confirmation",
           );
           router.replace(
             Routes.checkout.orderConfirmation({
               orderId: params.orderId,
-              paymentMethod: 'paymongo',
-              paymentSuccess: 'true',
-            })
+              paymentMethod: "paymongo",
+              paymentSuccess: "true",
+            }),
           );
           return;
         }
       } catch (_) {}
 
       setError(
-        'Payment verification timed out. Please check your order history.'
+        "Payment verification timed out. Please check your order history.",
       );
       setVerifying(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to verify payment');
+      setError(err.message || "Failed to verify payment");
       setVerifying(false);
     }
   }, [params.orderId]);
@@ -274,7 +274,7 @@ const PaymentSuccessScreen = () => {
                     fontSize: h2,
                     color: palette.text,
                     marginTop: 24,
-                    textAlign: 'center',
+                    textAlign: "center",
                   },
                 ]}
               >
@@ -285,7 +285,7 @@ const PaymentSuccessScreen = () => {
                   {
                     fontSize: body,
                     color: palette.subText,
-                    textAlign: 'center',
+                    textAlign: "center",
                     marginTop: 8,
                     paddingHorizontal: 32,
                   },
@@ -327,7 +327,7 @@ const PaymentSuccessScreen = () => {
                 style={[styles.successIconWrapper, animatedIconStyle]}
               >
                 <LinearGradient
-                  colors={[colors.success, '#34D399']}
+                  colors={[colors.success, "#34D399"]}
                   style={styles.gradientIcon}
                 >
                   <Ionicons name="checkmark" size={64} color="#FFF" />
@@ -342,7 +342,7 @@ const PaymentSuccessScreen = () => {
                     {
                       fontSize: h1,
                       color: palette.text,
-                      textAlign: 'center',
+                      textAlign: "center",
                       marginBottom: 8,
                     },
                   ]}
@@ -354,7 +354,7 @@ const PaymentSuccessScreen = () => {
                     {
                       fontSize: body,
                       color: palette.subText,
-                      textAlign: 'center',
+                      textAlign: "center",
                       marginBottom: 32,
                     },
                   ]}
@@ -381,7 +381,7 @@ const PaymentSuccessScreen = () => {
                         {
                           fontSize: body,
                           color: palette.text,
-                          fontWeight: '600',
+                          fontWeight: "600",
                         },
                       ]}
                     >
@@ -404,7 +404,7 @@ const PaymentSuccessScreen = () => {
                           {
                             fontSize: bodySmall,
                             color: colors.success,
-                            fontWeight: '600',
+                            fontWeight: "600",
                           },
                         ]}
                       >
@@ -427,7 +427,7 @@ const PaymentSuccessScreen = () => {
                         {
                           fontSize: body,
                           color: palette.text,
-                          fontWeight: '600',
+                          fontWeight: "600",
                         },
                       ]}
                     >
@@ -476,18 +476,18 @@ const PaymentSuccessScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   centerContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
     paddingHorizontal: 24,
   },
   successContent: {
-    alignItems: 'center',
-    width: '100%',
+    alignItems: "center",
+    width: "100%",
     paddingHorizontal: 24,
     marginTop: -40,
   },
@@ -496,16 +496,16 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     opacity: 0.5,
   },
   iconContainer: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
   },
   successIconWrapper: {
@@ -520,52 +520,52 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   contentWrapper: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   orderCard: {
-    width: '100%',
+    width: "100%",
     padding: 20,
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 32,
   },
   cardRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 8,
   },
   divider: {
     height: 1,
-    width: '100%',
+    width: "100%",
     marginVertical: 4,
   },
   statusBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: "rgba(16, 185, 129, 0.1)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
   actionButtons: {
-    width: '100%',
+    width: "100%",
     gap: 12,
   },
   buttonContainer: {
-    width: '100%',
+    width: "100%",
     marginTop: 32,
     gap: 12,
   },
   primaryButton: {
-    width: '100%',
+    width: "100%",
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -573,22 +573,22 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   secondaryButton: {
-    width: '100%',
+    width: "100%",
     height: 56,
     borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   buttonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   secondaryButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
 

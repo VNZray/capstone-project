@@ -1,4 +1,4 @@
-import apiClient from '@/services/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 import type { Booking } from '@/types/Booking';
 
 /**
@@ -10,7 +10,7 @@ export async function fetchBookingsByBusinessId(
   opts?: { noCache?: boolean }
 ): Promise<Booking[]> {
   const cacheSuffix = opts?.noCache ? `?ts=${Date.now()}` : '';
-  const { data } = await apiClient.get(
+  const { data } = await businessApiClient.get(
     `/booking/business/${businessId}${cacheSuffix}`,
     {
       headers: opts?.noCache
@@ -33,7 +33,7 @@ export async function fetchBookingsByRoomId(
   opts?: { noCache?: boolean }
 ): Promise<Booking[]> {
   const cacheSuffix = opts?.noCache ? `?ts=${Date.now()}` : '';
-  const { data } = await apiClient.get(
+  const { data } = await businessApiClient.get(
     `/booking/room/${roomId}${cacheSuffix}`,
     {
       headers: opts?.noCache

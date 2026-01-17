@@ -6,6 +6,15 @@ import { loginRateLimiter, refreshRateLimiter } from '../middleware/rateLimit.js
 
 const router = express.Router();
 
+// Health check endpoint (no auth required)
+router.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'mobile-backend',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Apply rate limiting to sensitive auth endpoints
 router.post('/login', loginRateLimiter, authController.login);
 router.post('/refresh', refreshRateLimiter, authController.refresh);

@@ -1,4 +1,4 @@
-import apiClient, { setAccessToken, clearApiClientState } from './apiClient';
+import apiClient, { setAccessToken, clearApiClientState } from './api/apiClient';
 import debugLogger from '@/utils/debugLogger';
 import type {
   Address,
@@ -214,11 +214,33 @@ export const loginUser = async (
 
       const touristBarangayId =
         userData.barangay_id || (touristData as any).barangay_id;
+
+      debugLogger({
+        title: 'AuthService: Tourist address lookup',
+        data: {
+          userData_barangay_id: userData.barangay_id,
+          touristData_barangay_id: (touristData as any).barangay_id,
+          touristBarangayId,
+        },
+      });
+
       if (touristBarangayId) {
         const touristAddressData = await apiClient
           .get<Address>(`/address/${touristBarangayId}`)
-          .then((r) => r.data)
-          .catch(() => null);
+          .then((r) => {
+            debugLogger({
+              title: 'AuthService: Address data fetched',
+              data: r.data,
+            });
+            return r.data;
+          })
+          .catch((err) => {
+            debugLogger({
+              title: 'AuthService: Address fetch failed',
+              error: err?.message || String(err),
+            });
+            return null;
+          });
 
         if (touristAddressData) {
           touristBarangay = {
@@ -349,7 +371,25 @@ export const getStoredUser = async (): Promise<UserDetails | null> => {
     if (!storedUserData) {
       return null;
     }
-    return JSON.parse(storedUserData);
+    const user = JSON.parse(storedUserData) as UserDetails;
+
+    // If we have a barangay_id but no barangay_name, fetch the address data
+    if (user.barangay_id && !user.barangay_name) {
+      try {
+        const addressResp = await apiClient.get(`/address/${user.barangay_id}`);
+        if (addressResp.data) {
+          user.barangay_name = addressResp.data.barangay_name || '';
+          user.municipality_name = addressResp.data.municipality_name || '';
+          user.province_name = addressResp.data.province_name || '';
+          // Save the updated user data with address names
+          await saveUserData(JSON.stringify(user));
+        }
+      } catch (addressError) {
+        console.warn('[AuthService] Failed to fetch address data:', addressError);
+      }
+    }
+
+    return user;
   } catch (error) {
     console.error('[AuthService] Failed to get stored user:', error);
     return null;

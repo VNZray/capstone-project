@@ -1,4 +1,5 @@
-import apiClient from '@/services/apiClient';
+import apiClient from '@/services/api/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 import { supabase } from '@/utils/supabase';
 import type {
   ReviewAndRating,
@@ -120,14 +121,15 @@ function normalizeReviewData<T extends { review_type?: string }>(review: T): T {
 }
 
 // ===== Reviews =====
+// Reviews are served by business backend (port 4000)
 
 export async function getAllReviews(): Promise<ReviewAndRatings> {
-  const { data } = await apiClient.get(`/reviews`);
+  const { data } = await businessApiClient.get(`/reviews`);
   return normalizeList<ReviewAndRating>(data);
 }
 
 export async function getReviewById(id: string): Promise<ReviewAndRating> {
-  const { data } = await apiClient.get(`/reviews/${id}`);
+  const { data } = await businessApiClient.get(`/reviews/${id}`);
   return unwrap<ReviewAndRating>(data);
 }
 
@@ -135,7 +137,7 @@ export async function getReviewsByTypeAndEntityId(
   review_type: ReviewType,
   review_type_id: string
 ): Promise<ReviewAndRatings> {
-  const { data } = await apiClient.get(
+  const { data } = await businessApiClient.get(
     `/reviews/type/${review_type}/${review_type_id}`
   );
   return normalizeList<ReviewAndRating>(data);
@@ -148,7 +150,7 @@ export async function getReviewsByTypeAndEntityId(
 export async function getReviewsByTouristId(
   touristId: string
 ): Promise<ReviewWithEntityDetails[]> {
-  const { data } = await apiClient.get(`/reviews/tourist/${touristId}`);
+  const { data } = await businessApiClient.get(`/reviews/tourist/${touristId}`);
   const reviews = normalizeList<ReviewWithEntityDetails>(data);
   // Normalize review_type from backend format to frontend format
   return reviews.map(normalizeReviewData);
@@ -261,7 +263,7 @@ export async function getBusinessReviews(
 export async function createReview(
   payload: CreateReviewPayload
 ): Promise<ReviewAndRating> {
-  const { data } = await apiClient.post(`/reviews`, payload);
+  const { data } = await businessApiClient.post(`/reviews`, payload);
   return unwrap<ReviewAndRating>(data);
 }
 
@@ -269,34 +271,35 @@ export async function updateReview(
   id: string,
   payload: UpdateReviewPayload
 ): Promise<ReviewAndRating> {
-  const { data } = await apiClient.patch(`/reviews/${id}`, payload);
+  const { data } = await businessApiClient.patch(`/reviews/${id}`, payload);
   return unwrap<ReviewAndRating>(data);
 }
 
 export async function deleteReview(id: string): Promise<{ message: string }> {
-  const { data } = await apiClient.delete(`/reviews/${id}`);
+  const { data } = await businessApiClient.delete(`/reviews/${id}`);
   return data;
 }
 
 // ===== Replies =====
+// Replies are served by business backend (port 4000)
 
 export async function getAllReplies(): Promise<Replies> {
-  const { data } = await apiClient.get(`/replies`);
+  const { data } = await businessApiClient.get(`/replies`);
   return normalizeList<Reply>(data);
 }
 
 export async function getReplyById(id: string): Promise<Reply> {
-  const { data } = await apiClient.get(`/replies/${id}`);
+  const { data } = await businessApiClient.get(`/replies/${id}`);
   return unwrap<Reply>(data);
 }
 
 export async function getRepliesByReviewId(reviewId: string): Promise<Replies> {
-  const { data } = await apiClient.get(`/replies/review/${reviewId}`);
+  const { data } = await businessApiClient.get(`/replies/review/${reviewId}`);
   return normalizeList<Reply>(data);
 }
 
 export async function createReply(payload: CreateReplyPayload): Promise<Reply> {
-  const { data } = await apiClient.post(`/replies`, payload);
+  const { data } = await businessApiClient.post(`/replies`, payload);
   return unwrap<Reply>(data);
 }
 
@@ -304,19 +307,20 @@ export async function updateReply(
   id: string,
   payload: UpdateReplyPayload
 ): Promise<Reply> {
-  const { data } = await apiClient.patch(`/replies/${id}`, payload);
+  const { data } = await businessApiClient.patch(`/replies/${id}`, payload);
   return unwrap<Reply>(data);
 }
 
 export async function deleteReply(id: string): Promise<{ message: string }> {
-  const { data } = await apiClient.delete(`/replies/${id}`);
+  const { data } = await businessApiClient.delete(`/replies/${id}`);
   return data;
 }
 
 // ===== Review Photos =====
+// Review photos are served by business backend (port 4000)
 
 export async function getReviewPhotos(reviewId: string): Promise<ReviewPhotos> {
-  const { data } = await apiClient.get(
+  const { data } = await businessApiClient.get(
     `/review-photos/reviews/${reviewId}/photos`
   );
   return normalizeList<ReviewPhoto>(data);
@@ -379,7 +383,7 @@ export async function addReviewPhotos(
   }
 
   // Then send the URLs to the backend
-  const { data } = await apiClient.post(
+  const { data } = await businessApiClient.post(
     `/review-photos/reviews/${reviewId}/photos`,
     { photos: uploadedUrls }
   );
@@ -390,7 +394,7 @@ export async function addReviewPhotos(
 export async function deleteReviewPhoto(
   photoId: string
 ): Promise<{ message: string }> {
-  const { data } = await apiClient.delete(
+  const { data } = await businessApiClient.delete(
     `/review-photos/reviews/photos/${photoId}`
   );
   return data;
@@ -401,7 +405,7 @@ export async function getAverageRating(
   review_type: ReviewType,
   review_type_id: string
 ): Promise<number> {
-  const { data } = await apiClient.get(
+  const { data } = await businessApiClient.get(
     `/reviews/average/${review_type}/${review_type_id}`
   );
   // Handle array/object response: [{ average_rating: "5.0000" }]
@@ -429,7 +433,7 @@ export async function getTotalReviews(
   review_type: ReviewType,
   review_type_id: string
 ): Promise<number> {
-  const { data } = await apiClient.get(
+  const { data } = await businessApiClient.get(
     `/reviews/total/${review_type}/${review_type_id}`
   );
   // Handle array/object response: [{ total_reviews: 2 }]

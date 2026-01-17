@@ -21,7 +21,7 @@ import React, {
   useCallback,
   useRef,
   useMemo,
-} from 'react';
+} from "react";
 import {
   View,
   Text,
@@ -32,15 +32,15 @@ import {
   Animated,
   Vibration,
   Platform,
-} from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Routes } from '@/routes/mainRoutes';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/color';
-import PageContainer from '@/components/PageContainer';
-import { useCart } from '@/context/CartContext';
-import { Ionicons } from '@expo/vector-icons';
-import { createOrder } from '@/services/OrderService';
+} from "react-native";
+import { Stack, router, useLocalSearchParams } from "expo-router";
+import { Routes } from "@/routes/mainRoutes";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/color";
+import PageContainer from "@/components/PageContainer";
+import { useCart } from "@/context/CartContext";
+import { Ionicons } from "@expo/vector-icons";
+import { createOrder } from "@/services/OrderService";
 import {
   createPaymentIntent,
   attachEwalletPaymentMethod,
@@ -48,9 +48,9 @@ import {
   dismissBrowser,
   createPaymentMethod,
   attachPaymentMethodClient,
-} from '@/services/PaymentIntentService';
-import API_URL from '@/services/api';
-import type { CreateOrderPayload } from '@/types/Order';
+} from "@/services/PaymentIntentService";
+import API_URL from "@/services/api/api";
+import type { CreateOrderPayload } from "@/types/Order";
 
 // Grace period duration in seconds
 const GRACE_PERIOD_SECONDS = 10;
@@ -75,14 +75,14 @@ const OrderGracePeriodScreen = () => {
     return params.billingInfo ? JSON.parse(params.billingInfo as string) : {};
   }, [params.billingInfo]);
 
-  const paymentMethodType = (params.paymentMethodType as string) || 'gcash';
-  const totalAmount = parseFloat((params.total as string) || '0');
+  const paymentMethodType = (params.paymentMethodType as string) || "gcash";
+  const totalAmount = parseFloat((params.total as string) || "0");
 
   // State
   const [countdown, setCountdown] = useState(GRACE_PERIOD_SECONDS);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStep, setProcessingStep] = useState('');
+  const [processingStep, setProcessingStep] = useState("");
   const hasStartedPayment = useRef(false);
 
   // Track created order for error handling (so user can view order if payment fails)
@@ -105,24 +105,24 @@ const OrderGracePeriodScreen = () => {
     hasStartedPayment.current = true;
 
     if (!orderData) {
-      Alert.alert('Error', 'Order data not found. Please try again.');
+      Alert.alert("Error", "Order data not found. Please try again.");
       router.back();
       return;
     }
 
     try {
       setIsProcessing(true);
-      setProcessingStep('Creating your order...');
+      setProcessingStep("Creating your order...");
 
       // Step 1: Create the order in backend
-      console.log('[GracePeriod] Creating order...');
-      console.log('[GracePeriod] orderData:', orderData);
+      console.log("[GracePeriod] Creating order...");
+      console.log("[GracePeriod] orderData:", orderData);
       console.log(
-        '[GracePeriod] orderData.pickup_datetime:',
-        orderData.pickup_datetime
+        "[GracePeriod] orderData.pickup_datetime:",
+        orderData.pickup_datetime,
       );
       const orderResponse = await createOrder(orderData);
-      console.log('[GracePeriod] Order created:', orderResponse.order_number);
+      console.log("[GracePeriod] Order created:", orderResponse.order_number);
 
       // Clear cart now that order is successfully created
       clearCart();
@@ -134,36 +134,36 @@ const OrderGracePeriodScreen = () => {
       // Store order details for error handling
       createdOrderRef.current = { orderId, orderNumber, arrivalCode };
 
-      setProcessingStep('Initializing payment...');
+      setProcessingStep("Initializing payment...");
 
       // Step 2: Create Payment Intent using unified API
       console.log(
-        '[GracePeriod] Creating payment intent with method:',
-        paymentMethodType
+        "[GracePeriod] Creating payment intent with method:",
+        paymentMethodType,
       );
       const intentResponse = await createPaymentIntent({
-        payment_for: 'order',
+        payment_for: "order",
         reference_id: orderId,
-        payment_method: paymentMethodType as 'card' | 'gcash' | 'paymaya',
+        payment_method: paymentMethodType as "card" | "gcash" | "paymaya",
       });
 
       const paymentIntentId = intentResponse.data.payment_intent_id;
-      console.log('[GracePeriod] Payment intent created:', paymentIntentId);
+      console.log("[GracePeriod] Payment intent created:", paymentIntentId);
 
       // Step 3: Handle based on payment method type
-      if (paymentMethodType === 'card') {
+      if (paymentMethodType === "card") {
         // Process card payment inline using card details from billingInfo
-        setProcessingStep('Processing card payment...');
-        console.log('[GracePeriod] Processing card payment inline');
+        setProcessingStep("Processing card payment...");
+        console.log("[GracePeriod] Processing card payment inline");
 
         // Generate return URL
-        const backendBaseUrl = API_URL ? API_URL.replace('/api', '') : '';
+        const backendBaseUrl = API_URL ? API_URL.replace("/api", "") : "";
         const returnUrl = `${backendBaseUrl}/orders/${orderId}/payment-success`;
 
         // Step 3a: Create Payment Method using card details from billingInfo
-        console.log('[GracePeriod] Creating card payment method...');
+        console.log("[GracePeriod] Creating card payment method...");
         const paymentMethodResponse = await createPaymentMethod(
-          'card',
+          "card",
           {
             card_number: billingInfo.cardNumber,
             exp_month: billingInfo.expMonth,
@@ -173,54 +173,54 @@ const OrderGracePeriodScreen = () => {
           {
             name: billingInfo.name,
             email: billingInfo.email,
-          }
+          },
         );
 
         const paymentMethodId = paymentMethodResponse.data.id;
         console.log(
-          '[GracePeriod] Card payment method created:',
-          paymentMethodId
+          "[GracePeriod] Card payment method created:",
+          paymentMethodId,
         );
 
         // Step 3b: Attach Payment Method to Payment Intent
-        setProcessingStep('Verifying card...');
-        console.log('[GracePeriod] Attaching card payment method...');
+        setProcessingStep("Verifying card...");
+        console.log("[GracePeriod] Attaching card payment method...");
         const attachResponse = await attachPaymentMethodClient(
           paymentIntentId,
           paymentMethodId,
           intentResponse.data.client_key,
-          returnUrl
+          returnUrl,
         );
 
         const cardStatus = attachResponse.data.attributes.status;
         const cardNextAction = attachResponse.data.attributes.next_action;
 
-        console.log('[GracePeriod] Card attach result:', cardStatus);
+        console.log("[GracePeriod] Card attach result:", cardStatus);
 
         // Step 3c: Handle 3DS if required
         if (
-          cardStatus === 'awaiting_next_action' &&
+          cardStatus === "awaiting_next_action" &&
           cardNextAction?.redirect?.url
         ) {
-          setProcessingStep('Verifying with your bank...');
-          console.log('[GracePeriod] 3DS authentication required');
+          setProcessingStep("Verifying with your bank...");
+          console.log("[GracePeriod] 3DS authentication required");
 
           const authResult = await open3DSAuthentication(
             cardNextAction.redirect.url,
-            returnUrl
+            returnUrl,
           );
 
-          console.log('[GracePeriod] 3DS auth result:', authResult.type);
+          console.log("[GracePeriod] 3DS auth result:", authResult.type);
           dismissBrowser();
 
-          if (authResult.type === 'cancel') {
-            console.log('[GracePeriod] User cancelled 3DS authentication');
+          if (authResult.type === "cancel") {
+            console.log("[GracePeriod] User cancelled 3DS authentication");
             router.replace(
               Routes.checkout.paymentCancel({
                 orderId,
                 orderNumber,
-                reason: 'cancelled',
-              })
+                reason: "cancelled",
+              }),
             );
             return;
           }
@@ -233,29 +233,29 @@ const OrderGracePeriodScreen = () => {
               arrivalCode,
               paymentIntentId,
               total: totalAmount.toString(),
-            })
+            }),
           );
           return;
         }
 
         // Card payment succeeded without 3DS
-        if (cardStatus === 'succeeded') {
-          console.log('[GracePeriod] Card payment succeeded immediately');
+        if (cardStatus === "succeeded") {
+          console.log("[GracePeriod] Card payment succeeded immediately");
           router.replace(
             Routes.checkout.orderConfirmation({
               orderId,
               orderNumber,
               arrivalCode,
               total: totalAmount.toString(),
-              paymentMethod: 'paymongo',
-              paymentSuccess: 'true',
-            })
+              paymentMethod: "paymongo",
+              paymentSuccess: "true",
+            }),
           );
           return;
         }
 
         // Payment processing
-        if (cardStatus === 'processing') {
+        if (cardStatus === "processing") {
           router.replace(
             Routes.checkout.paymentProcessing({
               orderId,
@@ -263,7 +263,7 @@ const OrderGracePeriodScreen = () => {
               arrivalCode,
               paymentIntentId,
               total: totalAmount.toString(),
-            })
+            }),
           );
           return;
         }
@@ -276,47 +276,47 @@ const OrderGracePeriodScreen = () => {
             arrivalCode,
             paymentIntentId,
             total: totalAmount.toString(),
-          })
+          }),
         );
         return;
       }
 
       // For e-wallets (GCash, Maya)
-      setProcessingStep('Connecting to payment provider...');
+      setProcessingStep("Connecting to payment provider...");
 
       // Generate return URL
-      const backendBaseUrl = API_URL ? API_URL.replace('/api', '') : '';
+      const backendBaseUrl = API_URL ? API_URL.replace("/api", "") : "";
       const returnUrl = `${backendBaseUrl}/orders/${orderId}/payment-success`;
 
       // Attach e-wallet payment method (Client-Side - direct to PayMongo)
       const attachResponse = await attachEwalletPaymentMethod(
         paymentIntentId,
-        paymentMethodType as 'gcash' | 'paymaya',
+        paymentMethodType as "gcash" | "paymaya",
         returnUrl,
         intentResponse.data.client_key, // Pass client_key for direct PayMongo call
-        billingInfo
+        billingInfo,
       );
 
       console.log(
-        '[GracePeriod] Attachment response:',
-        attachResponse.data.attributes.status
+        "[GracePeriod] Attachment response:",
+        attachResponse.data.attributes.status,
       );
 
       // Check if redirect is needed (for e-wallet authorization)
       const nextAction = attachResponse.data.attributes.next_action;
       if (nextAction?.redirect?.url) {
-        setProcessingStep('Opening payment app...');
+        setProcessingStep("Opening payment app...");
         console.log(
-          '[GracePeriod] Opening e-wallet authorization:',
-          nextAction.redirect.url
+          "[GracePeriod] Opening e-wallet authorization:",
+          nextAction.redirect.url,
         );
 
         const authResult = await open3DSAuthentication(
           nextAction.redirect.url,
-          returnUrl
+          returnUrl,
         );
 
-        console.log('[GracePeriod] Auth session completed:', authResult.type);
+        console.log("[GracePeriod] Auth session completed:", authResult.type);
         dismissBrowser();
 
         // Handle based on auth session result type
@@ -324,17 +324,17 @@ const OrderGracePeriodScreen = () => {
         // 1. User manually closes browser (actual cancel)
         // 2. Deep link fires and closes browser (payment may have succeeded)
         // We navigate to processing screen to verify actual payment status
-        if (authResult.type === 'cancel') {
+        if (authResult.type === "cancel") {
           // Explicit cancel - user tapped cancel button
           console.log(
-            '[GracePeriod] User explicitly cancelled payment authorization'
+            "[GracePeriod] User explicitly cancelled payment authorization",
           );
           router.replace(
             Routes.checkout.paymentCancel({
               orderId,
               orderNumber,
-              reason: 'cancelled',
-            })
+              reason: "cancelled",
+            }),
           );
           return;
         }
@@ -342,7 +342,7 @@ const OrderGracePeriodScreen = () => {
         // For 'dismiss' or 'success', navigate to processing screen to verify payment status
         // The deep link handler will show appropriate feedback
         console.log(
-          '[GracePeriod] Auth session ended, verifying payment status...'
+          "[GracePeriod] Auth session ended, verifying payment status...",
         );
 
         // After user returns from e-wallet, navigate to processing screen
@@ -353,22 +353,22 @@ const OrderGracePeriodScreen = () => {
             arrivalCode,
             paymentIntentId,
             total: totalAmount.toString(),
-          })
+          }),
         );
         return;
       }
 
       // If no redirect needed (unlikely for e-wallets), payment may have succeeded
-      if (attachResponse.data.attributes.status === 'succeeded') {
+      if (attachResponse.data.attributes.status === "succeeded") {
         router.replace(
           Routes.checkout.orderConfirmation({
             orderId,
             orderNumber,
             arrivalCode,
             total: totalAmount.toString(),
-            paymentMethod: 'paymongo',
-            paymentSuccess: 'true',
-          })
+            paymentMethod: "paymongo",
+            paymentSuccess: "true",
+          }),
         );
         return;
       }
@@ -381,10 +381,10 @@ const OrderGracePeriodScreen = () => {
           arrivalCode,
           paymentIntentId,
           total: totalAmount.toString(),
-        })
+        }),
       );
     } catch (error: any) {
-      console.error('[GracePeriod] Error processing order:', error);
+      console.error("[GracePeriod] Error processing order:", error);
       // IMPORTANT: Do NOT reset hasStartedPayment.current to false here!
       // This was causing double order creation when the useEffect re-triggered.
       // Once payment processing has failed, the user must navigate to payment-failed
@@ -392,7 +392,7 @@ const OrderGracePeriodScreen = () => {
 
       // Map PayMongo error codes to user-friendly messages
       const getErrorMessage = (
-        err: any
+        err: any,
       ): { title: string; message: string; isCardError: boolean } => {
         // Extract sub_code from multiple possible locations in the error structure:
         // 1. err.response.data.errors[0].sub_code - From axios error response
@@ -413,7 +413,7 @@ const OrderGracePeriodScreen = () => {
 
         // Log for debugging (will help identify unmapped error codes)
         if (subCode || errorCode) {
-          console.log('[GracePeriod] PayMongo error codes:', {
+          console.log("[GracePeriod] PayMongo error codes:", {
             subCode,
             errorCode,
             fullError: err.response?.data || err.message,
@@ -423,105 +423,105 @@ const OrderGracePeriodScreen = () => {
         // Generic message for security-sensitive errors (fraud, lost/stolen cards)
         // PayMongo recommends NOT exposing these details to customers
         const GENERIC_DECLINE_MESSAGE =
-          'Your card was declined. Please contact your bank or try a different card.';
+          "Your card was declined. Please contact your bank or try a different card.";
 
         // ===== DECLINED TRANSACTIONS =====
         const declinedMessages: Record<string, string> = {
           generic_decline:
-            'Your card was declined. Please contact your bank or try a different card.',
+            "Your card was declined. Please contact your bank or try a different card.",
           do_not_honor:
-            'Your card was declined. Please contact your bank or try a different card.',
+            "Your card was declined. Please contact your bank or try a different card.",
           payment_refused:
-            'Payment was refused. Please try a different card or payment method.',
+            "Payment was refused. Please try a different card or payment method.",
           insufficient_funds:
-            'Insufficient funds. Please try a different card or payment method.',
+            "Insufficient funds. Please try a different card or payment method.",
           debit_card_usage_limit_exceeded:
-            'Card usage limit exceeded. Please try a different card or payment method.',
+            "Card usage limit exceeded. Please try a different card or payment method.",
           issuer_declined:
-            'Your bank declined this transaction. Please contact them for more information.',
+            "Your bank declined this transaction. Please contact them for more information.",
           issuer_not_available:
             "We couldn't reach your bank. Please wait a few minutes and try again.",
           amount_allowed_exceeded:
-            'Amount exceeds your card limit. Please contact your bank or try a different card.',
+            "Amount exceeds your card limit. Please contact your bank or try a different card.",
           call_card_issuer:
-            'Please contact your bank for more information, then try again.',
+            "Please contact your bank for more information, then try again.",
           card_not_supported:
-            'This card type is not supported. Please try a different card.',
+            "This card type is not supported. Please try a different card.",
           card_type_mismatch:
-            'Card type mismatch. Please verify your card details and try again.',
+            "Card type mismatch. Please verify your card details and try again.",
           card_unauthorized:
-            'This card is not authorized for online payments. Please contact your bank or try a different card.',
+            "This card is not authorized for online payments. Please contact your bank or try a different card.",
           credit_limit_exceeded:
-            'Credit limit exceeded. Please try a different card or payment method.',
+            "Credit limit exceeded. Please try a different card or payment method.",
           currency_not_supported_by_card_issuer:
-            'Your card does not support this currency. Please try a different card.',
+            "Your card does not support this currency. Please try a different card.",
         };
 
         // ===== BLOCKED TRANSACTIONS (Security-sensitive - use generic message) =====
         const blockedCodes = [
-          'fraudulent',
-          'highest_risk_level',
-          'lost_card',
-          'pickup_card',
-          'processor_blocked',
-          'restricted_card',
-          'stolen_card',
-          'blocked',
+          "fraudulent",
+          "highest_risk_level",
+          "lost_card",
+          "pickup_card",
+          "processor_blocked",
+          "restricted_card",
+          "stolen_card",
+          "blocked",
         ];
 
         // ===== PROCESSOR ERRORS =====
         // Note: 'processor_unavailable' is from test card 5500000000000194
         const processorMessages: Record<string, string> = {
           avs_failed:
-            'Address verification failed. Please check your billing address and try again.',
+            "Address verification failed. Please check your billing address and try again.",
           card_not_accepted:
-            'This card type is not accepted. Please try a different card.',
+            "This card type is not accepted. Please try a different card.",
           config_invalid_or_missing:
-            'Payment processing error. Please try again or contact support.',
+            "Payment processing error. Please try again or contact support.",
           customer_blacklisted:
-            'This payment cannot be processed. Please contact support.',
+            "This payment cannot be processed. Please contact support.",
           merchant_configuration_invalid:
-            'Payment processing error. Please try again or contact support.',
+            "Payment processing error. Please try again or contact support.",
           processing_error:
-            'Payment processing error. Please wait a few minutes and try again.',
+            "Payment processing error. Please wait a few minutes and try again.",
           processor_declined:
-            'Payment was declined. Please try a different card or payment method.',
+            "Payment was declined. Please try a different card or payment method.",
           processor_timeout:
-            'Payment timed out. Please try again or contact support.',
+            "Payment timed out. Please try again or contact support.",
           processor_unavailable:
-            'Payment processor unavailable. Please wait a few minutes and try again, or use a different card.',
+            "Payment processor unavailable. Please wait a few minutes and try again, or use a different card.",
           system_error:
-            'System error. Please try again later or contact support.',
+            "System error. Please try again later or contact support.",
         };
 
         // ===== UNKNOWN ERRORS =====
         const unknownErrorCodes = [
-          'server_timeout',
-          'service_timeout',
-          'unknown_error',
+          "server_timeout",
+          "service_timeout",
+          "unknown_error",
         ];
 
         // ===== INVALID CARD DETAILS =====
         // Note: PayMongo returns 'card_expired' (not 'expired_card') for test card 4200000000000018
         const invalidCardMessages: Record<string, string> = {
           card_number_invalid:
-            'Invalid card number. Please verify your card details and try again.',
+            "Invalid card number. Please verify your card details and try again.",
           cvc_invalid:
-            'Invalid security code (CVC). Please check and try again.',
+            "Invalid security code (CVC). Please check and try again.",
           cvc_incorrect:
-            'Incorrect security code (CVC). Please check and try again.',
-          card_expired: 'Your card has expired. Please use a different card.',
-          expired_card: 'Your card has expired. Please use a different card.',
+            "Incorrect security code (CVC). Please check and try again.",
+          card_expired: "Your card has expired. Please use a different card.",
+          expired_card: "Your card has expired. Please use a different card.",
           card_type_mismatch:
-            'Card type mismatch. Please verify your card details and try again.',
+            "Card type mismatch. Please verify your card details and try again.",
         };
 
         // Check if it's a card-related error
-        if (errorCode === 'resource_failed_state' || subCode) {
+        if (errorCode === "resource_failed_state" || subCode) {
           // Check blocked transactions first (use generic message for security)
           if (blockedCodes.includes(subCode)) {
             return {
-              title: 'Card Declined',
+              title: "Card Declined",
               message: GENERIC_DECLINE_MESSAGE,
               isCardError: true,
             };
@@ -530,9 +530,9 @@ const OrderGracePeriodScreen = () => {
           // Check unknown errors
           if (unknownErrorCodes.includes(subCode)) {
             return {
-              title: 'Payment Error',
+              title: "Payment Error",
               message:
-                'Payment failed due to an unknown error. Please try again or contact support.',
+                "Payment failed due to an unknown error. Please try again or contact support.",
               isCardError: true,
             };
           }
@@ -540,7 +540,7 @@ const OrderGracePeriodScreen = () => {
           // Check invalid card details
           if (invalidCardMessages[subCode]) {
             return {
-              title: 'Invalid Card Details',
+              title: "Invalid Card Details",
               message: invalidCardMessages[subCode],
               isCardError: true,
             };
@@ -549,7 +549,7 @@ const OrderGracePeriodScreen = () => {
           // Check processor errors
           if (processorMessages[subCode]) {
             return {
-              title: 'Payment Error',
+              title: "Payment Error",
               message: processorMessages[subCode],
               isCardError: true,
             };
@@ -558,7 +558,7 @@ const OrderGracePeriodScreen = () => {
           // Check declined transactions
           if (declinedMessages[subCode]) {
             return {
-              title: 'Card Declined',
+              title: "Card Declined",
               message: declinedMessages[subCode],
               isCardError: true,
             };
@@ -566,7 +566,7 @@ const OrderGracePeriodScreen = () => {
 
           // Default to generic decline for any unmapped error
           return {
-            title: 'Card Declined',
+            title: "Card Declined",
             message: GENERIC_DECLINE_MESSAGE,
             isCardError: true,
           };
@@ -574,14 +574,14 @@ const OrderGracePeriodScreen = () => {
 
         // Generic payment errors
         if (
-          err.message?.includes('declined') ||
-          err.message?.includes('card')
+          err.message?.includes("declined") ||
+          err.message?.includes("card")
         ) {
           return {
-            title: 'Payment Failed',
+            title: "Payment Failed",
             message:
               err.message ||
-              'Your payment could not be processed. Please try again or use a different payment method.',
+              "Your payment could not be processed. Please try again or use a different payment method.",
             isCardError: true,
           };
         }
@@ -589,7 +589,7 @@ const OrderGracePeriodScreen = () => {
         // Order creation errors
         if (err.response?.data?.message) {
           return {
-            title: 'Order Failed',
+            title: "Order Failed",
             message: err.response.data.message,
             isCardError: false,
           };
@@ -597,9 +597,9 @@ const OrderGracePeriodScreen = () => {
 
         // Generic error
         return {
-          title: 'Something Went Wrong',
+          title: "Something Went Wrong",
           message:
-            err.message || 'Failed to process your order. Please try again.',
+            err.message || "Failed to process your order. Please try again.",
           isCardError: false,
         };
       };
@@ -617,9 +617,9 @@ const OrderGracePeriodScreen = () => {
             : undefined,
           errorMessage: message,
           errorTitle: title,
-          isCardError: isCardError ? 'true' : 'false',
-          orderCreated: orderCreated ? 'true' : 'false',
-        })
+          isCardError: isCardError ? "true" : "false",
+          orderCreated: orderCreated ? "true" : "false",
+        }),
       );
     } finally {
       setIsProcessing(false);
@@ -647,7 +647,7 @@ const OrderGracePeriodScreen = () => {
           duration: 500,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulse.start();
 
@@ -663,13 +663,13 @@ const OrderGracePeriodScreen = () => {
         if (prev <= 1) {
           clearInterval(timer);
           // Vibrate when countdown ends
-          if (Platform.OS !== 'web') {
+          if (Platform.OS !== "web") {
             Vibration.vibrate(100);
           }
           return 0;
         }
         // Vibrate on last 3 seconds
-        if (prev <= 4 && Platform.OS !== 'web') {
+        if (prev <= 4 && Platform.OS !== "web") {
           Vibration.vibrate(50);
         }
         return prev - 1;
@@ -694,22 +694,22 @@ const OrderGracePeriodScreen = () => {
     setIsCancelling(true);
 
     Alert.alert(
-      'Cancel Order?',
-      'Are you sure you want to cancel? Your order has not been placed yet.',
+      "Cancel Order?",
+      "Are you sure you want to cancel? Your order has not been placed yet.",
       [
         {
-          text: 'No, Continue',
-          style: 'cancel',
+          text: "No, Continue",
+          style: "cancel",
           onPress: () => setIsCancelling(false),
         },
         {
-          text: 'Yes, Cancel',
-          style: 'destructive',
+          text: "Yes, Cancel",
+          style: "destructive",
           onPress: () => {
             router.back();
           },
         },
-      ]
+      ],
     );
   }, []);
 
@@ -731,7 +731,7 @@ const OrderGracePeriodScreen = () => {
       <>
         <Stack.Screen
           options={{
-            title: 'Processing',
+            title: "Processing",
             headerStyle: { backgroundColor: theme.background },
             headerTintColor: theme.text,
             headerLeft: () => null,
@@ -771,7 +771,7 @@ const OrderGracePeriodScreen = () => {
     <>
       <Stack.Screen
         options={{
-          title: 'Confirm Order',
+          title: "Confirm Order",
           headerStyle: { backgroundColor: theme.background },
           headerTintColor: theme.text,
           headerLeft: () => null,
@@ -817,13 +817,13 @@ const OrderGracePeriodScreen = () => {
                     borderRadius: circleSize / 2,
                     borderWidth: strokeWidth,
                     borderColor: countdown <= 3 ? theme.error : theme.primary,
-                    borderTopColor: 'transparent',
-                    borderRightColor: 'transparent',
+                    borderTopColor: "transparent",
+                    borderRightColor: "transparent",
                     transform: [
                       {
                         rotate: progressAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: ['0deg', '360deg'],
+                          outputRange: ["0deg", "360deg"],
                         }),
                       },
                     ],
@@ -892,13 +892,13 @@ const OrderGracePeriodScreen = () => {
                 Payment
               </Text>
               <Text style={[styles.summaryValue, { color: theme.text }]}>
-                {paymentMethodType === 'gcash'
-                  ? 'GCash'
-                  : paymentMethodType === 'paymaya'
-                  ? 'PayMaya'
-                  : paymentMethodType === 'card'
-                  ? 'Credit/Debit Card'
-                  : paymentMethodType.toUpperCase()}
+                {paymentMethodType === "gcash"
+                  ? "GCash"
+                  : paymentMethodType === "paymaya"
+                    ? "PayMaya"
+                    : paymentMethodType === "card"
+                      ? "Credit/Debit Card"
+                      : paymentMethodType.toUpperCase()}
               </Text>
             </View>
           </View>
@@ -970,12 +970,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   header: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 8,
   },
   subtitle: {
@@ -983,25 +983,25 @@ const styles = StyleSheet.create({
   },
   countdownContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   circleContainer: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
   },
   circleBackground: {
-    position: 'absolute',
+    position: "absolute",
   },
   progressCircle: {
-    position: 'absolute',
+    position: "absolute",
   },
   countdownTextContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   countdownNumber: {
-    fontWeight: '800',
+    fontWeight: "800",
   },
   countdownLabel: {
     fontSize: 14,
@@ -1013,8 +1013,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     gap: 12,
   },
@@ -1024,11 +1024,11 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     padding: 16,
     borderRadius: 12,
     marginBottom: 24,
@@ -1040,20 +1040,20 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   buttonContainer: {
-    alignItems: 'center',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 0,
+    alignItems: "center",
+    paddingBottom: Platform.OS === "ios" ? 20 : 0,
     gap: 12,
   },
   proceedButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     gap: 8,
-    width: '100%',
-    shadowColor: '#000',
+    width: "100%",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -1061,47 +1061,47 @@ const styles = StyleSheet.create({
   },
   proceedButtonText: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
+    fontWeight: "700",
+    color: "#FFF",
   },
   cancelButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     borderWidth: 2,
     gap: 8,
-    width: '100%',
+    width: "100%",
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   footerText: {
     marginTop: 16,
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   processingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 16,
     padding: 40,
     marginVertical: 40,
   },
   processingTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   processingSubtitle: {
     fontSize: 14,
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 

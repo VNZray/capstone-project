@@ -1,4 +1,4 @@
-import apiClient from '@/services/apiClient';
+import tourismApiClient from '@/services/api/tourismApiClient';
 import type {
   Event,
   EventCategory,
@@ -11,13 +11,13 @@ import type {
 
 // Fetch all event categories
 export const fetchEventCategories = async (): Promise<EventCategory[]> => {
-  const { data } = await apiClient.get('/events/categories');
+  const { data } = await tourismApiClient.get('/events/categories');
   return data?.data || [];
 };
 
 // Fetch event category by ID
 export const fetchEventCategoryById = async (id: string): Promise<EventCategory | null> => {
-  const { data } = await apiClient.get(`/events/categories/${id}`);
+  const { data } = await tourismApiClient.get(`/events/categories/${id}`);
   return data?.data || null;
 };
 
@@ -30,7 +30,7 @@ export const fetchPublishedEvents = async (params?: {
   search?: string;
 }): Promise<Event[]> => {
   const queryParams = new URLSearchParams();
-  
+
   if (params?.category_id) {
     queryParams.append('category_id', params.category_id);
   }
@@ -40,35 +40,35 @@ export const fetchPublishedEvents = async (params?: {
   if (params?.search) {
     queryParams.append('search', params.search);
   }
-  
+
   const queryString = queryParams.toString();
   const url = `/events/public${queryString ? `?${queryString}` : ''}`;
-  
-  const { data } = await apiClient.get(url);
+
+  const { data } = await tourismApiClient.get(url);
   return data?.data || [];
 };
 
 // Fetch upcoming events (next 30 days)
 export const fetchUpcomingEvents = async (): Promise<Event[]> => {
-  const { data } = await apiClient.get('/events/upcoming');
+  const { data } = await tourismApiClient.get('/events/upcoming');
   return data?.data || [];
 };
 
 // Fetch featured events
 export const fetchFeaturedEvents = async (): Promise<Event[]> => {
-  const { data } = await apiClient.get('/events/featured/list');
+  const { data } = await tourismApiClient.get('/events/featured/list');
   return data?.data || [];
 };
 
 // Fetch all events (admin/staff view)
 export const fetchAllEvents = async (): Promise<Event[]> => {
-  const { data } = await apiClient.get('/events');
+  const { data } = await tourismApiClient.get('/events');
   return data?.data || [];
 };
 
 // Fetch single event by ID
 export const fetchEventById = async (id: string): Promise<Event | null> => {
-  const { data } = await apiClient.get(`/events/${id}`);
+  const { data } = await tourismApiClient.get(`/events/${id}`);
   return data?.data || null;
 };
 
@@ -76,7 +76,7 @@ export const fetchEventById = async (id: string): Promise<Event | null> => {
 
 // Fetch event images
 export const fetchEventImages = async (eventId: string): Promise<EventImage[]> => {
-  const { data } = await apiClient.get(`/events/${eventId}/images`);
+  const { data } = await tourismApiClient.get(`/events/${eventId}/images`);
   return data?.data || [];
 };
 
@@ -84,7 +84,7 @@ export const fetchEventImages = async (eventId: string): Promise<EventImage[]> =
 
 // Fetch categories for a specific event
 export const fetchEventCategoriesForEvent = async (eventId: string): Promise<EventCategory[]> => {
-  const { data } = await apiClient.get(`/events/${eventId}/categories`);
+  const { data } = await tourismApiClient.get(`/events/${eventId}/categories`);
   return data?.data || [];
 };
 
@@ -92,7 +92,7 @@ export const fetchEventCategoriesForEvent = async (eventId: string): Promise<Eve
 
 // Fetch locations for a specific event
 export const fetchEventLocations = async (eventId: string): Promise<EventLocation[]> => {
-  const { data } = await apiClient.get(`/events/${eventId}/locations`);
+  const { data } = await tourismApiClient.get(`/events/${eventId}/locations`);
   return data?.data || [];
 };
 
@@ -100,19 +100,19 @@ export const fetchEventLocations = async (eventId: string): Promise<EventLocatio
 
 // Create a new event
 export const createEvent = async (eventData: EventFormData): Promise<{ id: string; status: string }> => {
-  const { data } = await apiClient.post('/events', eventData);
+  const { data } = await tourismApiClient.post('/events', eventData);
   return data?.data;
 };
 
 // Update an event
 export const updateEvent = async (id: string, eventData: Partial<EventFormData>): Promise<Event> => {
-  const { data } = await apiClient.put(`/events/${id}`, eventData);
+  const { data } = await tourismApiClient.put(`/events/${id}`, eventData);
   return data?.data;
 };
 
 // Delete an event
 export const deleteEvent = async (id: string): Promise<void> => {
-  await apiClient.delete(`/events/${id}`);
+  await tourismApiClient.delete(`/events/${id}`);
 };
 
 // ===== EVENT IMAGE MANAGEMENT =====
@@ -129,15 +129,15 @@ export const addEventImage = async (
     display_order?: number;
   }
 ): Promise<void> => {
-  await apiClient.post(`/events/${eventId}/images`, imageData);
+  await tourismApiClient.post(`/events/${eventId}/images`, imageData);
 };
 
 // Delete event image
 export const deleteEventImage = async (eventId: string, imageId: string): Promise<void> => {
-  await apiClient.delete(`/events/${eventId}/images/${imageId}`);
+  await tourismApiClient.delete(`/events/${eventId}/images/${imageId}`);
 };
 
 // Set primary event image
 export const setPrimaryEventImage = async (eventId: string, imageId: string): Promise<void> => {
-  await apiClient.put(`/events/${eventId}/images/${imageId}/set-primary`);
+  await tourismApiClient.put(`/events/${eventId}/images/${imageId}/set-primary`);
 };

@@ -1,5 +1,5 @@
 
-import apiClient from '@/services/apiClient';
+import apiClient from '@/services/api/apiClient';
 import type { Review, ReviewFormData, ReviewSummary } from '@/types/Review';
 
 /**
@@ -11,9 +11,9 @@ export const fetchReviewsByBusinessId = async (businessId: string): Promise<Revi
     const { data } = await apiClient.get<Review[]>(
       `/reviews/business/${businessId}`
     );
-    
+
     // Sort by date DESC (newest first)
-    return data.sort((a, b) => 
+    return data.sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   } catch (error) {

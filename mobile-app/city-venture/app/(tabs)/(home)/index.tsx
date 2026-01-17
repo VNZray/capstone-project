@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   Pressable,
@@ -9,7 +9,7 @@ import {
   useColorScheme,
   Platform,
   UIManager,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -18,56 +18,56 @@ import Animated, {
   Extrapolation,
   withTiming,
   Easing,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { Routes } from '@/routes/mainRoutes';
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons, Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Routes } from "@/routes/mainRoutes";
 
 // --- YOUR IMPORTS ---
-import HeroSection from '@/components/home/HeroSection';
-import NewsAndEventsSection from '@/components/home/NewsAndEventsSection';
-import { ThemedText } from '@/components/themed-text';
-import HomepageSkeleton from '@/components/skeleton/HomepageSkeleton';
-import CityListSection from '@/components/home/CityListSection';
-import PersonalRecommendationSection from '@/components/home/PersonalRecommendationSection';
-import VisitorsHandbookSection from '@/components/home/VisitorsHandbookSection';
-import SpecialOffersSection from '@/components/home/SpecialOffersSection';
-import FeaturedPartnersSection from '@/components/home/FeaturedPartnersSection';
-import FeaturedTouristSpotsSection from '@/components/home/FeaturedTouristSpotsSection';
-import ReportIssueSection from '@/components/home/ReportIssueSection';
-import SearchBar from '@/components/SearchBar';
+import HeroSection from "@/components/home/HeroSection";
+import NewsAndEventsSection from "@/components/home/NewsAndEventsSection";
+import { ThemedText } from "@/components/themed-text";
+import HomepageSkeleton from "@/components/skeleton/HomepageSkeleton";
+import CityListSection from "@/components/home/CityListSection";
+import PersonalRecommendationSection from "@/components/home/PersonalRecommendationSection";
+import VisitorsHandbookSection from "@/components/home/VisitorsHandbookSection";
+import SpecialOffersSection from "@/components/home/SpecialOffersSection";
+import FeaturedPartnersSection from "@/components/home/FeaturedPartnersSection";
+import FeaturedTouristSpotsSection from "@/components/home/FeaturedTouristSpotsSection";
+import ReportIssueSection from "@/components/home/ReportIssueSection";
+import SearchBar from "@/components/SearchBar";
 
-import { useAuth } from '@/context/AuthContext';
-import { Colors } from '@/constants/color';
-import { navigateToAccommodationHome } from '@/routes/accommodationRoutes';
-import { navigateToEventHome } from '@/routes/eventRoutes';
-import { navigateToShopHome, navigateToCart } from '@/routes/shopRoutes';
-import { navigateToTouristSpotHome } from '@/routes/touristSpotRoutes';
+import { useAuth } from "@/context/AuthContext";
+import { Colors } from "@/constants/color";
+import { usePreventDoubleNavigation } from "@/hooks/usePreventDoubleNavigation";
+import { navigateToEventHome } from "@/routes/eventRoutes";
+import { navigateToShopHome, navigateToCart } from "@/routes/shopRoutes";
+import { navigateToTouristSpotHome } from "@/routes/touristSpotRoutes";
 import {
   type HomeEvent,
   type NewsArticle,
-} from '@/services/HomeContentService';
+} from "@/services/HomeContentService";
 import {
   ACTIONS,
   PLACEHOLDER_NEWS,
   type ActionItem,
-} from '@/components/home/data';
-import { Image } from 'expo-image';
-import { getUnreadNotificationCount } from '@/services/NotificationService';
-import { useUpcomingEvents } from '@/query/eventQuery';
-import type { Event } from '@/types/Event';
+} from "@/components/home/data";
+import { Image } from "expo-image";
+import { getUnreadNotificationCount } from "@/services/NotificationService";
+import { useUpcomingEvents } from "@/query/eventQuery";
+import type { Event } from "@/types/Event";
 
 // Enable LayoutAnimation for Android
 if (
-  Platform.OS === 'android' &&
+  Platform.OS === "android" &&
   UIManager.setLayoutAnimationEnabledExperimental
 ) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 const HERO_HEIGHT = 280;
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_WIDTH = Dimensions.get("window").width;
 const HEADER_SCROLL_THRESHOLD = 80;
 
 const AnimatedScrollView = Animated.ScrollView;
@@ -75,32 +75,36 @@ const AnimatedScrollView = Animated.ScrollView;
 const HomeScreen = () => {
   const { user } = useAuth();
   const { top: insetsTop, bottom } = useSafeAreaInsets();
-  const colorScheme = useColorScheme() ?? 'light';
+  const colorScheme = useColorScheme() ?? "light";
   const palette = Colors[colorScheme];
+  const { navigate } = usePreventDoubleNavigation();
 
   // Extract user_id to a stable reference to prevent unnecessary re-renders
   const userId = user?.user_id;
 
   // Fetch upcoming events from API
-  const { 
-    data: upcomingEvents = [], 
+  const {
+    data: upcomingEvents = [],
     isLoading: eventsLoading,
-    refetch: refetchEvents 
+    refetch: refetchEvents,
   } = useUpcomingEvents();
 
   // Convert API events to HomeEvent format for NewsAndEventsSection
   const homeEvents: HomeEvent[] = upcomingEvents.map((event: Event) => ({
     id: event.id,
     name: event.name,
-    date: event.start_date ? new Date(event.start_date).toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    }) : 'Date TBD',
-    location: event.venue_name || event.municipality_name || 'Location TBD',
-    image: event.cover_image_url || 
-      (event.images?.[0]?.file_url) || 
-      'https://via.placeholder.com/400x200?text=Event',
+    date: event.start_date
+      ? new Date(event.start_date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "Date TBD",
+    location: event.venue_name || event.municipality_name || "Location TBD",
+    image:
+      event.cover_image_url ||
+      event.images?.[0]?.file_url ||
+      "https://via.placeholder.com/400x200?text=Event",
   }));
 
   // --- Animation Values ---
@@ -109,9 +113,9 @@ const HomeScreen = () => {
   const headerVisible = useSharedValue(1); // 1 = Visible, 0 = Hidden
 
   // --- State ---
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [greeting, setGreeting] = useState('Hello');
+  const [greeting, setGreeting] = useState("Hello");
   const [unreadCount, setUnreadCount] = useState(0);
 
   const [newsState, setNewsState] = useState<{
@@ -126,13 +130,13 @@ const HomeScreen = () => {
   // --- Effects ---
   useEffect(() => {
     const greetings = [
-      'Hello',
-      'Bonjour',
-      'Hola',
-      'Ciao',
-      'Konnichiwa',
-      'Guten Tag',
-      'Namaste',
+      "Hello",
+      "Bonjour",
+      "Hola",
+      "Ciao",
+      "Konnichiwa",
+      "Guten Tag",
+      "Namaste",
     ];
     let index = 0;
     const interval = setInterval(() => {
@@ -152,7 +156,7 @@ const HomeScreen = () => {
       const count = await getUnreadNotificationCount(userId);
       setUnreadCount(count);
     } catch (error) {
-      console.error('Failed to fetch unread count:', error);
+      console.error("Failed to fetch unread count:", error);
     }
   }, [userId]);
 
@@ -160,19 +164,22 @@ const HomeScreen = () => {
     fetchUnreadCount();
   }, [fetchUnreadCount]);
 
-  const loadHomeContent = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else {
-      setNewsState((prev) => ({ ...prev, loading: true }));
-    }
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    // Refetch events from API
-    if (isRefresh) {
-      refetchEvents();
-    }
-    setNewsState({ data: PLACEHOLDER_NEWS, loading: false });
-    setRefreshing(false);
-  }, [refetchEvents]);
+  const loadHomeContent = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      else {
+        setNewsState((prev) => ({ ...prev, loading: true }));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Refetch events from API
+      if (isRefresh) {
+        refetchEvents();
+      }
+      setNewsState({ data: PLACEHOLDER_NEWS, loading: false });
+      setRefreshing(false);
+    },
+    [refetchEvents],
+  );
 
   const handleRefresh = useCallback(() => {
     loadHomeContent(true);
@@ -223,7 +230,7 @@ const HomeScreen = () => {
       scrollY.value,
       [0, HEADER_SCROLL_THRESHOLD],
       [0, 1],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
     return {
       opacity,
@@ -238,7 +245,7 @@ const HomeScreen = () => {
       headerVisible.value,
       [0, 1],
       [0, 60],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     );
 
     return {
@@ -246,22 +253,22 @@ const HomeScreen = () => {
       opacity,
       height,
       marginBottom: interpolate(headerVisible.value, [0, 1], [0, 12]),
-      overflow: 'hidden',
+      overflow: "hidden",
     };
   });
 
-  const handleActionPress = (id: ActionItem['id']) => {
+  const handleActionPress = (id: ActionItem["id"]) => {
     switch (id) {
-      case 'accommodation':
-        navigateToAccommodationHome();
+      case "accommodation":
+        navigate(Routes.accommodation.index);
         break;
-      case 'food':
+      case "food":
         navigateToShopHome();
         break;
-      case 'tours':
+      case "tours":
         navigateToTouristSpotHome();
         break;
-      case 'events':
+      case "events":
         navigateToEventHome();
         break;
       default:
@@ -314,16 +321,16 @@ const HomeScreen = () => {
             <View>
               <ThemedText
                 type="label-medium"
-                style={{ color: 'rgba(255,255,255,0.8)' }}
+                style={{ color: "rgba(255,255,255,0.8)" }}
               >
                 {greeting}
               </ThemedText>
               <ThemedText
                 type="body-large"
                 weight="bold"
-                style={{ color: '#FFF' }}
+                style={{ color: "#FFF" }}
               >
-                {user?.first_name || 'Guest'}!
+                {user?.first_name || "Guest"}!
               </ThemedText>
             </View>
           </View>
@@ -401,7 +408,7 @@ const HomeScreen = () => {
           <View style={styles.sectionContainer}>
             <CityListSection
               onPressCity={(city) => console.log(city.name)}
-              onPressViewMore={() => console.log('View more cities')}
+              onPressViewMore={() => console.log("View more cities")}
             />
             <PersonalRecommendationSection
               onPressItem={(item) => console.log(item.title)}
@@ -415,8 +422,8 @@ const HomeScreen = () => {
             />
             <FeaturedTouristSpotsSection />
             <ReportIssueSection
-              onViewReports={() => console.log('View Reports')}
-              onReportIssue={() => console.log('Report Issue')}
+              onViewReports={() => console.log("View Reports")}
+              onReportIssue={() => console.log("Report Issue")}
             />
             <NewsAndEventsSection
               newsData={newsState.data}
@@ -442,7 +449,7 @@ type ActionGridProps = {
 };
 
 const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
-  const scheme = useColorScheme() ?? 'light';
+  const scheme = useColorScheme() ?? "light";
   const colors = Colors[scheme];
   const [currentPage, setCurrentPage] = useState(0);
   const scrollX = useSharedValue(0);
@@ -459,7 +466,7 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
 
   const onMomentumScrollEnd = (event: any) => {
     const pageIndex = Math.round(
-      event.nativeEvent.contentOffset.x / SCREEN_WIDTH
+      event.nativeEvent.contentOffset.x / SCREEN_WIDTH,
     );
     setCurrentPage(pageIndex);
   };
@@ -483,14 +490,14 @@ const ActionGrid: React.FC<ActionGridProps> = ({ items, onPressItem }) => {
               {page.map((item, index) => {
                 const globalIndex = pageIndex * ITEMS_PER_PAGE + index;
                 const palettes = [
-                  { bg: 'rgba(52, 152, 219, 0.1)', icon: '#3498db' },
-                  { bg: 'rgba(46, 204, 113, 0.1)', icon: '#2ecc71' },
-                  { bg: 'rgba(155, 89, 182, 0.1)', icon: '#9b59b6' },
-                  { bg: 'rgba(230, 126, 34, 0.1)', icon: '#e67e22' },
-                  { bg: 'rgba(231, 76, 60, 0.1)', icon: '#e74c3c' },
-                  { bg: 'rgba(26, 188, 156, 0.1)', icon: '#1abc9c' },
-                  { bg: 'rgba(241, 196, 15, 0.1)', icon: '#f1c40f' },
-                  { bg: 'rgba(52, 73, 94, 0.1)', icon: '#34495e' },
+                  { bg: "rgba(52, 152, 219, 0.1)", icon: "#3498db" },
+                  { bg: "rgba(46, 204, 113, 0.1)", icon: "#2ecc71" },
+                  { bg: "rgba(155, 89, 182, 0.1)", icon: "#9b59b6" },
+                  { bg: "rgba(230, 126, 34, 0.1)", icon: "#e67e22" },
+                  { bg: "rgba(231, 76, 60, 0.1)", icon: "#e74c3c" },
+                  { bg: "rgba(26, 188, 156, 0.1)", icon: "#1abc9c" },
+                  { bg: "rgba(241, 196, 15, 0.1)", icon: "#f1c40f" },
+                  { bg: "rgba(52, 73, 94, 0.1)", icon: "#34495e" },
                 ];
                 const { bg, icon } = palettes[globalIndex % palettes.length];
 
@@ -553,57 +560,57 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stickyHeader: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 100,
   },
   topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   profileIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: "rgba(255,255,255,0.3)",
   },
   iconRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   iconButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: "rgba(255,255,255,0.1)",
   },
   searchBarWrapper: {
     paddingHorizontal: 20,
     paddingBottom: 12,
   },
   searchBarContainer: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 12,
     borderWidth: 0,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -614,7 +621,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 40,
     minHeight: 1000,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   sectionContainer: {
     paddingHorizontal: 20,
@@ -626,31 +633,31 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   actionGridPage: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: '100%',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    width: "100%",
   },
   actionItem: {
-    width: '25%',
-    alignItems: 'center',
+    width: "25%",
+    alignItems: "center",
     marginBottom: 20,
   },
   actionIcon: {
     width: 56,
     height: 56,
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
   actionLabel: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   paginationContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: -8,
     gap: 6,
   },
@@ -663,23 +670,23 @@ const styles = StyleSheet.create({
     width: 24,
   },
   notificationBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -4,
-    backgroundColor: '#E74C3C',
+    backgroundColor: "#E74C3C",
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 4,
     borderWidth: 2,
-    borderColor: '#FFF',
+    borderColor: "#FFF",
   },
   notificationBadgeText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });
 

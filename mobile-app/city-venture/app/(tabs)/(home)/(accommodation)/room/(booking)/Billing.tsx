@@ -1,17 +1,17 @@
-import Button from '@/components/Button';
-import Container from '@/components/Container';
-import PageContainer from '@/components/PageContainer';
-import RadioButton from '@/components/RadioButton';
-import FormTextInput from '@/components/TextInput';
-import { ThemedText } from '@/components/themed-text';
-import { background, colors } from '@/constants/color';
+import Button from "@/components/Button";
+import Container from "@/components/Container";
+import PageContainer from "@/components/PageContainer";
+import RadioButton from "@/components/RadioButton";
+import FormTextInput from "@/components/TextInput";
+import { ThemedText } from "@/components/themed-text";
+import { background, colors } from "@/constants/color";
 
-import { useRoom } from '@/context/RoomContext';
-import { useAuth } from '@/context/AuthContext';
-import { useAccommodation } from '@/context/AccommodationContext';
-import { Booking, BookingPayment } from '@/types/Booking';
-import { MaterialIcons } from '@expo/vector-icons';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useRoom } from "@/context/RoomContext";
+import { useAuth } from "@/context/AuthContext";
+import { useAccommodation } from "@/context/AccommodationContext";
+import { Booking, BookingPayment } from "@/types/Booking";
+import { MaterialIcons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -19,29 +19,29 @@ import {
   Alert,
   Platform,
   useColorScheme,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { parse, format } from 'date-fns';
-import * as PromotionService from '@/services/PromotionService';
-import type { Promotion } from '@/types/Promotion';
-import { createFullBooking } from '@/query/accommodationQuery';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { parse, format } from "date-fns";
+import * as PromotionService from "@/services/PromotionService";
+import type { Promotion } from "@/types/Promotion";
+import { createFullBooking } from "@/query/accommodationQuery";
 import {
   initiateBookingPayment,
   mapPaymentMethodType,
   openBookingCheckout,
   dismissBookingBrowser,
   verifyBookingPayment,
-} from '@/services/BookingPaymentService';
-import { Routes } from '@/routes/mainRoutes';
-import API_URL from '@/services/api';
-import debugLogger from '@/utils/debugLogger';
-import { AppHeader } from '@/components/header/AppHeader';
+} from "@/services/BookingPaymentService";
+import { Routes } from "@/routes/mainRoutes";
+import API_URL from "@/services/api/api";
+import debugLogger from "@/utils/debugLogger";
+import { AppHeader } from "@/components/header/AppHeader";
 import {
   fetchSeasonalPricingByRoomId,
   calculateLocalPriceForDateRange,
-} from '@/services/SeasonalPricingService';
-import type { SeasonalPricing } from '@/types/SeasonalPricing';
+} from "@/services/SeasonalPricingService";
+import type { SeasonalPricing } from "@/types/SeasonalPricing";
 
 /**
  * Billing Page - Payment method selection and processing
@@ -55,7 +55,7 @@ const BillingPage: React.FC = () => {
   const navigation = useNavigation();
   const router = useRouter();
   const colorScheme = useColorScheme();
-  const bgColor = colorScheme === 'dark' ? background.dark : background.light;
+  const bgColor = colorScheme === "dark" ? background.dark : background.light;
 
   // Get booking data from route params
   const params = useLocalSearchParams<{
@@ -80,10 +80,10 @@ const BillingPage: React.FC = () => {
       try {
         return JSON.parse(params.paymentData);
       } catch {
-        return { payment_type: 'Full Payment', amount: 0 };
+        return { payment_type: "Full Payment", amount: 0 };
       }
     }
-    return { payment_type: 'Full Payment', amount: 0 };
+    return { payment_type: "Full Payment", amount: 0 };
   }, [params.paymentData]);
 
   // Local state for booking and payment
@@ -108,7 +108,7 @@ const BillingPage: React.FC = () => {
         const pricing = await fetchSeasonalPricingByRoomId(roomDetails.id);
         setSeasonalPricing(pricing);
       } catch (error) {
-        console.log('[Billing] Failed to fetch seasonal pricing:', error);
+        console.log("[Billing] Failed to fetch seasonal pricing:", error);
         setSeasonalPricing(null);
       } finally {
         setLoadingSeasonalPricing(false);
@@ -123,9 +123,9 @@ const BillingPage: React.FC = () => {
     if (dt instanceof Date) return dt;
     // Try to parse string
     // Accepts 'YYYY-MM-DD HH:mm:ss' or ISO
-    if (typeof dt === 'string') {
+    if (typeof dt === "string") {
       // Try date-fns parse
-      const parsed = parse(dt, 'yyyy-MM-dd HH:mm:ss', new Date());
+      const parsed = parse(dt, "yyyy-MM-dd HH:mm:ss", new Date());
       if (!isNaN(parsed.getTime())) return parsed;
       // fallback: try Date constructor
       const fallback = new Date(dt);
@@ -137,7 +137,7 @@ const BillingPage: React.FC = () => {
   // Helper to parse time string (HH:mm:ss) and combine with date
   const combineDateTime = (
     dateVal: string | Date | null | undefined,
-    timeVal: string | Date | null | undefined
+    timeVal: string | Date | null | undefined,
   ): Date | null => {
     if (!dateVal) return null;
 
@@ -147,7 +147,7 @@ const BillingPage: React.FC = () => {
       baseDate = dateVal;
     } else {
       // Try parsing as yyyy-MM-dd first
-      const parsed = parse(dateVal, 'yyyy-MM-dd', new Date());
+      const parsed = parse(dateVal, "yyyy-MM-dd", new Date());
       if (!isNaN(parsed.getTime())) {
         baseDate = parsed;
       } else {
@@ -168,9 +168,9 @@ const BillingPage: React.FC = () => {
       hours = timeVal.getHours();
       minutes = timeVal.getMinutes();
       seconds = timeVal.getSeconds();
-    } else if (typeof timeVal === 'string') {
+    } else if (typeof timeVal === "string") {
       // Parse HH:mm:ss or HH:mm format
-      const timeParts = timeVal.split(':');
+      const timeParts = timeVal.split(":");
       hours = parseInt(timeParts[0]) || 0;
       minutes = parseInt(timeParts[1]) || 0;
       seconds = parseInt(timeParts[2]) || 0;
@@ -182,24 +182,24 @@ const BillingPage: React.FC = () => {
       baseDate.getDate(),
       hours,
       minutes,
-      seconds
+      seconds,
     );
   };
 
   // Use booking_type field as primary indicator for short-stay
-  const isShortStay = bookingData.booking_type === 'short-stay';
+  const isShortStay = bookingData.booking_type === "short-stay";
 
   // Combine date and time for accurate calculations
   const checkIn = isShortStay
     ? combineDateTime(
         bookingData.check_in_date as string | Date | undefined,
-        bookingData.check_in_time as string | Date | undefined
+        bookingData.check_in_time as string | Date | undefined,
       )
     : parseDateTime(bookingData.check_in_date as string);
   const checkOut = isShortStay
     ? combineDateTime(
         bookingData.check_out_date as string | Date | undefined,
-        bookingData.check_out_time as string | Date | undefined
+        bookingData.check_out_time as string | Date | undefined,
       )
     : parseDateTime(bookingData.check_out_date as string);
 
@@ -219,12 +219,12 @@ const BillingPage: React.FC = () => {
       const inDate = new Date(
         checkIn.getFullYear(),
         checkIn.getMonth(),
-        checkIn.getDate()
+        checkIn.getDate(),
       );
       const outDate = new Date(
         checkOut.getFullYear(),
         checkOut.getMonth(),
-        checkOut.getDate()
+        checkOut.getDate(),
       );
       const diff =
         (outDate.getTime() - inDate.getTime()) / (1000 * 60 * 60 * 24);
@@ -234,10 +234,10 @@ const BillingPage: React.FC = () => {
   }
 
   const [paymentMethod, setPaymentMethod] = useState<string | null>(
-    paymentData.payment_method || null
+    paymentData.payment_method || null,
   );
   const [paymentType, setPaymentType] = useState<string>(
-    paymentData.payment_type || 'Full Payment'
+    paymentData.payment_type || "Full Payment",
   );
 
   // Discounts - Each discount: positive amount to subtract from subtotal
@@ -245,11 +245,11 @@ const BillingPage: React.FC = () => {
     {
       label: string;
       amount: number;
-      type: 'room' | 'coupon' | 'code';
+      type: "room" | "coupon" | "code";
       promotionId?: string;
     }[]
   >([]);
-  const [discountCode, setDiscountCode] = useState('');
+  const [discountCode, setDiscountCode] = useState("");
   const [discountError, setDiscountError] = useState<string | null>(null);
 
   // Fetch promotions on mount
@@ -263,12 +263,12 @@ const BillingPage: React.FC = () => {
       setLoadingPromotions(true);
       try {
         const promos = await PromotionService.fetchPromotionsByBusinessId(
-          selectedAccommodationId
+          selectedAccommodationId,
         );
-        console.log('[Billing] Fetched promotions:', promos);
+        console.log("[Billing] Fetched promotions:", promos);
         setPromotions(promos);
       } catch (error) {
-        console.error('Failed to fetch promotions:', error);
+        console.error("Failed to fetch promotions:", error);
       } finally {
         setLoadingPromotions(false);
       }
@@ -280,22 +280,22 @@ const BillingPage: React.FC = () => {
   const handleApplyDiscount = () => {
     const code = discountCode.trim().toUpperCase();
     if (!code) {
-      setDiscountError('Please enter a code.');
+      setDiscountError("Please enter a code.");
       return;
     }
 
     // Check if code already applied
     if (discounts.some((d) => d.label.includes(code))) {
-      setDiscountError('Code already applied.');
+      setDiscountError("Code already applied.");
       return;
     }
 
     // Only allow one coupon/code at a time
     const hasCouponOrCode = discounts.some(
-      (d) => d.type === 'coupon' || d.type === 'code'
+      (d) => d.type === "coupon" || d.type === "code",
     );
     if (hasCouponOrCode) {
-      setDiscountError('Only one discount coupon or promo code can be used.');
+      setDiscountError("Only one discount coupon or promo code can be used.");
       return;
     }
 
@@ -303,7 +303,7 @@ const BillingPage: React.FC = () => {
     const matchingPromo = promotions.find(
       (p) =>
         p.promo_code?.toUpperCase() === code &&
-        (p.promo_type === 1 || p.promo_type === 3)
+        (p.promo_type === 1 || p.promo_type === 3),
     );
 
     if (matchingPromo) {
@@ -312,25 +312,25 @@ const BillingPage: React.FC = () => {
         matchingPromo.usage_limit &&
         (matchingPromo.used_count || 0) >= matchingPromo.usage_limit
       ) {
-        setDiscountError('This code has reached its usage limit.');
+        setDiscountError("This code has reached its usage limit.");
         return;
       }
 
       let discountAmount = 0;
-      let discountType: 'coupon' | 'code' = 'coupon';
+      let discountType: "coupon" | "code" = "coupon";
 
       if (matchingPromo.promo_type === 1) {
         // Discount Coupon - percentage off
-        discountType = 'coupon';
+        discountType = "coupon";
         if (matchingPromo.discount_percentage) {
           discountAmount = Math.floor(
             (baseRoomPrice + bookingFee) *
-              (matchingPromo.discount_percentage / 100)
+              (matchingPromo.discount_percentage / 100),
           );
         }
       } else if (matchingPromo.promo_type === 3) {
         // Promo Code - fixed amount off
-        discountType = 'code';
+        discountType = "code";
         discountAmount = matchingPromo.fixed_discount_amount || 0;
       }
 
@@ -339,7 +339,7 @@ const BillingPage: React.FC = () => {
           ...prev,
           {
             label:
-              discountType === 'coupon'
+              discountType === "coupon"
                 ? `${matchingPromo.title} (${matchingPromo.discount_percentage}% OFF)`
                 : `${matchingPromo.title} (₱${discountAmount} OFF)`,
             amount: discountAmount,
@@ -347,14 +347,14 @@ const BillingPage: React.FC = () => {
             promotionId: matchingPromo.id,
           },
         ]);
-        setDiscountCode('');
+        setDiscountCode("");
         setDiscountError(null);
-        Alert.alert('Success', `${matchingPromo.title} applied successfully!`);
+        Alert.alert("Success", `${matchingPromo.title} applied successfully!`);
       } else {
-        setDiscountError('Invalid discount value.');
+        setDiscountError("Invalid discount value.");
       }
     } else {
-      setDiscountError('Invalid or expired code.');
+      setDiscountError("Invalid or expired code.");
     }
   };
 
@@ -386,12 +386,12 @@ const BillingPage: React.FC = () => {
       checkOut
     ) {
       // Use local calculation with seasonal pricing
-      const startDateStr = format(checkIn, 'yyyy-MM-dd');
-      const endDateStr = format(checkOut, 'yyyy-MM-dd');
+      const startDateStr = format(checkIn, "yyyy-MM-dd");
+      const endDateStr = format(checkOut, "yyyy-MM-dd");
       const seasonalTotal = calculateLocalPriceForDateRange(
         seasonalPricing,
         startDateStr,
-        endDateStr
+        endDateStr,
       );
       // If seasonal calculation returns valid price, use it; otherwise fallback
       return seasonalTotal > 0 ? seasonalTotal : fallbackPrice * days;
@@ -416,13 +416,13 @@ const BillingPage: React.FC = () => {
   // Transaction fee assumption: 3% of base room price for non-cash online methods; 0 otherwise.
   const transactionFee = useMemo(() => {
     if (!baseRoomPrice) return 0;
-    if (!paymentMethod || paymentMethod === 'Cash') return 0;
+    if (!paymentMethod || paymentMethod === "Cash") return 0;
     return Math.round(baseRoomPrice * 0.03); // TODO: replace with real gateway fee logic
   }, [baseRoomPrice, paymentMethod]);
 
   const discountTotal = useMemo(
     () => discounts.reduce((sum, d) => sum + (d.amount > 0 ? d.amount : 0), 0),
-    [discounts]
+    [discounts],
   );
 
   const subtotal =
@@ -431,14 +431,14 @@ const BillingPage: React.FC = () => {
   const totalPayable = Math.max(subtotal - discountTotal, 0);
 
   // Derived payment breakdown
-  const isPartial = (paymentType || '').toLowerCase().includes('partial');
+  const isPartial = (paymentType || "").toLowerCase().includes("partial");
   const amountDue = useMemo(
     () => (isPartial ? Math.round(totalPayable * 0.5) : totalPayable),
-    [isPartial, totalPayable]
+    [isPartial, totalPayable],
   );
   const balance = useMemo(
     () => Math.max(totalPayable - amountDue, 0),
-    [totalPayable, amountDue]
+    [totalPayable, amountDue],
   );
 
   // Auto-apply room discounts when promotions and baseRoomPrice are ready
@@ -455,7 +455,7 @@ const BillingPage: React.FC = () => {
         const isStarted = startDate <= now;
         const notExpired = !p.end_date || new Date(p.end_date) >= now;
 
-        console.log('[Billing Effect] Checking promo:', {
+        console.log("[Billing Effect] Checking promo:", {
           title: p.title,
           isRoomDiscount,
           isActive,
@@ -472,29 +472,29 @@ const BillingPage: React.FC = () => {
         );
       });
 
-      console.log('[Billing Effect] Valid room discounts:', validRoomDiscounts);
+      console.log("[Billing Effect] Valid room discounts:", validRoomDiscounts);
 
       // Apply only if no room discount already applied
-      const hasRoomDiscount = discounts.some((d) => d.type === 'room');
+      const hasRoomDiscount = discounts.some((d) => d.type === "room");
       if (!hasRoomDiscount && validRoomDiscounts.length > 0) {
         // Apply the best room discount (highest percentage)
         const bestDiscount = validRoomDiscounts.reduce((prev, current) =>
           (current.discount_percentage || 0) > (prev.discount_percentage || 0)
             ? current
-            : prev
+            : prev,
         );
 
-        console.log('[Billing Effect] Applying best discount:', bestDiscount);
+        console.log("[Billing Effect] Applying best discount:", bestDiscount);
 
         const discountAmount = Math.floor(
-          baseRoomPrice * ((bestDiscount.discount_percentage || 0) / 100)
+          baseRoomPrice * ((bestDiscount.discount_percentage || 0) / 100),
         );
 
         console.log(
-          '[Billing Effect] Discount amount:',
+          "[Billing Effect] Discount amount:",
           discountAmount,
-          'from baseRoomPrice:',
-          baseRoomPrice
+          "from baseRoomPrice:",
+          baseRoomPrice,
         );
 
         setDiscounts((prev) => [
@@ -502,12 +502,12 @@ const BillingPage: React.FC = () => {
           {
             label: `${bestDiscount.title} (${bestDiscount.discount_percentage}% OFF)`,
             amount: discountAmount,
-            type: 'room',
+            type: "room",
             promotionId: bestDiscount.id,
           },
         ]);
       } else if (!hasRoomDiscount) {
-        console.log('[Billing Effect] No valid room discounts found to apply');
+        console.log("[Billing Effect] No valid room discounts found to apply");
       }
     }
     // Only run when these specific dependencies change, not discounts to avoid loop
@@ -527,8 +527,8 @@ const BillingPage: React.FC = () => {
     }));
     setPaymentData((prev: BookingPayment) => ({
       ...prev,
-      payment_method: paymentMethod as BookingPayment['payment_method'],
-      payment_type: paymentType as BookingPayment['payment_type'],
+      payment_method: paymentMethod as BookingPayment["payment_method"],
+      payment_type: paymentType as BookingPayment["payment_type"],
       amount: amountDue,
     }));
   }, [paymentMethod, paymentType, totalPayable, amountDue, discounts]);
@@ -548,7 +548,7 @@ const BillingPage: React.FC = () => {
     if (submitting) return;
 
     if (!roomDetails?.id || !user?.id) {
-      Alert.alert('Error', 'Room or user not found.');
+      Alert.alert("Error", "Room or user not found.");
       return;
     }
 
@@ -558,27 +558,27 @@ const BillingPage: React.FC = () => {
       const bookingPayload: Booking = {
         ...bookingData,
         room_id: roomDetails.id,
-        tourist_id: user.id,
-        booking_status: 'Pending',
+        // tourist_id is automatically set from authenticated session by backend
+        booking_status: "Pending",
         balance: Number(bookingData.total_price) - Number(paymentData.amount),
       };
 
       debugLogger({
-        title: 'Cash Booking Submission',
+        title: "Cash Booking Submission",
         data: bookingPayload,
       });
 
       const created = await createFullBooking(bookingPayload, undefined);
 
       debugLogger({
-        title: 'Booking Created',
+        title: "Booking Created",
         data: created,
-        successMessage: 'Booking successfully created.',
+        successMessage: "Booking successfully created.",
       });
 
       if (created?.id) {
         router.replace({
-          pathname: '/(tabs)/(home)/(accommodation)/room/(booking)/Summary',
+          pathname: "/(tabs)/(home)/(accommodation)/room/(booking)/Summary",
           params: {
             bookingData: JSON.stringify({
               ...bookingData,
@@ -591,12 +591,12 @@ const BillingPage: React.FC = () => {
       }
     } catch (e: any) {
       debugLogger({
-        title: 'Booking Error',
+        title: "Booking Error",
         error: e?.response?.data || e,
       });
       Alert.alert(
-        'Error',
-        e?.response?.data?.message || e.message || 'Failed to create booking'
+        "Error",
+        e?.response?.data?.message || e.message || "Failed to create booking",
       );
     } finally {
       setSubmitting(false);
@@ -608,12 +608,12 @@ const BillingPage: React.FC = () => {
     if (submitting) return;
 
     if (!roomDetails?.id || !user?.id) {
-      Alert.alert('Error', 'Room or user not found.');
+      Alert.alert("Error", "Room or user not found.");
       return;
     }
 
     if (!paymentData.amount || paymentData.amount <= 0) {
-      Alert.alert('Payment', 'Invalid amount to charge.');
+      Alert.alert("Payment", "Invalid amount to charge.");
       return;
     }
 
@@ -625,22 +625,22 @@ const BillingPage: React.FC = () => {
       const bookingPayload: Booking = {
         ...bookingData,
         room_id: roomDetails.id,
-        tourist_id: user.id,
-        booking_status: 'Pending',
+        // tourist_id is automatically set from authenticated session by backend
+        booking_status: "Pending",
         balance: Number(bookingData.total_price) - Number(paymentData.amount),
       };
 
       // Create booking first if not exists
       if (!bookingId) {
         debugLogger({
-          title: 'Creating booking before payment',
+          title: "Creating booking before payment",
           data: { roomId: roomDetails.id, userId: user.id },
         });
 
         const created = await createFullBooking(bookingPayload, undefined);
 
         if (!created?.id) {
-          Alert.alert('Error', 'Failed to create booking. Please try again.');
+          Alert.alert("Error", "Failed to create booking. Please try again.");
           setSubmitting(false);
           return;
         }
@@ -654,17 +654,17 @@ const BillingPage: React.FC = () => {
       }
 
       if (!bookingId) {
-        Alert.alert('Error', 'Booking ID not found.');
+        Alert.alert("Error", "Booking ID not found.");
         setSubmitting(false);
         return;
       }
 
       const paymentMethodType = mapPaymentMethodType(
-        paymentData.payment_method || 'gcash'
+        paymentData.payment_method || "gcash",
       );
 
       debugLogger({
-        title: 'Initiating Payment',
+        title: "Initiating Payment",
         data: {
           amount: paymentData.amount,
           paymentMethodType,
@@ -674,30 +674,30 @@ const BillingPage: React.FC = () => {
 
       const response = await initiateBookingPayment(bookingId, {
         payment_method_type: paymentMethodType,
-        payment_type: paymentData.payment_type || 'Full Payment',
+        payment_type: paymentData.payment_type || "Full Payment",
         amount: paymentData.amount,
       });
 
       if (!response.success || !response.data?.checkout_url) {
-        Alert.alert('Payment', response.message || 'No checkout URL returned.');
+        Alert.alert("Payment", response.message || "No checkout URL returned.");
         setSubmitting(false);
         return;
       }
 
       const { checkout_url: checkoutUrl, payment_id } = response.data;
 
-      const backendBaseUrl = API_URL ? API_URL.replace('/api', '') : '';
+      const backendBaseUrl = API_URL ? API_URL.replace("/api", "") : "";
       const returnUrl = `${backendBaseUrl}/bookings/${bookingId}/payment-success`;
 
       const authResult = await openBookingCheckout(checkoutUrl, returnUrl);
       dismissBookingBrowser();
 
-      if (authResult.type === 'cancel') {
+      if (authResult.type === "cancel") {
         router.replace(
           Routes.accommodation.room.bookingCancel({
             bookingId,
-            reason: 'cancelled',
-          })
+            reason: "cancelled",
+          }),
         );
         return;
       }
@@ -706,56 +706,56 @@ const BillingPage: React.FC = () => {
       try {
         const verifyResponse = await verifyBookingPayment(
           bookingId,
-          payment_id
+          payment_id,
         );
 
         if (
           verifyResponse.data.verified &&
-          verifyResponse.data.payment_status === 'success'
+          verifyResponse.data.payment_status === "success"
         ) {
           router.replace(
             Routes.accommodation.room.bookingSuccess({
               bookingId,
-              paymentSuccess: '1',
-            })
+              paymentSuccess: "1",
+            }),
           );
-        } else if (verifyResponse.data.payment_status === 'failed') {
+        } else if (verifyResponse.data.payment_status === "failed") {
           router.replace(
             Routes.accommodation.room.bookingCancel({
               bookingId,
               reason:
                 verifyResponse.data.last_payment_error?.message ||
-                'Payment failed',
-            })
+                "Payment failed",
+            }),
           );
         } else {
           router.replace(
             Routes.accommodation.room.bookingSuccess({
               bookingId,
-              paymentSuccess: '1',
-            })
+              paymentSuccess: "1",
+            }),
           );
         }
       } catch (verifyError) {
-        console.error('Payment verification error:', verifyError);
+        console.error("Payment verification error:", verifyError);
         router.replace(
           Routes.accommodation.room.bookingSuccess({
             bookingId,
-            paymentSuccess: '1',
-          })
+            paymentSuccess: "1",
+          }),
         );
       }
     } catch (err: any) {
-      console.error('Payment Error:', err);
+      console.error("Payment Error:", err);
       debugLogger({
-        title: 'Payment Error',
+        title: "Payment Error",
         error: err?.response?.data || err,
       });
       Alert.alert(
-        'Payment error',
+        "Payment error",
         err?.response?.data?.message ||
           err?.message ||
-          'Failed to process payment.'
+          "Failed to process payment.",
       );
       setSubmitting(false);
     }
@@ -764,11 +764,11 @@ const BillingPage: React.FC = () => {
   // Handle Pay Now button
   const handlePayNow = () => {
     if (!isPaymentValid()) {
-      Alert.alert('Invalid Payment', 'Please select a payment method.');
+      Alert.alert("Invalid Payment", "Please select a payment method.");
       return;
     }
 
-    if (paymentMethod === 'Cash') {
+    if (paymentMethod === "Cash") {
       sendBookingConfirmation();
     } else {
       processPayment();
@@ -795,18 +795,18 @@ const BillingPage: React.FC = () => {
               justify="space-between"
             >
               <ThemedText type="body-extra-small" weight="medium">
-                {isShortStay ? 'Duration' : "Day's of Stay"}
+                {isShortStay ? "Duration" : "Day's of Stay"}
               </ThemedText>
               <ThemedText type="body-extra-small" weight="medium">
                 {checkIn && checkOut
                   ? isShortStay
-                    ? `${hours} hour${hours !== 1 ? 's' : ''}`
+                    ? `${hours} hour${hours !== 1 ? "s" : ""}`
                     : days > 0
-                    ? `${days} day${days > 1 ? 's' : ''} / ${nights} night${
-                        nights !== 1 ? 's' : ''
-                      }`
-                    : 'Select check-in and check-out dates'
-                  : 'Select check-in and check-out dates'}
+                      ? `${days} day${days > 1 ? "s" : ""} / ${nights} night${
+                          nights !== 1 ? "s" : ""
+                        }`
+                      : "Select check-in and check-out dates"
+                  : "Select check-in and check-out dates"}
               </ThemedText>
             </Container>
             <Container
@@ -817,7 +817,7 @@ const BillingPage: React.FC = () => {
             >
               <View>
                 <ThemedText type="body-extra-small" weight="medium">
-                  Room Price{isShortStay ? ' (1 Night Rate)' : ''}
+                  Room Price{isShortStay ? " (1 Night Rate)" : ""}
                 </ThemedText>
                 {isShortStay && (
                   <ThemedText
@@ -830,7 +830,7 @@ const BillingPage: React.FC = () => {
                 )}
               </View>
               <ThemedText type="body-extra-small" weight="medium">
-                {baseRoomPrice > 0 ? `₱${baseRoomPrice.toLocaleString()}` : '—'}
+                {baseRoomPrice > 0 ? `₱${baseRoomPrice.toLocaleString()}` : "—"}
               </ThemedText>
             </Container>
             <Container
@@ -843,7 +843,7 @@ const BillingPage: React.FC = () => {
                 Booking Fee
               </ThemedText>
               <ThemedText type="body-extra-small" weight="medium">
-                {bookingFee ? `₱${bookingFee.toLocaleString()}` : '—'}
+                {bookingFee ? `₱${bookingFee.toLocaleString()}` : "—"}
               </ThemedText>
             </Container>
             <Container
@@ -856,7 +856,7 @@ const BillingPage: React.FC = () => {
                 Transaction Fee
               </ThemedText>
               <ThemedText type="body-extra-small" weight="medium">
-                {transactionFee ? `₱${transactionFee.toLocaleString()}` : '—'}
+                {transactionFee ? `₱${transactionFee.toLocaleString()}` : "—"}
               </ThemedText>
             </Container>
             <Container
@@ -869,7 +869,7 @@ const BillingPage: React.FC = () => {
                 Subtotal
               </ThemedText>
               <ThemedText type="body-extra-small" weight="medium">
-                {subtotal > 0 ? `₱${subtotal.toLocaleString()}` : '—'}
+                {subtotal > 0 ? `₱${subtotal.toLocaleString()}` : "—"}
               </ThemedText>
             </Container>
           </Container>
@@ -879,25 +879,25 @@ const BillingPage: React.FC = () => {
             size="medium"
             label="Select Payment Method"
             items={[
-              { id: 'Gcash', label: 'Gcash' },
-              { id: 'Paymaya', label: 'Paymaya' },
-              { id: 'Credit Card', label: 'Credit Card' },
-              { id: 'Cash', label: 'Cash' },
+              { id: "Gcash", label: "Gcash" },
+              { id: "Paymaya", label: "Paymaya" },
+              { id: "Credit Card", label: "Credit Card" },
+              { id: "Cash", label: "Cash" },
             ]}
             value={paymentMethod}
             onChange={(item) => {
               const selected = item?.id ? String(item.id) : null;
               setPaymentMethod(selected);
               // Force Full Payment when Cash is selected
-              if (selected === 'Cash') {
-                setPaymentType('Full Payment');
+              if (selected === "Cash") {
+                setPaymentType("Full Payment");
               }
             }}
           />
 
-          {paymentMethod === 'Cash' && (
+          {paymentMethod === "Cash" && (
             <Container
-              style={{ flexWrap: 'wrap' }}
+              style={{ flexWrap: "wrap" }}
               variant="soft"
               backgroundColor={colors.warning}
             >
@@ -920,17 +920,17 @@ const BillingPage: React.FC = () => {
           )}
 
           {/* 3. PAYMENT TYPE (if not Cash) */}
-          {paymentMethod && paymentMethod !== 'Cash' && (
+          {paymentMethod && paymentMethod !== "Cash" && (
             <RadioButton
               size="medium"
               label="Payment Type"
               items={[
-                { id: 'Full Payment', label: 'Full Payment' },
-                { id: 'Partial Payment', label: 'Partial Payment' },
+                { id: "Full Payment", label: "Full Payment" },
+                { id: "Partial Payment", label: "Partial Payment" },
               ]}
               value={paymentType}
               onChange={(item) =>
-                setPaymentType(item?.id ? String(item.id) : 'Full Payment')
+                setPaymentType(item?.id ? String(item.id) : "Full Payment")
               }
             />
           )}
@@ -941,7 +941,7 @@ const BillingPage: React.FC = () => {
               Discounts
             </ThemedText>
             <View
-              style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}
+              style={{ flexDirection: "row", gap: 8, alignItems: "center" }}
             >
               <Container padding={0} style={{ flex: 1 }}>
                 {/* Hidden placeholder to keep layout consistent with existing RadioButton styling if any */}
@@ -950,7 +950,7 @@ const BillingPage: React.FC = () => {
                   items={[]}
                   value={undefined}
                   onChange={() => {}}
-                  style={{ display: 'none' }}
+                  style={{ display: "none" }}
                 />
                 <FormTextInput
                   placeholder="Enter discount code"
@@ -992,15 +992,15 @@ const BillingPage: React.FC = () => {
                     type="body-extra-small"
                     style={{ opacity: 0.6, fontSize: 10 }}
                   >
-                    {d.type === 'room'
-                      ? 'Room Discount (Auto-applied)'
-                      : d.type === 'coupon'
-                      ? 'Discount Coupon'
-                      : 'Promo Code'}
+                    {d.type === "room"
+                      ? "Room Discount (Auto-applied)"
+                      : d.type === "coupon"
+                        ? "Discount Coupon"
+                        : "Promo Code"}
                   </ThemedText>
                 </View>
                 <View
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
                 >
                   <ThemedText
                     type="body-extra-small"
@@ -1010,17 +1010,17 @@ const BillingPage: React.FC = () => {
                   >
                     -₱{d.amount.toLocaleString()}
                   </ThemedText>
-                  {d.type !== 'room' && (
+                  {d.type !== "room" && (
                     <Button
                       label="Remove"
                       size="small"
                       color="error"
-                      startIcon={'trash'}
+                      startIcon={"trash"}
                       icon
                       variant="soft"
                       onPress={() => {
                         setDiscounts((prev) =>
-                          prev.filter((_, i) => i !== idx)
+                          prev.filter((_, i) => i !== idx),
                         );
                       }}
                       style={{
@@ -1049,7 +1049,7 @@ const BillingPage: React.FC = () => {
                 type="body-extra-small"
                 weight="medium"
               >
-                {discountTotal > 0 ? `₱${discountTotal.toLocaleString()}` : '—'}
+                {discountTotal > 0 ? `₱${discountTotal.toLocaleString()}` : "—"}
               </ThemedText>
             </Container>
           </Container>
@@ -1073,7 +1073,7 @@ const BillingPage: React.FC = () => {
                 weight="bold"
                 style={{ color: colors.primary }}
               >
-                {amountDue > 0 ? `₱${amountDue.toLocaleString()}` : '—'}
+                {amountDue > 0 ? `₱${amountDue.toLocaleString()}` : "—"}
               </ThemedText>
             </Container>
             {balance > 0 && (
@@ -1110,10 +1110,10 @@ const BillingPage: React.FC = () => {
                 weight="medium"
                 style={{ opacity: 0.7 }}
               >
-                {totalPayable > 0 ? `₱${totalPayable.toLocaleString()}` : '—'}
+                {totalPayable > 0 ? `₱${totalPayable.toLocaleString()}` : "—"}
               </ThemedText>
             </Container>
-            {paymentType === 'Partial Payment' && (
+            {paymentType === "Partial Payment" && (
               <ThemedText
                 type="body-extra-small"
                 style={{ color: colors.success, marginTop: 4 }}
@@ -1131,10 +1131,10 @@ const BillingPage: React.FC = () => {
           styles.fabBar,
           {
             paddingBottom:
-              Platform.OS === 'ios'
+              Platform.OS === "ios"
                 ? insets.bottom + TAB_BAR_HEIGHT
                 : 12 + insets.bottom + TAB_BAR_HEIGHT,
-            paddingTop: Platform.OS === 'ios' ? 16 : 12,
+            paddingTop: Platform.OS === "ios" ? 16 : 12,
             backgroundColor: bgColor,
           },
         ]}
@@ -1149,10 +1149,10 @@ const BillingPage: React.FC = () => {
         <Button
           label={
             submitting
-              ? 'Processing...'
-              : paymentMethod === 'Cash'
-              ? 'Confirm Booking'
-              : 'Pay Now'
+              ? "Processing..."
+              : paymentMethod === "Cash"
+                ? "Confirm Booking"
+                : "Pay Now"
           }
           fullWidth
           color="primary"
@@ -1174,21 +1174,21 @@ export default BillingPage;
 
 const styles = StyleSheet.create({
   fabBar: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     paddingHorizontal: 16,
     paddingTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+    borderTopColor: "rgba(0,0,0,0.1)",
   },
 });

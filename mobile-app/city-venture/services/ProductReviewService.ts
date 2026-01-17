@@ -1,4 +1,4 @@
-import apiClient from '@/services/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 
 export interface ProductReviewStats {
   product_id: string;
@@ -45,7 +45,7 @@ export const fetchBusinessReviewStats = async (
   businessId: string
 ): Promise<BusinessReviewStats | null> => {
   try {
-    const { data } = await apiClient.get<BusinessReviewStats>(
+    const { data } = await businessApiClient.get<BusinessReviewStats>(
       `/product-reviews/business/${businessId}/stats`
     );
     return data;
@@ -63,7 +63,7 @@ export const fetchReviewsByBusinessId = async (
   businessId: string
 ): Promise<ProductReview[]> => {
   try {
-    const { data } = await apiClient.get<ProductReview[]>(
+    const { data } = await businessApiClient.get<ProductReview[]>(
       `/product-reviews/business/${businessId}`
     );
     return Array.isArray(data) ? data : [];
@@ -81,7 +81,7 @@ export const fetchReviewsByProductId = async (
   productId: string
 ): Promise<ProductReview[]> => {
   try {
-    const { data } = await apiClient.get<ProductReview[]>(
+    const { data } = await businessApiClient.get<ProductReview[]>(
       `/product-reviews/product/${productId}`
     );
     return Array.isArray(data) ? data : [];

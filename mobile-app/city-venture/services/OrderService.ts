@@ -5,11 +5,11 @@
  * Integrates with PayMongo for online payments
  */
 
-import apiClient from '@/services/apiClient';
-import type { 
-  Order, 
-  CreateOrderPayload, 
-  CreateOrderResponse 
+import apiClient from '@/services/api/apiClient';
+import type {
+  Order,
+  CreateOrderPayload,
+  CreateOrderResponse
 } from '@/types/Order';
 
 /**
@@ -23,7 +23,7 @@ export async function createOrder(
 ): Promise<CreateOrderResponse> {
   try {
     const { data } = await apiClient.post<CreateOrderResponse>(
-      `/orders`, 
+      `/orders`,
       payload
     );
     return data;
@@ -45,7 +45,7 @@ export async function getOrderById(orderId: string): Promise<Order> {
     const { data } = await apiClient.get<Order>(
       `/orders/${orderId}`
     );
-    
+
     // Normalize the order data to ensure consistent format
     return {
       ...data,
@@ -74,13 +74,13 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
     const { data } = await apiClient.get<Order[]>(
       `/orders/user/${userId}`
     );
-    
+
     // Ensure data is an array and normalize any missing fields
     if (!Array.isArray(data)) {
       console.warn('[OrderService] getUserOrders returned non-array:', data);
       return [];
     }
-    
+
     // Normalize each order to ensure required fields exist
     return data.map(order => ({
       ...order,
@@ -129,7 +129,7 @@ export function isWithinGracePeriod(createdAt: string, graceSeconds: number = 10
   const createdTime = new Date(createdAt).getTime();
   const currentTime = Date.now();
   const elapsedSeconds = (currentTime - createdTime) / 1000;
-  
+
   return elapsedSeconds <= graceSeconds;
 }
 
@@ -144,6 +144,6 @@ export function getRemainingGraceTime(createdAt: string, graceSeconds: number = 
   const currentTime = Date.now();
   const elapsedSeconds = (currentTime - createdTime) / 1000;
   const remaining = graceSeconds - elapsedSeconds;
-  
+
   return Math.max(0, Math.floor(remaining));
 }

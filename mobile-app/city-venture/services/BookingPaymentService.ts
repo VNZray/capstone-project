@@ -1,13 +1,13 @@
 /**
  * Booking Payment Service
  * Handles payment initiation for accommodation bookings via unified payment API
- * 
+ *
  * MIGRATED: Now uses CLIENT-SIDE Payment Intent flow:
  * 1. Backend creates Payment Intent -> returns client_key
  * 2. Frontend creates Payment Method (direct to PayMongo)
  * 3. Frontend attaches Payment Method to Intent (direct to PayMongo)
  * 4. Frontend receives checkout_url for e-wallet redirect
- * 
+ *
  * SECURITY NOTE: Uses openAuthSessionAsync for external browser authentication
  * which is more secure than WebView as it:
  * - Prevents session hijacking
@@ -15,14 +15,14 @@
  * - Properly handles deep link redirects
  */
 
-import apiClient from '@/services/apiClient';
-import API_URL from '@/services/api';
+import apiClient from '@/services/api/apiClient';
+import API_URL from '@/services/api/api';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 // Import helpers from PaymentIntentService for client-side operations
-import { 
-  createPaymentMethod, 
-  attachPaymentMethodClient 
+import {
+  createPaymentMethod,
+  attachPaymentMethodClient
 } from './PaymentIntentService';
 
 export interface InitiateBookingPaymentRequest {
@@ -51,13 +51,13 @@ export interface InitiateBookingPaymentResponse {
 
 /**
  * Initiate payment for a booking using the CLIENT-SIDE Payment Intent flow
- * 
+ *
  * Flow:
  * 1. Create Payment Intent via backend -> get client_key
  * 2. Create Payment Method directly with PayMongo (frontend)
  * 3. Attach Payment Method to Intent directly with PayMongo (frontend)
  * 4. Return checkout_url for e-wallet redirect
- * 
+ *
  * @param bookingId - The booking UUID
  * @param paymentData - Payment details including method type and amount
  * @param billingInfo - Optional billing details for the payment
@@ -70,7 +70,7 @@ export async function initiateBookingPayment(
 ): Promise<InitiateBookingPaymentResponse> {
   try {
     console.log('[BookingPayment] Step 1: Creating Payment Intent (Backend)...');
-    
+
     // Step 1: Create Payment Intent via Backend
     // The backend returns { client_key, payment_intent_id, payment_id }
     const intentResponse = await apiClient.post<any>(
@@ -85,35 +85,35 @@ export async function initiateBookingPayment(
     );
 
     const { client_key, payment_intent_id, payment_id, amount, currency } = intentResponse.data.data || intentResponse.data;
-    
+
     console.log('[BookingPayment] Intent created:', { payment_intent_id, payment_id });
 
     // Step 2: Create Payment Method directly with PayMongo (Frontend)
     console.log('[BookingPayment] Step 2: Creating Payment Method (Frontend -> PayMongo)...');
-    
+
     const methodResponse = await createPaymentMethod(
       paymentData.payment_method_type as 'gcash' | 'paymaya' | 'grab_pay' | 'card',
       undefined, // Card details - undefined for e-wallets
-      { 
+      {
         email: billingInfo?.email || 'guest@cityventure.app',
         name: billingInfo?.name || 'Guest User',
         phone: billingInfo?.phone
       }
     );
     const paymentMethodId = methodResponse.data.id;
-    
+
     console.log('[BookingPayment] Payment Method created:', paymentMethodId);
 
     // Step 3: Attach Payment Method to Intent (Frontend -> PayMongo)
     console.log('[BookingPayment] Step 3: Attaching Payment Method to Intent...');
-    
+
     // IMPORTANT: PayMongo requires an https:// URL for return_url
     // Use the backend's bridge endpoint which will redirect to the mobile app via deep link
     const backendBaseUrl = API_URL ? API_URL.replace('/api', '') : '';
     const returnUrl = `${backendBaseUrl}/bookings/${bookingId}/payment-success`;
-    
+
     console.log('[BookingPayment] Return URL:', returnUrl);
-    
+
     const attachResponse = await attachPaymentMethodClient(
       payment_intent_id,
       paymentMethodId,
@@ -157,7 +157,7 @@ export async function initiateBookingPayment(
  * - Opens in the system browser (more secure than WebView)
  * - Auto-closes when redirect URL is detected
  * - Returns control back to the app with the final URL
- * 
+ *
  * @param checkoutUrl - PayMongo checkout URL
  * @param expectedRedirectBase - Base URL that PayMongo will redirect to after payment (your backend bridge)
  * @returns Promise with browser auth session result
@@ -171,7 +171,7 @@ export async function openBookingCheckout(
     // openAuthSessionAsync will detect when the browser navigates to this URL
     // and automatically close, returning the full URL with query params
     const redirectListenUrl = expectedRedirectBase || Linking.createURL('');
-    
+
     console.log('[BookingPaymentService] Opening auth session:', checkoutUrl);
     console.log('[BookingPaymentService] Listening for redirect to:', redirectListenUrl);
 
@@ -256,7 +256,7 @@ export interface VerifyBookingPaymentResponse {
 /**
  * Verify payment status after PayMongo redirect
  * Uses the unified /payment/verify endpoint
- * 
+ *
  * @param bookingId - The booking UUID
  * @param paymentId - The local payment record UUID
  * @returns Verification result with actual payment status

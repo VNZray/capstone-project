@@ -1,18 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ActivityIndicator } from 'react-native';
-import BottomSheetModal from '@/components/ui/BottomSheetModal';
-import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/color';
-import { ThemedText } from '@/components/themed-text';
-import FormTextInput from '@/components/TextInput';
-import Button from '@/components/Button';
-import Dropdown from '@/components/Dropdown';
-import axios from 'axios';
-import api from '@/services/api';
-import { updateUser as updateUserService } from '@/services/UserService';
-import { useAuth } from '@/context/AuthContext';
-import Container from '@/components/Container';
+import React, { useEffect, useState } from "react";
+import { StyleSheet, View, ActivityIndicator } from "react-native";
+import BottomSheetModal from "@/components/ui/BottomSheetModal";
+import { Ionicons } from "@expo/vector-icons";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Colors } from "@/constants/color";
+import { ThemedText } from "@/components/themed-text";
+import FormTextInput from "@/components/TextInput";
+import Button from "@/components/Button";
+import Dropdown from "@/components/Dropdown";
+import axios from "axios";
+import api from "@/services/api/api";
+import { updateUser as updateUserService } from "@/services/UserService";
+import { useAuth } from "@/context/AuthContext";
+import Container from "@/components/Container";
 
 interface ChangeAddressProps {
   visible: boolean;
@@ -26,13 +26,13 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
   onSuccess,
 }) => {
   const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const isDark = scheme === "dark";
   const { user, updateUser } = useAuth();
 
-  const textColor = isDark ? '#ECEDEE' : '#0D1B2A';
-  const subTextColor = isDark ? '#9BA1A6' : '#6B7280';
-  const cardBg = isDark ? '#1E293B' : '#F8FAFC';
-  const borderColor = isDark ? '#374151' : '#E5E7EB';
+  const textColor = isDark ? "#ECEDEE" : "#0D1B2A";
+  const subTextColor = isDark ? "#9BA1A6" : "#6B7280";
+  const cardBg = isDark ? "#1E293B" : "#F8FAFC";
+  const borderColor = isDark ? "#374151" : "#E5E7EB";
 
   // Get current address from user context
   const currentAddress = [
@@ -41,7 +41,7 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
     user?.province_name,
   ]
     .filter(Boolean)
-    .join(', ');
+    .join(", ");
 
   // Location data
   const [provinces, setProvinces] = useState<
@@ -56,20 +56,20 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
 
   // Selected values
   const [selectedProvinceId, setSelectedProvinceId] = useState<number | null>(
-    null
+    null,
   );
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState<
     number | null
   >(null);
   const [selectedBarangayId, setSelectedBarangayId] = useState<number | null>(
-    null
+    null,
   );
-  const [addressLine, setAddressLine] = useState('');
+  const [addressLine, setAddressLine] = useState("");
 
   // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Fetch provinces
   const fetchProvinces = async () => {
@@ -79,7 +79,7 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
         setProvinces(response.data);
       }
     } catch (err) {
-      console.error('Error fetching provinces:', err);
+      console.error("Error fetching provinces:", err);
     }
   };
 
@@ -87,13 +87,13 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
   const fetchMunicipalities = async (provinceId: number) => {
     try {
       const response = await axios.get(
-        `${api}/address/municipalities/${provinceId}`
+        `${api}/address/municipalities/${provinceId}`,
       );
       if (Array.isArray(response.data)) {
         setMunicipalities(response.data);
       }
     } catch (err) {
-      console.error('Error fetching municipalities:', err);
+      console.error("Error fetching municipalities:", err);
     }
   };
 
@@ -101,13 +101,13 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
   const fetchBarangays = async (municipalityId: number) => {
     try {
       const response = await axios.get(
-        `${api}/address/barangays/${municipalityId}`
+        `${api}/address/barangays/${municipalityId}`,
       );
       if (Array.isArray(response.data)) {
         setBarangays(response.data);
       }
     } catch (err) {
-      console.error('Error fetching barangays:', err);
+      console.error("Error fetching barangays:", err);
     }
   };
 
@@ -136,7 +136,7 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
 
   const loadCurrentAddress = () => {
     setSelectedBarangayId(user?.barangay_id || null);
-    setAddressLine(user?.address || '');
+    setAddressLine(user?.address || "");
   };
 
   const handleProvinceSelect = (item: { id: string | number } | null) => {
@@ -146,7 +146,7 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
     setSelectedBarangayId(null);
     setMunicipalities([]);
     setBarangays([]);
-    setError('');
+    setError("");
   };
 
   const handleMunicipalitySelect = (item: { id: string | number } | null) => {
@@ -154,17 +154,17 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
     setSelectedMunicipalityId(id);
     setSelectedBarangayId(null);
     setBarangays([]);
-    setError('');
+    setError("");
   };
 
   const handleBarangaySelect = (item: { id: string | number } | null) => {
     const id = item?.id as number | null;
     setSelectedBarangayId(id);
-    setError('');
+    setError("");
   };
 
   const handleClose = () => {
-    setError('');
+    setError("");
     // Reset state
     setSelectedProvinceId(null);
     setSelectedMunicipalityId(null);
@@ -176,37 +176,51 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
 
   const handleSave = async () => {
     if (!selectedBarangayId) {
-      setError('Please select Province, Municipality, and Barangay.');
+      setError("Please select Province, Municipality, and Barangay.");
       return;
     }
 
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       if (!user?.user_id) {
-        throw new Error('User ID is required');
+        throw new Error("User ID is required");
       }
 
       await updateUserService(user.user_id, {
         barangay_id: selectedBarangayId,
       });
 
-      // Update auth context
+      // Get the selected names from the arrays
+      const selectedProvince = provinces.find(
+        (p) => p.id === selectedProvinceId,
+      );
+      const selectedMunicipality = municipalities.find(
+        (m) => m.id === selectedMunicipalityId,
+      );
+      const selectedBarangay = barangays.find(
+        (b) => b.id === selectedBarangayId,
+      );
+
+      // Update auth context with both ID and names
       await updateUser({
         barangay_id: selectedBarangayId,
+        barangay_name: selectedBarangay?.barangay || "",
+        municipality_name: selectedMunicipality?.municipality || "",
+        province_name: selectedProvince?.province || "",
       });
 
-      console.log('✅ Address updated successfully');
+      console.log("✅ Address updated successfully");
       handleClose();
       onSuccess?.();
     } catch (err: any) {
       const message =
         err?.response?.data?.message ||
         err?.message ||
-        'Failed to update address.';
+        "Failed to update address.";
       setError(message);
-      console.error('❌ Error updating address:', err);
+      console.error("❌ Error updating address:", err);
     } finally {
       setIsLoading(false);
     }
@@ -218,7 +232,7 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
         isOpen={visible}
         onClose={onClose}
         headerTitle="Edit Address"
-        snapPoints={['70%']}
+        snapPoints={["70%"]}
         content={
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={Colors.light.primary} />
@@ -239,7 +253,7 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
       isOpen={visible}
       onClose={handleClose}
       headerTitle="Edit Address"
-      snapPoints={['80%']}
+      snapPoints={["80%"]}
       content={
         <Container backgroundColor="transparent">
           {/* Current Address Display */}
@@ -315,8 +329,8 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
             label="Municipality/City"
             placeholder={
               selectedProvinceId
-                ? 'Select your municipality'
-                : 'Select province first'
+                ? "Select your municipality"
+                : "Select province first"
             }
             items={municipalities.map((m) => ({
               id: m.id,
@@ -336,8 +350,8 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
             label="Barangay"
             placeholder={
               selectedMunicipalityId
-                ? 'Select your barangay'
-                : 'Select municipality first'
+                ? "Select your barangay"
+                : "Select municipality first"
             }
             items={barangays.map((b) => ({ id: b.id, label: b.barangay }))}
             value={selectedBarangayId}
@@ -365,7 +379,7 @@ const ChangeAddress: React.FC<ChangeAddressProps> = ({
       }
       bottomActionButton={
         <Button
-          label={isLoading ? 'Saving...' : 'Save Changes'}
+          label={isLoading ? "Saving..." : "Save Changes"}
           onPress={handleSave}
           disabled={isLoading}
           variant="solid"
@@ -382,13 +396,13 @@ export default ChangeAddress;
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 40,
   },
   currentAddressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
@@ -399,17 +413,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(99, 102, 241, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   currentAddressContent: {
     flex: 1,
   },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(185, 28, 28, 0.1)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(185, 28, 28, 0.1)",
     padding: 12,
     borderRadius: 8,
     marginTop: 12,

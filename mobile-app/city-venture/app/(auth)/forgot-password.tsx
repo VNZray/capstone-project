@@ -1,16 +1,16 @@
-import Button from '@/components/Button';
-import Container from '@/components/Container';
-import FormLogo from '@/components/FormLogo';
-import PageContainer from '@/components/PageContainer';
-import FormTextInput from '@/components/TextInput';
-import { ThemedText } from '@/components/themed-text';
-import { colors } from '@/constants/color';
-import { validateEmail } from '@/utils/validation';
-import { formatErrorMessage } from '@/utils/networkHandler';
-import Entypo from '@expo/vector-icons/Entypo';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import Button from "@/components/Button";
+import Container from "@/components/Container";
+import FormLogo from "@/components/FormLogo";
+import PageContainer from "@/components/PageContainer";
+import FormTextInput from "@/components/TextInput";
+import { ThemedText } from "@/components/themed-text";
+import { colors } from "@/constants/color";
+import { validateEmail } from "@/utils/validation";
+import { formatErrorMessage } from "@/utils/networkHandler";
+import Entypo from "@expo/vector-icons/Entypo";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { router } from "expo-router";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -19,30 +19,30 @@ import {
   ScrollView,
   StyleSheet,
   View,
-} from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import axios from 'axios';
-import api from '@/services/api';
+} from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import axios from "axios";
+import api from "@/services/api/api";
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [emailError, setEmailError] = useState('');
+  const [emailError, setEmailError] = useState("");
 
   const handleResetPassword = async () => {
     if (isLoading) return;
 
     // Clear previous errors
-    setError('');
-    setEmailError('');
+    setError("");
+    setEmailError("");
     setSuccess(false);
 
     // Validate email
     const validation = validateEmail(email.trim());
     if (!validation.isValid) {
-      setEmailError(validation.error || 'Invalid email');
+      setEmailError(validation.error || "Invalid email");
       return;
     }
 
@@ -55,7 +55,7 @@ const ForgotPassword = () => {
       });
 
       setSuccess(true);
-      
+
       // Optionally navigate back after a delay
       setTimeout(() => {
         router.back();
@@ -73,8 +73,8 @@ const ForgotPassword = () => {
       <PageContainer padding={0}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
         >
           <ScrollView
             keyboardShouldPersistTaps="handled"
@@ -101,7 +101,9 @@ const ForgotPassword = () => {
                 backgroundColor={colors.success || colors.primary}
               >
                 <ThemedText
-                  startIcon={<FontAwesome name="check-circle" size={18} color="#fff" />}
+                  startIcon={
+                    <FontAwesome name="check-circle" size={18} color="#fff" />
+                  }
                   lightColor="#fff"
                   type="body-medium"
                 >
@@ -137,7 +139,7 @@ const ForgotPassword = () => {
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
-                  if (emailError) setEmailError('');
+                  if (emailError) setEmailError("");
                 }}
                 variant="outlined"
                 required
@@ -158,11 +160,10 @@ const ForgotPassword = () => {
 
             {/* Back to Login */}
             <View style={styles.footer}>
-              <ThemedText type="body-medium">Remember your password?</ThemedText>
-              <ThemedText
-                type="link-medium"
-                onPress={() => router.back()}
-              >
+              <ThemedText type="body-medium">
+                Remember your password?
+              </ThemedText>
+              <ThemedText type="link-medium" onPress={() => router.back()}>
                 Sign In
               </ThemedText>
             </View>
@@ -192,35 +193,35 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 20,
     flexGrow: 1,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   fieldGroup: {
-    flexDirection: 'column',
+    flexDirection: "column",
     gap: 16,
   },
   footer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     padding: 20,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 30,
     borderRadius: 12,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 15,
     minWidth: 150,
   },
   loadingText: {
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

@@ -3,20 +3,20 @@
  * API service for fetching emergency facilities
  */
 
-import apiClient from '@/services/apiClient';
+import tourismApiClient from '@/services/api/tourismApiClient';
 import type { EmergencyFacility, FacilityType } from '@/types/EmergencyFacility';
 
 const BASE_PATH = '/emergency-facilities';
 
 // Get all active emergency facilities (public endpoint)
 export const fetchActiveEmergencyFacilities = async (): Promise<EmergencyFacility[]> => {
-    const { data } = await apiClient.get(`${BASE_PATH}/active`);
+    const { data } = await tourismApiClient.get(`${BASE_PATH}/active`);
     return data || [];
 };
 
 // Get emergency facility by ID
 export const fetchEmergencyFacilityById = async (id: string): Promise<EmergencyFacility> => {
-    const { data } = await apiClient.get(`${BASE_PATH}/${id}`);
+    const { data } = await tourismApiClient.get(`${BASE_PATH}/${id}`);
     return data;
 };
 
@@ -24,7 +24,7 @@ export const fetchEmergencyFacilityById = async (id: string): Promise<EmergencyF
 export const fetchEmergencyFacilitiesByType = async (
     type: FacilityType
 ): Promise<EmergencyFacility[]> => {
-    const { data } = await apiClient.get(`${BASE_PATH}/type/${type}`);
+    const { data } = await tourismApiClient.get(`${BASE_PATH}/type/${type}`);
     return data || [];
 };
 
@@ -32,7 +32,7 @@ export const fetchEmergencyFacilitiesByType = async (
 export const fetchEmergencyFacilitiesByBarangay = async (
     barangayId: number
 ): Promise<EmergencyFacility[]> => {
-    const { data } = await apiClient.get(`${BASE_PATH}/barangay/${barangayId}`);
+    const { data } = await tourismApiClient.get(`${BASE_PATH}/barangay/${barangayId}`);
     return data || [];
 };
 
@@ -50,7 +50,7 @@ export const fetchNearbyEmergencyFacilities = async (
     });
     if (type) params.append('type', type);
 
-    const { data } = await apiClient.get(`${BASE_PATH}/nearby?${params.toString()}`);
+    const { data } = await tourismApiClient.get(`${BASE_PATH}/nearby?${params.toString()}`);
     return data || [];
 };
 

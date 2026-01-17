@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/context/AuthContext';
-import { getAccessToken } from '@/services/apiClient';
+import { getAccessToken } from '@/services/api/apiClient';
 
 interface OrderUpdatePayload {
   id: string;
@@ -90,11 +90,11 @@ export const useOrderDetailSocket = ({
 
     socket.on('connect', () => {
       console.log('[useOrderDetailSocket] ✅ Connected! Socket ID:', socket.id);
-      
+
       // Join user room and order-specific room
       socket.emit('join:user', { userId: user.id });
       socket.emit('join:order', { orderId });
-      
+
       console.log(`[useOrderDetailSocket] 📥 Joined rooms: user:${user.id}, order:${orderId}`);
     });
 
@@ -109,15 +109,15 @@ export const useOrderDetailSocket = ({
     // Order updated event - check if it's for this order
     socket.on('order:updated', (data: OrderUpdatePayload) => {
       console.log('[useOrderDetailSocket] 🔄 Order updated:', data);
-      
+
       // Only process updates for this specific order
       if (data.id === orderId) {
         console.log('[useOrderDetailSocket] ✅ Update matches current order, triggering callbacks');
-        
+
         if (callbacksRef.current.onOrderUpdated) {
           callbacksRef.current.onOrderUpdated(data);
         }
-        
+
         // Trigger refresh to get full updated order data
         if (callbacksRef.current.onRefresh) {
           callbacksRef.current.onRefresh();
@@ -128,14 +128,14 @@ export const useOrderDetailSocket = ({
     // Order status change event
     socket.on('order:status', (data: OrderUpdatePayload) => {
       console.log('[useOrderDetailSocket] 📊 Order status changed:', data);
-      
+
       if (data.id === orderId) {
         console.log('[useOrderDetailSocket] ✅ Status change matches current order');
-        
+
         if (callbacksRef.current.onOrderUpdated) {
           callbacksRef.current.onOrderUpdated(data);
         }
-        
+
         if (callbacksRef.current.onRefresh) {
           callbacksRef.current.onRefresh();
         }
@@ -145,19 +145,19 @@ export const useOrderDetailSocket = ({
     // Payment updated event - check if it's for this order
     socket.on('payment:updated', (data: PaymentUpdatePayload) => {
       console.log('[useOrderDetailSocket] 💳 Payment updated:', data);
-      
+
       // Check if payment update is for this order
-      const isForThisOrder = data.order_id === orderId || 
-                             data.refundForId === orderId ||
-                             (data.type === 'refund_update' && data.refundFor === 'order' && data.refundForId === orderId);
-      
+      const isForThisOrder = data.order_id === orderId ||
+        data.refundForId === orderId ||
+        (data.type === 'refund_update' && data.refundFor === 'order' && data.refundForId === orderId);
+
       if (isForThisOrder) {
         console.log('[useOrderDetailSocket] ✅ Payment update matches current order');
-        
+
         if (callbacksRef.current.onPaymentUpdated) {
           callbacksRef.current.onPaymentUpdated(data);
         }
-        
+
         // Refresh order to get updated payment/refund status
         if (callbacksRef.current.onRefresh) {
           callbacksRef.current.onRefresh();
@@ -168,7 +168,7 @@ export const useOrderDetailSocket = ({
     // Cleanup on unmount or when dependencies change
     return () => {
       console.log('[useOrderDetailSocket] 🧹 Cleaning up socket connection');
-      
+
       if (socketRef.current) {
         socketRef.current.emit('leave:user', { userId: user.id });
         socketRef.current.emit('leave:order', { orderId });

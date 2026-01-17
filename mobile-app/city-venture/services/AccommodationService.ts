@@ -3,9 +3,8 @@ import type {
   BusinessDetails,
 } from '@/types/Business';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import apiClient from '@/services/apiClient';
+import businessApiClient from '@/services/api/businessApiClient';
 
-import api from '@/services/api';
 import { Address } from '@/types/Address';
 import { Bookings } from '@/types/Booking';
 import debugLogger from '@/utils/debugLogger';
@@ -28,40 +27,38 @@ export const clearStoredBusinessId = async () => {
   await AsyncStorage.removeItem('selectedBusinessId');
 };
 
-/** Fetch Business Details from API */
+/** Fetch Business Details from API - uses Business Backend */
 export const fetchAllBusinessDetails = async (): Promise<Business[]> => {
-  const { data } = await apiClient.get<Business[]>(`/business`);
+  const { data } = await businessApiClient.get<Business[]>(`/business`);
   return data;
 };
 
-/** Fetch Business Details from API */
+/** Fetch Business Details from API - uses Business Backend */
 export const fetchBusinessDetails = async (
   business_id: string
 ): Promise<Business> => {
-  const { data } = await apiClient.get<Business>(`/business/${business_id}`);
+  const { data } = await businessApiClient.get<Business>(`/business/${business_id}`);
   return data;
 };
 
 export const fetchBusinessesByOwner = async (
   owner_id: string
 ): Promise<Business[]> => {
-  const { data } = await apiClient.get(`/business/owner/${owner_id}`);
+  const { data } = await businessApiClient.get(`/business/owner/${owner_id}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
 export const fetchBusinessesByStatus = async (
   status: string
 ): Promise<Business[]> => {
-  const { data } = await apiClient.get(`/business/status/${status}`);
+  const { data } = await businessApiClient.get(`/business/status/${status}`);
   return Array.isArray(data) ? data : [data]; // ensure it's always an array
 };
 
 export const fetchAddress = async (barangay_id: number): Promise<Address> => {
-  const res = await apiClient.get<Address>(`/address/${barangay_id}`);
+  const res = await businessApiClient.get<Address>(`/address/${barangay_id}`);
   return res.data;
 };
-
-export { api };
 
 /** Fetch Complete Business Data with categories from entity_categories */
 export const fetchBusinessData = async (
@@ -69,7 +66,7 @@ export const fetchBusinessData = async (
 ): Promise<BusinessDetails> => {
   const business = await fetchBusinessDetails(id);
   const address = await fetchAddress(business.barangay_id);
-  
+
   // Fetch categories from entity_categories
   const categories = await fetchEntityCategories('business', id);
   const primaryCategory = categories.find(c => c.is_primary) || categories[0];
@@ -122,7 +119,7 @@ export const fetchBookings = async (
   tourist_id: string
 ): Promise<Bookings[]> => {
   try {
-    const response = await apiClient.get(`/booking/tourist/${tourist_id}`);
+    const response = await businessApiClient.get(`/booking/tourist/${tourist_id}`);
     return response.data;
   } catch (err: any) {
     debugLogger({
@@ -135,7 +132,7 @@ export const fetchBookings = async (
 
 export const fetchAllBookings = async (): Promise<Bookings[]> => {
   try {
-    const response = await apiClient.get(`/booking`);
+    const response = await businessApiClient.get(`/booking`);
     return response.data;
   } catch (err: any) {
     debugLogger({
