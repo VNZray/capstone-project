@@ -5,7 +5,6 @@ import axios from "axios";
 // Route Components
 import AccommodationRoutes from "./AccommodationRoutes";
 import ShopRoutes from "./ShopRoutes";
-import TourismRoutes from "./TourismRoutes";
 import ProtectedRoute from "./ProtectedRoute";
 
 // Permission constants
@@ -85,7 +84,6 @@ export default function AppRoutes() {
   }, []);
 
   // Normalized role names as produced by AuthService
-  const TOURISM_ROLES = ["Admin", "Tourism Officer"];
   const BUSINESS_ROLES = [
     "Business Owner",
     "Manager",
@@ -159,7 +157,12 @@ export default function AppRoutes() {
             <Route
               path={`${business}`}
               element={
-                <ProtectedRoute requiredAnyPermissions={[P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE]}>
+                <ProtectedRoute
+                  requiredAnyPermissions={[
+                    P.VIEW_BUSINESS_PROFILE,
+                    P.MANAGE_BUSINESS_PROFILE,
+                  ]}
+                >
                   <MyBusiness />
                 </ProtectedRoute>
               }
@@ -167,7 +170,9 @@ export default function AppRoutes() {
             <Route
               path={`${business}/register`}
               element={
-                <ProtectedRoute requiredAnyPermissions={[P.MANAGE_BUSINESS_PROFILE]}>
+                <ProtectedRoute
+                  requiredAnyPermissions={[P.MANAGE_BUSINESS_PROFILE]}
+                >
                   <BusinessRegistration />
                 </ProtectedRoute>
               }
@@ -180,8 +185,12 @@ export default function AppRoutes() {
             <Route
               path={`${business}/dashboard`}
               element={
-                <ProtectedRoute 
-                  requiredAnyPermissions={[P.VIEW_DASHBOARD, P.VIEW_REPORTS, P.VIEW_ANALYTICS]}
+                <ProtectedRoute
+                  requiredAnyPermissions={[
+                    P.VIEW_DASHBOARD,
+                    P.VIEW_REPORTS,
+                    P.VIEW_ANALYTICS,
+                  ]}
                 >
                   <UnifiedDashboard />
                 </ProtectedRoute>
@@ -192,8 +201,11 @@ export default function AppRoutes() {
             <Route
               path={`${business}/business-profile`}
               element={
-                <ProtectedRoute 
-                  requiredAnyPermissions={[P.VIEW_BUSINESS_PROFILE, P.MANAGE_BUSINESS_PROFILE]}
+                <ProtectedRoute
+                  requiredAnyPermissions={[
+                    P.VIEW_BUSINESS_PROFILE,
+                    P.MANAGE_BUSINESS_PROFILE,
+                  ]}
                 >
                   <UnifiedBusinessProfile />
                 </ProtectedRoute>
@@ -204,7 +216,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/reviews`}
               element={
-                <ProtectedRoute 
+                <ProtectedRoute
                   requiredAnyPermissions={[P.VIEW_REVIEWS, P.MANAGE_REVIEWS]}
                 >
                   <UnifiedReviews />
@@ -216,8 +228,11 @@ export default function AppRoutes() {
             <Route
               path={`${business}/promotions`}
               element={
-                <ProtectedRoute 
-                  requiredAnyPermissions={[P.VIEW_PROMOTIONS, P.MANAGE_PROMOTIONS]}
+                <ProtectedRoute
+                  requiredAnyPermissions={[
+                    P.VIEW_PROMOTIONS,
+                    P.MANAGE_PROMOTIONS,
+                  ]}
                 >
                   <UnifiedPromotions />
                 </ProtectedRoute>
@@ -228,8 +243,11 @@ export default function AppRoutes() {
             <Route
               path={`${business}/subscription`}
               element={
-                <ProtectedRoute 
-                  requiredAnyPermissions={[P.MANAGE_SUBSCRIPTIONS, P.VIEW_PAYMENTS]}
+                <ProtectedRoute
+                  requiredAnyPermissions={[
+                    P.MANAGE_SUBSCRIPTIONS,
+                    P.VIEW_PAYMENTS,
+                  ]}
                 >
                   <UnifiedSubscription />
                 </ProtectedRoute>
@@ -240,8 +258,12 @@ export default function AppRoutes() {
             <Route
               path={`${business}/manage-staff`}
               element={
-                <ProtectedRoute 
-                  requiredAnyPermissions={[P.VIEW_STAFF, P.ADD_STAFF, P.MANAGE_STAFF_ROLES]}
+                <ProtectedRoute
+                  requiredAnyPermissions={[
+                    P.VIEW_STAFF,
+                    P.ADD_STAFF,
+                    P.MANAGE_STAFF_ROLES,
+                  ]}
                 >
                   <UnifiedManageStaff />
                 </ProtectedRoute>
@@ -252,7 +274,7 @@ export default function AppRoutes() {
             <Route
               path={`${business}/settings`}
               element={
-                <ProtectedRoute 
+                <ProtectedRoute
                   requiredAnyPermissions={[P.MANAGE_BUSINESS_SETTINGS]}
                 >
                   <Settings />
@@ -269,7 +291,6 @@ export default function AppRoutes() {
         </Route>
 
         {/* Tourism/Admin Portal Routes */}
-        {TourismRoutes({ tourismRoles: TOURISM_ROLES })}
       </Route>
 
       {/* 404 */}

@@ -57,7 +57,7 @@ import seasonalPricingRoutes from "./routes/seasonal-pricing.js";
 import guestRoutes from "./routes/guest.js";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT;
 
 // Create HTTP server for Socket.IO
 const httpServer = createServer(app);

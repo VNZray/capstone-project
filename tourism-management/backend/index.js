@@ -26,7 +26,7 @@ import approvalRoutes from "./routes/approval.js";
 import eventRoutes from "./routes/event.js";
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 
 // Create HTTP server
 const httpServer = createServer(app);

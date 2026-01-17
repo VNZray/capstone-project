@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "city-ventures",
+    "slug": "city-ventures",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo/light-logo.png",
+    "scheme": "city-ventures",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "config": {
+        "googleMapsApiKey": "process.env.EXPO_GOOGLE_MAPS_API_KEY"
+      },
+      "bundleIdentifier": "com.cityventure.cityventures",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "process.env.EXPO_GOOGLE_MAPS_API_KEY"
+        }
+      },
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/light-logo.png",
+        "backgroundImage": "./assets/images/light-logo.png",
+        "monochromeImage": "./assets/images/dark-logo.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.cityventure.cityventures",
+      "googleServicesFile": "./google-services.json"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/logo/light-logo.png",
+      "bundler": "metro",
+      "display": "standalone",
+      "scope": "/",
+      "themeColor": "#0A1B47",
+      "backgroundColor": "#F5F7FB"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo/light-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo/light-logo.png",
+          "color": "#0A1B47",
+          "androidMode": "default",
+          "androidCollapsedTitle": "#{unread_notifications} new notifications"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://ieodjlfkxmhbtgppddhw.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imllb2RqbGZreG1oYnRncHBkZGh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzNTQxNTgsImV4cCI6MjA1OTkzMDE1OH0.Pa0FhIKYtaabxssKYav5I5NL_DCH1hDJ8bgJ6Xd6pi4",
+      "EXPO_PUBLIC_PAYMONGO_BASIC_AUTH": "Basic c2tfdGVzdF9wTGh3YVFHWmtITXRXaDhLb0pLaTRNeWI6",
+      "router": {},
+      "eas": {
+        "projectId": "06c17879-5794-4625-99a5-4e6b67a5604e"
+      }
+    },
+    "owner": "city-venture"
+  }
+}

@@ -1,0 +1,61 @@
+const { createProductReviewProcedures, dropProductReviewProcedures } = require("../procedures/product/product-review.procedures.cjs");
+
+exports.up = async function (knex) {
+  // Create product_review table (separate from existing review_and_rating table)
+  // This provides more specific product review functionality alongside the existing polymorphic review system
+  await knex.schema.createTable("product_review", (table) => {
+    table.uuid("id").primary().defaultTo(knex.raw("(UUID())"));
+    table.uuid("product_id").notNullable()
+      .references("id")
+      .inTable("product")
+      .onDelete("CASCADE");
+    table.uuid("user_id").notNullable()
+      .references("id")
+      .inTable("user")  // Reference existing 'user' table
+      .onDelete("CASCADE");
+    table.uuid("order_id").nullable()  // reference to order (optional)
+      .references("id")
+      .inTable("order")
+      .onDelete("SET NULL");
+    table.tinyint("rating").notNullable(); // rating between 1 and 5
+    table.string("review_title", 255).nullable();
+    table.text("review_text").nullable();
+    table.boolean("is_verified_purchase").defaultTo(false);
+    table.enu("status", ["active", "hidden", "flagged"]).defaultTo("active");
+    table.timestamp("created_at").defaultTo(knex.fn.now());
+    table.timestamp("updated_at").defaultTo(knex.fn.now());
+
+    // Add check constraint for rating (MySQL/MariaDB syntax)
+    table.check("rating >= 1 AND rating <= 5", [], "product_review_rating_check");
+
+    table.index("product_id", "idx_product_review_product");
+    table.index("user_id", "idx_product_review_user");
+    table.index("rating", "idx_product_review_rating");
+    table.index("status", "idx_product_review_status");
+  });
+
+  // Create stored procedures
+  console.log("Creating product review stored procedures...");
+  try {
+    await createProductReviewProcedures(knex);
+    console.log("✅ Product review stored procedures created successfully");
+  } catch (error) {
+    console.error("❌ Error creating product review stored procedures:", error);
+    throw error;
+  }
+};
+
+exports.down = async function (knex) {
+  // Drop stored procedures first
+  console.log("Dropping product review stored procedures...");
+  try {
+    await dropProductReviewProcedures(knex);
+    console.log("✅ Product review stored procedures dropped successfully");
+  } catch (error) {
+    console.error("❌ Error dropping product review stored procedures:", error);
+    throw error;
+  }
+
+  // Drop tables
+  await knex.schema.dropTableIfExists("product_review");
+};

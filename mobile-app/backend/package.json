@@ -1,0 +1,51 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "node index.js",
+    "start:prod": "node dist/index.js",
+    "dev": "nodemon index.js",
+    "make": "knex migrate:make --knexfile knexfile.cjs --env development",
+    "latest": "knex migrate:latest --knexfile knexfile.cjs --env development",
+    "rollback": "knex migrate:rollback --knexfile knexfile.cjs --env development",
+    "createdb": "node scripts/create-db.js",
+    "cleardb": "node scripts/clear-db.js",
+    "seed": "knex seed:run --knexfile knexfile.cjs --env development",
+    "deletedb": "node scripts/delete-db.js",
+    "resetdb": "node scripts/delete-db.js && node scripts/create-db.js && knex migrate:latest --knexfile knexfile.cjs --env development && knex seed:run --knexfile knexfile.cjs --env development && npm run dev",
+    "test": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --forceExit",
+    "test:watch": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js --coverage --forceExit",
+    "test:abandoned": "node scripts/test-abandoned-cleanup.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@emailjs/nodejs": "^5.0.2",
+    "@emailjs/react-native": "^5.1.0",
+    "bcrypt": "^6.0.0",
+    "bull": "^4.16.5",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "expo-server-sdk": "^3.11.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.2.1",
+    "ioredis": "^5.8.2",
+    "jsonwebtoken": "^9.0.2",
+    "knex": "^3.1.0",
+    "mysql2": "^3.14.3",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
+  }
+}

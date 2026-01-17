@@ -1,0 +1,77 @@
+import { AppHeader } from '@/components/header/AppHeader';
+import { Stack } from 'expo-router';
+
+const HomeLayout = () => {
+  return (
+    <Stack
+      initialRouteName="index"
+      screenOptions={{
+        headerBackTitle: 'Back',
+        headerShown: false,
+        headerTitle: 'Naga Venture',
+      }}
+    >
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+          animation: 'default',
+        }}
+      />
+      <Stack.Screen
+        name="(notification)"
+        options={{
+          headerShown: true,
+          animation: 'ios_from_right',
+          header() {
+            return (
+              <AppHeader backButton title="Notifications" background="light" />
+            );
+          },
+        }}
+      />
+      <Stack.Screen
+        name="(accommodation)"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          headerTitle: 'Accommodation Directory',
+          headerBackTitle: 'Back',
+        }}
+      />
+      <Stack.Screen
+        name="(event)"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          headerTitle: 'Event Directory',
+          headerBackTitle: 'Back',
+        }}
+      />
+      <Stack.Screen
+        name="(shop)"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          headerTitle: 'Shop Directory',
+          headerBackTitle: 'Back',
+        }}
+      />
+      <Stack.Screen
+        name="(spot)"
+        options={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          headerTitleAlign: 'center',
+          headerTitle: 'Tourist Spots',
+          headerBackTitle: 'Back',
+        }}
+      />
+    </Stack>
+  );
+};
+
+export default HomeLayout;
